@@ -170,7 +170,7 @@ dialog::backdrop{background:rgba(15,15,40,.4)}
 .dlg textarea{min-height:50px;resize:vertical}
 .dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
 .hint{font-size:12px;color:var(--muted);font-style:italic}
-#flowDlg,#mermaidDlg{max-width:900px}
+#flowDlg,#mermaidDlg,#bizagiDlg{max-width:900px}
 .flowedit{display:flex;flex-direction:column;gap:6px;margin:8px 0}
 .frow{display:flex;align-items:center;gap:10px;background:#f6f5fb;border:1px solid var(--line);border-radius:9px;padding:8px 12px}
 .frow.off{opacity:.45}
@@ -361,13 +361,19 @@ dialog::backdrop{background:rgba(15,15,40,.4)}
   <p class="hint" style="margin:0 0 10px">Ajuste a ordem com as setas antes de exportar. Etapas com alçada viram decisão (recusa volta para a etapa anterior). Coral = etapa com GAP aberto.</p>
   <div class="flowedit" id="flowBody"></div>
   <div class="flow-legend"><span><span class="swatch" style="background:#f6f5fb;border:1px solid #cdcbe0"></span> etapa</span><span><span class="swatch" style="background:#FBEDE8;border:1px solid #e6bbad"></span> exige atenção (GAP)</span><span><span class="swatch" style="background:#E2F0FA;border:1px solid #bcdcef"></span> decisão (alçada)</span></div>
-  <div class="dlg-actions"><button onclick="document.getElementById('flowDlg').close()">Fechar</button><button class="primary" onclick="exportMermaid()">Exportar p/ editar (Mermaid)</button></div>
+  <div class="dlg-actions"><button onclick="document.getElementById('flowDlg').close()">Fechar</button><button onclick="exportMermaid()">Exportar (Mermaid)</button><button class="primary" onclick="exportBizagi()">Exportar p/ Bizagi (BPMN)</button></div>
 </div></dialog>
 
 <dialog id="mermaidDlg"><div class="dlg"><h3>Fluxo para editar — <span id="mermaidNum"></span></h3>
   <p class="steps-how">1. Copie o código.  2. Abra <b>draw.io</b> (ou mermaid.live).  3. No draw.io: <b>Arrange → Insert → Advanced → Mermaid</b>, cole e insira.  4. Edite à vontade e salve com o número <b><span id="mermaidNum2"></span></b>.  Formas: estádio = início/fim, retângulo = etapa, losango = decisão de aprovação.</p>
   <div class="mermaid-code" id="mermaidCode"></div>
   <div class="dlg-actions"><button id="copyBtn" class="primary" onclick="copyMermaid()">copiar código</button><button onclick="document.getElementById('mermaidDlg').close()">Fechar</button></div>
+</div></dialog>
+
+<dialog id="bizagiDlg"><div class="dlg"><h3>Fluxo para Bizagi — <span id="bizagiNum"></span></h3>
+  <p class="steps-how">1. Clique em <b>Baixar .bpmn</b>.  2. Abra o <b>Bizagi Modeler</b>.  3. Menu <b>Arquivo → Importar → BPMN 2.0 (XML)</b> e selecione o arquivo baixado.  4. O fluxograma abre editável no Bizagi, identificado como <b><span id="bizagiNum2"></span></b>.  Formas: círculo = início/fim, retângulo = etapa, losango = decisão de aprovação (recusa volta à etapa anterior).</p>
+  <div class="mermaid-code" id="bizagiCode"></div>
+  <div class="dlg-actions"><button id="bizagiDl" class="primary" onclick="downloadBizagi()">Baixar .bpmn</button><button id="bizagiCopyBtn" onclick="copyBizagi()">copiar XML</button><button onclick="document.getElementById('bizagiDlg').close()">Fechar</button></div>
 </div></dialog>
 
 
@@ -767,6 +773,99 @@ window.exportMermaid=function(){
 };
 function connect(prev,to){return prev.label?("  "+prev.node+" -->|"+prev.label+"| "+to+"\n"):("  "+prev.node+" --> "+to+"\n");}
 window.copyMermaid=function(){const t=document.getElementById('mermaidCode').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);const b=document.getElementById('copyBtn');b.textContent="copiado ✓";setTimeout(()=>b.textContent="copiar código",1500);};
+
+// ---- Bizagi (BPMN 2.0 XML) export ----
+let lastBpmn={xml:"",file:"fluxo.bpmn"};
+function xmlEsc(s){return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+window.exportBizagi=function(){
+  const mod=M();const steps=getFlowOrder();const num=flowNumber();
+  const procId="Proc_"+mod.key;
+  const nodes=[];const flows=[];let fseq=0;const F=()=>"Flow_"+(++fseq);
+  nodes.push({id:"StartEvent_1",type:"start",name:"Início"});
+  let prev="StartEvent_1",prevLabel=null;
+  steps.forEach((st,i)=>{
+    const tid="Task_"+i;let name=st.ecode+" - "+st.t;
+    if(st.opt&&!st.on)name+=" (não usada)";
+    if(st.dev)name+=" [GAP em aberto]";
+    nodes.push({id:tid,type:"task",name:name});
+    flows.push({id:F(),src:prev,tgt:tid,name:prevLabel});
+    if(st.decision){
+      const gid="Gw_"+i;nodes.push({id:gid,type:"gateway",name:st.ecode+" - aprovado?"});
+      flows.push({id:F(),src:tid,tgt:gid,name:null});
+      const back=i>0?("Task_"+(i-1)):tid;
+      flows.push({id:F(),src:gid,tgt:back,name:"recusado"});
+      prev=gid;prevLabel="aprovado";
+    }else{prev=tid;prevLabel=null;}
+  });
+  nodes.push({id:"EndEvent_1",type:"end",name:"Fim"});
+  flows.push({id:F(),src:prev,tgt:"EndEvent_1",name:prevLabel});
+  // layout vertical, centralizado em cx
+  const cx=320;let y=40;const pos={};
+  nodes.forEach(n=>{
+    const d=n.type==='task'?{w:150,h:70}:(n.type==='gateway'?{w:50,h:50}:{w:36,h:36});
+    pos[n.id]={x:Math.round(cx-d.w/2),y:Math.round(y),w:d.w,h:d.h,mx:cx,my:Math.round(y+d.h/2)};
+    y+=d.h+50;
+  });
+  // incoming / outgoing
+  const inc={},out={};
+  flows.forEach(f=>{(out[f.src]=out[f.src]||[]).push(f.id);(inc[f.tgt]=inc[f.tgt]||[]).push(f.id);});
+  // elementos do processo
+  let p="";
+  nodes.forEach(n=>{
+    const io=[].concat((inc[n.id]||[]).map(id=>"      <bpmn:incoming>"+id+"</bpmn:incoming>"),
+                       (out[n.id]||[]).map(id=>"      <bpmn:outgoing>"+id+"</bpmn:outgoing>")).join("\n");
+    const inner=io?("\n"+io+"\n    "):"";
+    if(n.type==='start')p+='    <bpmn:startEvent id="'+n.id+'" name="'+xmlEsc(n.name)+'">'+inner+'</bpmn:startEvent>\n';
+    else if(n.type==='end')p+='    <bpmn:endEvent id="'+n.id+'" name="'+xmlEsc(n.name)+'">'+inner+'</bpmn:endEvent>\n';
+    else if(n.type==='gateway')p+='    <bpmn:exclusiveGateway id="'+n.id+'" name="'+xmlEsc(n.name)+'">'+inner+'</bpmn:exclusiveGateway>\n';
+    else p+='    <bpmn:task id="'+n.id+'" name="'+xmlEsc(n.name)+'">'+inner+'</bpmn:task>\n';
+  });
+  flows.forEach(f=>{p+='    <bpmn:sequenceFlow id="'+f.id+'" sourceRef="'+f.src+'" targetRef="'+f.tgt+'"'+(f.name?' name="'+xmlEsc(f.name)+'"':'')+' />\n';});
+  // diagrama (BPMN DI)
+  let di="";
+  nodes.forEach(n=>{const b=pos[n.id];
+    di+='      <bpmndi:BPMNShape id="'+n.id+'_di" bpmnElement="'+n.id+'">\n';
+    di+='        <dc:Bounds x="'+b.x+'" y="'+b.y+'" width="'+b.w+'" height="'+b.h+'" />\n';
+    di+='      </bpmndi:BPMNShape>\n';
+  });
+  flows.forEach(f=>{const s=pos[f.src],t=pos[f.tgt];let wp;
+    if(t.y<s.y){ // aresta de retorno (recusado) — roteia pela direita
+      const rx=cx+140;
+      wp=[[s.x+s.w,s.my],[rx,s.my],[rx,t.my],[t.x+t.w,t.my]];
+    }else{wp=[[s.mx,s.y+s.h],[t.mx,t.y]];}
+    di+='      <bpmndi:BPMNEdge id="'+f.id+'_di" bpmnElement="'+f.id+'">\n';
+    wp.forEach(w=>{di+='        <di:waypoint x="'+w[0]+'" y="'+w[1]+'" />\n';});
+    di+='      </bpmndi:BPMNEdge>\n';
+  });
+  const cliente=book.meta.Cliente||'cliente';
+  const xml='<?xml version="1.0" encoding="UTF-8"?>\n'
+    +'<!-- '+num+' — '+xmlEsc(mod.name)+' — '+xmlEsc(cliente)+(book.meta['Nome do projeto']?' / '+xmlEsc(book.meta['Nome do projeto']):'')+' -->\n'
+    +'<!-- Aceite tecnico: '+xmlEsc(mod.approval.gerente)+' em '+xmlEsc(mod.approval.data)+' -->\n'
+    +'<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Defs_'+mod.key+'" targetNamespace="http://bizagi.com/bpmn">\n'
+    +'  <bpmn:process id="'+procId+'" name="'+xmlEsc(num+' - '+mod.name)+'" isExecutable="false">\n'
+    +p
+    +'  </bpmn:process>\n'
+    +'  <bpmndi:BPMNDiagram id="Diagram_1">\n'
+    +'    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="'+procId+'">\n'
+    +di
+    +'    </bpmndi:BPMNPlane>\n'
+    +'  </bpmndi:BPMNDiagram>\n'
+    +'</bpmn:definitions>\n';
+  lastBpmn={xml:xml,file:num+".bpmn"};
+  document.getElementById('bizagiCode').textContent=xml;
+  document.getElementById('bizagiNum').textContent=num;
+  document.getElementById('bizagiNum2').textContent=num;
+  mod.flowSeq=(mod.flowSeq||1)+1;save();
+  document.getElementById('flowDlg').close();
+  document.getElementById('bizagiDlg').showModal();
+};
+window.downloadBizagi=function(){
+  const blob=new Blob([lastBpmn.xml],{type:'application/xml'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');
+  a.href=url;a.download=lastBpmn.file;document.body.appendChild(a);a.click();
+  setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},100);
+};
+window.copyBizagi=function(){const t=document.getElementById('bizagiCode').textContent;navigator.clipboard&&navigator.clipboard.writeText(t);const b=document.getElementById('bizagiCopyBtn');b.textContent="copiado ✓";setTimeout(()=>b.textContent="copiar XML",1500);};
 
 // ---- export tab content (HTML doc — mesma aparência do formulário, sem pontos de atenção) ----
 // ---- Relatório de GAPs e Fora de Escopo ----
