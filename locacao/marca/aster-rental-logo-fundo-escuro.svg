@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 140" width="440" height="140" role="img" aria-label="aster rental">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 140" width="450" height="140" role="img" aria-label="aster rental">
   <title>aster rental</title>
-  <rect width="440" height="140" rx="16" fill="#0A0A5E"/>
+  <rect width="450" height="140" rx="16" fill="#0A0A5E"/>
   <g transform="translate(14 4)">
     <!-- cauda do cometa (identidade aster) -->
     <path d="M64 45 L120 2 L96 70 Z" fill="#3D8FDB"/>
@@ -15,6 +15,5 @@
     <circle cx="58" cy="80" r="9" fill="#3D8FDB"/>
     <circle cx="58" cy="80" r="3.5" fill="#0A0A5E"/>
   </g>
-  <text x="138" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="500" letter-spacing="-1" fill="#3D8FDB">aster</text>
-  <text x="308" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#00B0A6">rental</text>
+  <text x="138" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="500" letter-spacing="-1" fill="#3D8FDB">aster<tspan dx="8" font-size="44" font-weight="600" letter-spacing="0" fill="#00B0A6">rental</tspan></text>
 </svg>
