@@ -1,10 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 140" width="440" height="140" role="img" aria-label="aster rental">
   <title>aster rental</title>
   
-  <g transform="translate(14 8)">
+  <g transform="translate(14 4)">
     <!-- cauda do cometa (identidade aster) -->
     <path d="M64 45 L120 2 L96 70 Z" fill="#3D8FDB"/>
-    <!-- roda: pneu, aro e cubo (locação de veículos e equipamentos) -->
+    <!-- engrenagem (máquinas) com raios de roda (veículos) -->
+    <g fill="#3D8FDB"><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(0 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(36 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(72 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(108 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(144 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(180 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(216 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(252 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(288 58 80)"/><rect x="53.5" y="31" width="9" height="11" rx="1.5" transform="rotate(324 58 80)"/></g>
     <circle cx="58" cy="80" r="36" fill="none" stroke="#3D8FDB" stroke-width="11"/>
     <circle cx="58" cy="80" r="21" fill="none" stroke="#3D8FDB" stroke-width="3"/>
     <g stroke="#3D8FDB" stroke-width="3.2" stroke-linecap="round">
