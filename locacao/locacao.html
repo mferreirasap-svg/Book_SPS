@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Locação SPS — Gestão de Locadoras</title>
+<title>Áster Rental — Gestão de Locadoras</title>
 <style>
 :root{
   --navy:#0A0A5E; --navy2:#2A2A8C; --coral:#B0432A; --coralbg:#FBEDE8;
@@ -18,6 +18,7 @@ h1{font-size:19px;margin:0;color:var(--navy)}
 h2{font-size:16px;margin:0 0 10px;color:var(--navy)}
 h3{font-size:14px;margin:14px 0 8px;color:var(--navy2)}
 .sub{color:var(--muted);font-size:12.5px}
+.logo{height:44px;width:auto;display:block}
 nav{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 14px}
 nav button{border-radius:8px 8px 0 0;border-bottom:none}
 nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -88,7 +89,7 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
 <div id="login" class="wrap" hidden>
   <div class="brandbar"></div>
   <div class="card">
-    <h1>Locação SPS</h1>
+    <svg class="logo" viewBox="0 0 440 140" role="img" aria-label="aster rental"> <g transform="translate(14 8)"> <path d="M64 45 L120 2 L96 70 Z" fill="#3D8FDB"/> <circle cx="58" cy="80" r="36" fill="none" stroke="#3D8FDB" stroke-width="11"/> <circle cx="58" cy="80" r="21" fill="none" stroke="#3D8FDB" stroke-width="3"/> <g stroke="#3D8FDB" stroke-width="3.2" stroke-linecap="round"> <line x1="58" y1="59" x2="58" y2="101"/><line x1="37" y1="80" x2="79" y2="80"/> <line x1="43.2" y1="65.2" x2="72.8" y2="94.8"/><line x1="43.2" y1="94.8" x2="72.8" y2="65.2"/> </g> <circle cx="58" cy="80" r="9" fill="#3D8FDB"/> <circle cx="58" cy="80" r="3.5" fill="#ffffff"/> </g> <text x="138" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="500" letter-spacing="-1" fill="#3D8FDB">aster</text> <text x="308" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#00B0A6">rental</text> </svg>
     <div class="sub" style="margin-bottom:14px">Gestão de locadoras de máquinas, equipamentos e veículos — integrado ao SAP Business One</div>
     <div style="display:grid;gap:10px">
       <div><label>Modo</label>
@@ -107,7 +108,7 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
 <div id="app" class="wrap" hidden>
   <div class="brandbar"></div>
   <header>
-    <div><h1>Locação SPS</h1><div class="sub" id="hdrInfo"></div></div>
+    <div class="row" style="gap:14px"><svg class="logo" viewBox="0 0 440 140" role="img" aria-label="aster rental"> <g transform="translate(14 8)"> <path d="M64 45 L120 2 L96 70 Z" fill="#3D8FDB"/> <circle cx="58" cy="80" r="36" fill="none" stroke="#3D8FDB" stroke-width="11"/> <circle cx="58" cy="80" r="21" fill="none" stroke="#3D8FDB" stroke-width="3"/> <g stroke="#3D8FDB" stroke-width="3.2" stroke-linecap="round"> <line x1="58" y1="59" x2="58" y2="101"/><line x1="37" y1="80" x2="79" y2="80"/> <line x1="43.2" y1="65.2" x2="72.8" y2="94.8"/><line x1="43.2" y1="94.8" x2="72.8" y2="65.2"/> </g> <circle cx="58" cy="80" r="9" fill="#3D8FDB"/> <circle cx="58" cy="80" r="3.5" fill="#ffffff"/> </g> <text x="138" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="500" letter-spacing="-1" fill="#3D8FDB">aster</text> <text x="308" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#00B0A6">rental</text> </svg><div><div class="sub">Gestão de locadoras · máquinas, equipamentos e veículos</div><div class="sub" id="hdrInfo"></div></div></div>
     <div class="row"><span id="hdrMode" class="modebadge" hidden>DEMONSTRAÇÃO</span><button id="btnReload" title="Recarregar os dados">⟳ Atualizar</button><button id="btnLogout">Sair</button></div>
   </header>
   <nav id="tabs"></nav>
@@ -120,7 +121,7 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
 <script>
 'use strict';
 /* =========================================================================
-   Locação SPS — ERP de locação sobre o SAP Business One (Service Layer)
+   Áster Rental — ERP de locação sobre o SAP Business One (Service Layer)
    Página única para publicação no Áster. Dados gravados no B1 em UDTs/UDOs
    com prefixo SPS_L*. NF e boleto continuam sendo emitidos pelo B1.
    ========================================================================= */

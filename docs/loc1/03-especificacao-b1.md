@@ -1,4 +1,4 @@
-# Locação SPS — especificação técnica (SAP Business One + Áster)
+# Áster Rental — especificação técnica (SAP Business One + Áster)
 
 Este documento descreve o app `locacao/locacao.html`.
 

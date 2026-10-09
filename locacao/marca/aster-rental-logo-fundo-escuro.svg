@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 140" width="440" height="140" role="img" aria-label="aster rental">
+  <title>aster rental</title>
+  <rect width="440" height="140" rx="16" fill="#0A0A5E"/>
+  <g transform="translate(14 8)">
+    <!-- cauda do cometa (identidade aster) -->
+    <path d="M64 45 L120 2 L96 70 Z" fill="#3D8FDB"/>
+    <!-- roda: pneu, aro e cubo (locação de veículos e equipamentos) -->
+    <circle cx="58" cy="80" r="36" fill="none" stroke="#3D8FDB" stroke-width="11"/>
+    <circle cx="58" cy="80" r="21" fill="none" stroke="#3D8FDB" stroke-width="3"/>
+    <g stroke="#3D8FDB" stroke-width="3.2" stroke-linecap="round">
+      <line x1="58" y1="59" x2="58" y2="101"/><line x1="37" y1="80" x2="79" y2="80"/>
+      <line x1="43.2" y1="65.2" x2="72.8" y2="94.8"/><line x1="43.2" y1="94.8" x2="72.8" y2="65.2"/>
+    </g>
+    <circle cx="58" cy="80" r="9" fill="#3D8FDB"/>
+    <circle cx="58" cy="80" r="3.5" fill="#0A0A5E"/>
+  </g>
+  <text x="138" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="66" font-weight="500" letter-spacing="-1" fill="#3D8FDB">aster</text>
+  <text x="308" y="96" font-family="Montserrat, 'Segoe UI', Arial, sans-serif" font-size="30" font-weight="600" letter-spacing="3" fill="#00B0A6">rental</text>
+</svg>
