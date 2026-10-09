@@ -1,0 +1,1152 @@
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Locação SPS — Gestão de Locadoras</title>
+<style>
+:root{
+  --navy:#0A0A5E; --navy2:#2A2A8C; --coral:#B0432A; --coralbg:#FBEDE8;
+  --teal:#0A7A70; --tealbg:#E0F5F2; --blue:#0098C8; --bluebg:#E2F2FA;
+  --amber:#9A6200; --amberbg:#FDF1DC;
+  --ink:#1c1c2e; --muted:#5F5E6A; --line:#E3E1E8; --bg:#F6F6FA; --card:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.45;font-size:14px}
+[hidden]{display:none!important}
+.wrap{max-width:1240px;margin:0 auto;padding:16px 16px 80px}
+.brandbar{height:5px;background:linear-gradient(90deg,#00B0A6 0%,#0098C8 45%,#0A0A5E 100%);border-radius:3px;margin-bottom:12px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--navy);padding-bottom:10px}
+h1{font-size:19px;margin:0;color:var(--navy)}
+h2{font-size:16px;margin:0 0 10px;color:var(--navy)}
+h3{font-size:14px;margin:14px 0 8px;color:var(--navy2)}
+.sub{color:var(--muted);font-size:12.5px}
+nav{display:flex;gap:4px;flex-wrap:wrap;margin:12px 0 14px}
+nav button{border-radius:8px 8px 0 0;border-bottom:none}
+nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+button{font-family:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:6px 12px;border-radius:8px;cursor:pointer}
+button:hover{background:#f0eef6}
+button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+button.primary:hover{filter:brightness(1.15)}
+button.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+button.danger{color:var(--coral)}
+button.mini{font-size:12px;padding:2px 8px}
+button:disabled{opacity:.5;cursor:not-allowed}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.grid .span2{grid-column:span 2}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:2px}
+input,select,textarea{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:7px;font-family:inherit;font-size:13.5px;background:#fff}
+input[readonly]{background:#f3f2f7}
+textarea{min-height:60px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:600;border-bottom:2px solid var(--line);padding:6px 6px;white-space:nowrap}
+td{border-bottom:1px solid #eeedf3;padding:6px 6px;vertical-align:middle}
+td input,td select{padding:3px 6px;font-size:13px}
+tr.click{cursor:pointer}tr.click:hover td{background:#f7f6fb}
+.num{text-align:right;white-space:nowrap}
+.tbl{overflow-x:auto}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px}
+.toolbar>div{min-width:140px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.b-DIS,.b-ATV,.b-OK,.b-PAG{background:var(--tealbg);color:var(--teal)}
+.b-LOC,.b-REP{background:var(--bluebg);color:#006a8e}
+.b-MAN,.b-SUS,.b-PRO,.b-IND{background:var(--amberbg);color:var(--amber)}
+.b-RES,.b-RAS,.b-PEN{background:#ECEBF7;color:var(--navy2)}
+.b-BAI,.b-ENC,.b-DEV,.b-CAN,.b-FAT{background:#EEE;color:#555}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px}
+.kpi .v{font-size:22px;font-weight:700;color:var(--navy)}
+.kpi .l{font-size:12px;color:var(--muted)}
+.bar{height:8px;background:#eceaf2;border-radius:4px;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;background:var(--teal)}
+.msg{padding:8px 12px;border-radius:8px;font-size:13px;margin:8px 0}
+.msg.err{background:var(--coralbg);color:var(--coral)}
+.msg.ok{background:var(--tealbg);color:var(--teal)}
+.msg.info{background:var(--bluebg);color:#006a8e}
+.msg.warn{background:var(--amberbg);color:var(--amber)}
+.log{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:#11112a;color:#d9d9f0;border-radius:8px;padding:10px;max-height:320px;overflow:auto;white-space:pre-wrap}
+.muted{color:var(--muted)}
+.right{text-align:right}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+#login{max-width:430px;margin:60px auto}
+#modalBg{position:fixed;inset:0;background:rgba(10,10,40,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;z-index:50;overflow:auto}
+#modal{background:#fff;border-radius:12px;max-width:760px;width:100%;padding:18px}
+.chk td{padding:4px 6px}.chk label{display:inline;margin-right:8px;color:var(--ink);font-size:13px}
+.chk input[type=radio]{width:auto}
+canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520px;height:160px;touch-action:none;background:#fff}
+.modebadge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--amberbg);color:var(--amber)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:60;opacity:0;transition:.2s;pointer-events:none}
+#toast.on{opacity:1}
+#busy{position:fixed;top:0;left:0;right:0;height:3px;background:var(--blue);z-index:70;animation:busy 1s linear infinite}
+@keyframes busy{0%{opacity:.3}50%{opacity:1}100%{opacity:.3}}
+@media (max-width:640px){.grid .span2{grid-column:auto}}
+</style></head>
+<body>
+<div id="busy" hidden></div>
+<div id="toast"></div>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="login" class="wrap">
+  <div class="brandbar"></div>
+  <div class="card">
+    <h1>Locação SPS</h1>
+    <div class="sub" style="margin-bottom:14px">Gestão de locadoras de máquinas, equipamentos e veículos — integrado ao SAP Business One</div>
+    <div style="display:grid;gap:10px">
+      <div><label>Modo</label>
+        <select id="lgModo"><option value="sl">SAP Business One (Service Layer)</option><option value="mock">Demonstração (dados fictícios no navegador)</option></select></div>
+      <div class="slOnly"><label>URL da Service Layer</label><input id="lgUrl" placeholder="/b1s/v1  ou  https://servidor:50000/b1s/v1"></div>
+      <div class="slOnly"><label>Banco da empresa (CompanyDB)</label><input id="lgDb" placeholder="SBO_EMPRESA"></div>
+      <div class="slOnly"><label>Usuário B1</label><input id="lgUser" autocomplete="username"></div>
+      <div class="slOnly"><label>Senha</label><input id="lgPass" type="password" autocomplete="current-password"></div>
+      <button class="primary" id="lgBtn">Entrar</button>
+      <div id="lgMsg"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="app" class="wrap" hidden>
+  <div class="brandbar"></div>
+  <header>
+    <div><h1>Locação SPS</h1><div class="sub" id="hdrInfo"></div></div>
+    <div class="row"><span id="hdrMode" class="modebadge" hidden>MODO DEMONSTRAÇÃO</span><button id="btnReload" title="Recarregar dados do B1">⟳ Atualizar</button><button id="btnLogout">Sair</button></div>
+  </header>
+  <nav id="tabs"></nav>
+  <div id="globalMsg"></div>
+  <main id="view"></main>
+</div>
+
+<div id="modalBg" hidden><div id="modal"></div></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   Locação SPS — ERP de locação sobre o SAP Business One (Service Layer)
+   Página única para publicação no Áster. Dados gravados no B1 em UDTs/UDOs
+   com prefixo SPS_L*. NF e boleto continuam sendo emitidos pelo B1.
+   ========================================================================= */
+
+/* ---------- utilitários ---------- */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const round2=n=>Math.round((+n+Number.EPSILON)*100)/100;
+const brl=n=>(+n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=(n,d=2)=>(+n||0).toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d});
+const d10=v=>v?String(v).slice(0,10):'';
+const fmtD=v=>{v=d10(v);return v?v.split('-').reverse().join('/'):''};
+const hoje=()=>{const t=new Date();return t.getFullYear()+'-'+pad(t.getMonth()+1)+'-'+pad(t.getDate());};
+const addDias=(s,n)=>{const d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
+const difDias=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
+const maxD=(...a)=>a.filter(Boolean).sort().pop();
+const minD=(...a)=>a.filter(Boolean).sort()[0];
+const compDe=data=>d10(data).slice(0,7).replace('-','');           // 2026-10-09 -> 202610
+const compAtual=()=>compDe(hoje());
+const compFmt=c=>c?c.slice(4,6)+'/'+c.slice(0,4):'';
+const compInput=c=>c.slice(0,4)+'-'+c.slice(4,6);                   // 202610 -> 2026-10 (input month)
+const odq=s=>String(s).replace(/'/g,"''");                          // escapa aspas em literais OData
+const qs=(path,params)=>path+'?'+Object.entries(params).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
+function compRange(comp){
+  const y=+comp.slice(0,4),m=+comp.slice(4,6),dias=new Date(Date.UTC(y,m,0)).getUTCDate();
+  return {ini:`${comp.slice(0,4)}-${comp.slice(4,6)}-01`,fim:`${comp.slice(0,4)}-${comp.slice(4,6)}-${pad(dias)}`,dias};
+}
+let _toastT;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(_toastT);_toastT=setTimeout(()=>e.classList.remove('on'),2600);}
+function msg(el,tipo,t){(typeof el==='string'?$(el):el).innerHTML=t?`<div class="msg ${tipo}">${esc(t)}</div>`:'';}
+let _busy=0;async function busy(fn){_busy++;$('#busy').hidden=false;try{return await fn();}finally{if(--_busy===0)$('#busy').hidden=true;}}
+async function acao(fn){try{return await busy(fn);}catch(e){console.error(e);alert('Erro: '+(e.message||e));}}
+
+/* ---------- domínio ---------- */
+const SET={ATV:'SPSLATV',CTR:'SPSLCTR',MOV:'SPSLMOV',MED:'U_SPS_LMED',FAT:'U_SPS_LFAT',MUL:'U_SPS_LMUL',CFG:'U_SPS_LCFG'};
+const LN='SPS_LCT1Collection';
+const TP_ATV={EQP:'Máquina/Equipamento',VEI:'Veículo'};
+const ST_ATV={DIS:'Disponível',LOC:'Locado',MAN:'Manutenção',RES:'Reservado',BAI:'Baixado'};
+const TP_CTR={LOC:'Locação',COM:'Comodato',SRV:'Serviço'};
+const COBR={M:'Mensal',D:'Diária'};
+const ST_CTR={RAS:'Rascunho',ATV:'Ativo',SUS:'Suspenso',ENC:'Encerrado'};
+const ST_LIN={PEN:'Aguardando saída',LOC:'Locado',DEV:'Devolvido'};
+const TP_MOV={SAI:'Saída',DEV:'Devolução',SUB:'Substituição'};
+const ST_FAT={PRO:'Em processamento',OK:'Faturado',CAN:'Cancelado'};
+const ST_MUL={PEN:'Pendente',IND:'Condutor indicado',REP:'A repassar',FAT:'Faturada',PAG:'Paga pela locadora'};
+const DOCTYPES={DRAFT:'Rascunho de NF de saída',ORDER:'Pedido de venda',INVOICE:'NF de saída'};
+const DOCSET={DRAFT:'Drafts',ORDER:'Orders',INVOICE:'Invoices'};
+const COMBUST=['','Vazio','1/4','1/2','3/4','Cheio'];
+const UN=t=>t==='VEI'?'km':'h';
+const CFG_DEF={
+  EMPRESA:'',TIPO_DOC:'DRAFT',ITEM_MULTA:'',USAGE:'',FRANQ_PROP:'S',
+  CHK_EQP:['Limpeza geral','Nível de óleo e fluidos','Sem vazamentos (mangueiras/cilindros)','Pneus / esteiras','Implementos e acessórios do contrato','Funcionamento geral','Manual e documentação'].join('\n'),
+  CHK_VEI:['Documento (CRLV)','Pneus e estepe','Macaco, triângulo e chave de roda','Lataria sem avarias','Vidros e retrovisores','Faróis e lanternas','Limpeza interna','Tapetes'].join('\n')
+};
+
+/* ---------- esquema do B1 (UDTs, UDFs, UDOs) ---------- */
+const F=(n,t,d,o={})=>({n,t,d,...o});
+const SCHEMA={
+  tables:[
+    {TableName:'SPS_LATV',TableDescription:'Locação - Ativos',TableType:'bott_MasterData'},
+    {TableName:'SPS_LCTR',TableDescription:'Locação - Contratos',TableType:'bott_Document'},
+    {TableName:'SPS_LCT1',TableDescription:'Locação - Itens do contrato',TableType:'bott_DocumentLines'},
+    {TableName:'SPS_LMOV',TableDescription:'Locação - Movimentações',TableType:'bott_Document'},
+    {TableName:'SPS_LMED',TableDescription:'Locação - Medições',TableType:'bott_NoObject'},
+    {TableName:'SPS_LFAT',TableDescription:'Locação - Faturamentos',TableType:'bott_NoObject'},
+    {TableName:'SPS_LMUL',TableDescription:'Locação - Multas',TableType:'bott_NoObject'},
+    {TableName:'SPS_LCFG',TableDescription:'Locação - Parâmetros',TableType:'bott_NoObject'}
+  ],
+  fields:{
+    '@SPS_LATV':[F('Tipo','A','Tipo do ativo',{size:3,vv:TP_ATV,def:'EQP'}),F('Categoria','A','Categoria',{size:50}),F('ItemCode','A','Item de faturamento',{size:50}),
+      F('Serie','A','Nº série / patrimônio',{size:50}),F('Placa','A','Placa',{size:10}),F('Chassi','A','Chassi',{size:30}),F('Renavam','A','Renavam',{size:20}),
+      F('Marca','A','Marca',{size:50}),F('Modelo','A','Modelo',{size:50}),F('Ano','A','Ano',{size:4}),F('Medidor','M','Horímetro / hodômetro'),
+      F('Status','A','Status',{size:3,vv:ST_ATV,def:'DIS'}),F('ValorMes','P','Valor mensal'),F('ValorDia','P','Valor diária'),F('Filial','N','Filial (BPLId)'),
+      F('CtrAtual','N','Contrato atual'),F('Obs','T','Observações')],
+    '@SPS_LCTR':[F('CardCode','A','Cliente',{size:15}),F('CardName','A','Nome do cliente',{size:100}),F('Tipo','A','Tipo de contrato',{size:3,vv:TP_CTR,def:'LOC'}),
+      F('DtInicio','D','Início da vigência'),F('DtFim','D','Fim da vigência'),F('Cobranca','A','Periodicidade de cobrança',{size:1,vv:COBR,def:'M'}),
+      F('DiaFat','N','Dia de faturamento'),F('Status','A','Status',{size:3,vv:ST_CTR,def:'RAS'}),F('Filial','N','Filial (BPLId)'),
+      F('Obra','A','Obra / local de uso',{size:100}),F('Indice','A','Índice de reajuste',{size:20}),F('Obs','T','Observações')],
+    '@SPS_LCT1':[F('Ativo','A','Ativo',{size:50}),F('AtvDesc','A','Descrição do ativo',{size:100}),F('ItemCode','A','Item de faturamento',{size:50}),
+      F('Valor','P','Valor por período'),F('Franquia','M','Franquia mensal (h/km)'),F('VlrExced','P','Valor por h/km excedente'),
+      F('DtSaida','D','Data de saída'),F('DtDevol','D','Data de devolução'),F('Condutor','A','Condutor',{size:100}),
+      F('StatusL','A','Status do item',{size:3,vv:ST_LIN,def:'PEN'})],
+    '@SPS_LMOV':[F('Tipo','A','Tipo de movimento',{size:3,vv:TP_MOV}),F('CtrEntry','N','Contrato (DocEntry)'),F('CtrLine','N','Linha do contrato'),
+      F('CardName','A','Cliente',{size:100}),F('Ativo','A','Ativo',{size:50}),F('AtivoNovo','A','Ativo substituto',{size:50}),F('Data','D','Data'),
+      F('Medidor','M','Leitura do medidor'),F('MedidorN','M','Leitura ativo substituto'),F('Combust','A','Combustível',{size:10}),
+      F('Checklist','T','Checklist (JSON)'),F('Avarias','T','Avarias / observações'),F('Respons','A','Responsável cliente',{size:100}),
+      F('DocResp','A','Documento do responsável',{size:30}),F('DestAtivo','A','Status do ativo após',{size:3}),F('Assinatura','T','Assinatura (PNG base64)')],
+    '@SPS_LMED':[F('CtrEntry','N','Contrato (DocEntry)'),F('CtrLine','N','Linha do contrato'),F('Ativo','A','Ativo',{size:50}),F('Comp','A','Competência AAAAMM',{size:6}),
+      F('Data','D','Data da leitura'),F('LeitIni','M','Leitura inicial'),F('LeitFim','M','Leitura final')],
+    '@SPS_LFAT':[F('CtrEntry','N','Contrato (DocEntry)'),F('Comp','A','Competência AAAAMM',{size:6}),F('Status','A','Status',{size:3,vv:ST_FAT}),
+      F('DocType','A','Tipo de documento',{size:10}),F('DocEntry','N','DocEntry do documento'),F('DocNum','N','DocNum do documento'),F('Valor','S','Valor faturado'),F('Data','D','Data')],
+    '@SPS_LMUL':[F('Ativo','A','Ativo',{size:50}),F('Placa','A','Placa',{size:10}),F('DtInfr','D','Data da infração'),F('HrInfr','A','Hora da infração',{size:5}),
+      F('AIT','A','Auto de infração (AIT)',{size:30}),F('Descricao','A','Descrição',{size:100}),F('Valor','S','Valor'),F('CtrEntry','N','Contrato (DocEntry)'),
+      F('CtrLine','N','Linha do contrato'),F('CardName','A','Cliente',{size:100}),F('Condutor','A','Condutor',{size:100}),
+      F('Status','A','Status',{size:3,vv:ST_MUL,def:'PEN'}),F('Comp','A','Competência faturada',{size:6})],
+    '@SPS_LCFG':[F('Valor','T','Valor do parâmetro')],
+    'OINV':[F('SPS_CtrEntry','N','Contrato de locação'),F('SPS_Comp','A','Competência da locação',{size:6})]
+  },
+  udos:[
+    {Code:'SPSLATV',Name:'Locação - Ativos',TableName:'SPS_LATV',ObjectType:'boud_MasterData',CanFind:'tYES',CanDelete:'tNO',CanLog:'tYES',
+      UserObjectMD_FindColumns:[{ColumnAlias:'Code'},{ColumnAlias:'Name'},{ColumnAlias:'U_Placa'},{ColumnAlias:'U_Serie'}]},
+    {Code:'SPSLCTR',Name:'Locação - Contratos',TableName:'SPS_LCTR',ObjectType:'boud_Document',CanFind:'tYES',CanCancel:'tYES',CanClose:'tYES',CanLog:'tYES',ManageSeries:'tYES',
+      UserObjectMD_ChildTables:[{TableName:'SPS_LCT1',ObjectName:'SPS_LCT1'}],UserObjectMD_FindColumns:[{ColumnAlias:'U_CardCode'},{ColumnAlias:'U_CardName'}]},
+    {Code:'SPSLMOV',Name:'Locação - Movimentações',TableName:'SPS_LMOV',ObjectType:'boud_Document',CanFind:'tYES',CanCancel:'tYES',CanLog:'tYES',ManageSeries:'tYES',
+      UserObjectMD_FindColumns:[{ColumnAlias:'U_Ativo'},{ColumnAlias:'U_CardName'}]}
+  ]
+};
+const FTYPE={A:['db_Alpha','st_None'],N:['db_Numeric','st_None'],D:['db_Date','st_None'],P:['db_Float','st_Price'],Q:['db_Float','st_Quantity'],M:['db_Float','st_Measurement'],S:['db_Float','st_Sum'],T:['db_Memo','st_None']};
+function fieldMD(table,f){
+  const [Type,SubType]=FTYPE[f.t];
+  const md={Name:f.n,Description:f.d.slice(0,30),TableName:table,Type,SubType};
+  if(f.t==='A')md.EditSize=f.size;
+  if(f.t==='N')md.EditSize=11;
+  if(f.vv)md.ValidValuesMD=Object.entries(f.vv).map(([Value,Description])=>({Value,Description}));
+  if(f.def)md.DefaultValue=f.def;
+  return md;
+}
+
+/* =========================================================================
+   Cliente da Service Layer
+   ========================================================================= */
+class ServiceLayer{
+  constructor(base){this.base=String(base||'/b1s/v1').replace(/\/+$/,'');}
+  async request(method,path,body,headers={}){
+    const url=/^https?:/i.test(path)?path:this.base+'/'+String(path).replace(/^\/+/,'');
+    const r=await fetch(url,{method,credentials:'include',headers:{'Content-Type':'application/json',...headers},body:body!=null?JSON.stringify(body):undefined});
+    if(r.status===204)return null;
+    const txt=await r.text();let j=null;try{j=txt?JSON.parse(txt):null;}catch(e){}
+    if(!r.ok){
+      const m=j&&j.error&&j.error.message;const e=new Error((typeof m==='string'?m:m&&m.value)||txt||r.statusText||('HTTP '+r.status));
+      e.status=r.status;e.code=j&&j.error&&j.error.code;
+      if(r.status===401&&!/^\/?Login/i.test(path))sessaoExpirada();
+      throw e;
+    }
+    return j;
+  }
+  login(CompanyDB,UserName,Password){return this.request('POST','Login',{CompanyDB,UserName,Password});}
+  logout(){return this.request('POST','Logout').catch(()=>null);}
+  async getAll(path){
+    let out=[],next=path,guard=0;
+    while(next&&guard++<500){
+      const j=await this.request('GET',next,null,{Prefer:'odata.maxpagesize=200'});
+      out=out.concat((j&&j.value)||[]);
+      next=j&&(j['odata.nextLink']||j['@odata.nextLink'])||null;
+    }
+    return out;
+  }
+}
+
+/* Service Layer simulada (modo demonstração): mesmos endpoints, dados no navegador */
+class MockServiceLayer extends ServiceLayer{
+  constructor(){super('mock');this.key='sps_locacao_mock_v1';this.db=null;try{this.db=JSON.parse(localStorage.getItem(this.key));}catch(e){} if(!this.db)this.db=mockSeed();}
+  persist(){try{localStorage.setItem(this.key,JSON.stringify(this.db));}catch(e){}}
+  reset(){this.db=mockSeed();this.persist();}
+  fail(status,message,code){const e=new Error(message);e.status=status;e.code=code;throw e;}
+  keyOf(set){return {UserTablesMD:'TableName',UserObjectsMD:'Code',BusinessPartners:'CardCode',Items:'ItemCode'}[set]||(this.isDoc(set)?'DocEntry':'Code');}
+  isDoc(set){return ['SPSLCTR','SPSLMOV','Drafts','Orders','Invoices'].includes(set);}
+  async request(method,path,body,headers={}){
+    await new Promise(r=>setTimeout(r,25));
+    const [p,q='']=String(path).split('?');
+    const m=p.match(/^([A-Za-z_0-9]+)(?:\((.*)\))?$/);if(!m)this.fail(404,'Recurso não encontrado: '+p);
+    const set=m[1];const rawKey=m[2];
+    if(set==='Login')return {SessionId:'mock-session',Version:'mock'};
+    if(set==='Logout')return null;
+    const db=this.db,coll=(db.sets[set]=db.sets[set]||[]),kf=this.keyOf(set);
+    const key=rawKey==null?null:(/^'.*'$/.test(rawKey)?rawKey.slice(1,-1).replace(/''/g,"'"):+rawKey);
+    const idx=key==null?-1:coll.findIndex(r=>r[kf]==key);
+    const clone=o=>JSON.parse(JSON.stringify(o));
+    if(method==='GET'){
+      if(key!=null){if(idx<0)this.fail(404,'No matching records found (ODBC -2028)',-2028);return clone(coll[idx]);}
+      let rows=coll;const params=Object.fromEntries(q.split('&').filter(Boolean).map(x=>{const i=x.indexOf('=');return [x.slice(0,i),decodeURIComponent(x.slice(i+1))];}));
+      if(params.$filter){for(const c of params.$filter.matchAll(/(\w+) eq (?:'((?:[^']|'')*)'|(-?[\d.]+))/g)){const f=c[1],v=c[2]!=null?c[2].replace(/''/g,"'"):+c[3];rows=rows.filter(r=>r[f]==v);}}
+      return {value:clone(rows)};
+    }
+    if(method==='POST'){
+      const rec=clone(body||{});
+      if(this.isDoc(set)){db.seq[set]=(db.seq[set]||0)+1;rec.DocEntry=db.seq[set];rec.DocNum=db.seq[set];
+        for(const k in rec)if(Array.isArray(rec[k]))rec[k].forEach((l,i)=>{if(k==='DocumentLines')l.LineNum=i;else l.LineId=i+1;});}
+      else{if(rec[kf]==null||rec[kf]==='')this.fail(400,'Chave obrigatória: '+kf);if(coll.some(r=>r[kf]==rec[kf]))this.fail(400,'This entry already exists in the following tables (ODBC -2035)',-2035);}
+      if(set==='UserFieldsMD'){rec.FieldID=coll.filter(r=>r.TableName===rec.TableName).length;}
+      coll.push(rec);this.persist();return clone(rec);
+    }
+    if(method==='PATCH'){
+      if(idx<0)this.fail(404,'No matching records found (ODBC -2028)',-2028);
+      const cur=coll[idx],replace=headers['B1S-ReplaceCollectionsOnPatch']==='true';
+      for(const [k,v] of Object.entries(clone(body||{}))){
+        if(Array.isArray(v)){
+          const old=cur[k]||[];let maxId=old.reduce((a,l)=>Math.max(a,l.LineId||0),0);
+          const novo=replace?[]:old;
+          for(const l of v){const o=l.LineId!=null?old.find(x=>x.LineId===l.LineId):null;
+            if(o){Object.assign(o,l);if(replace)novo.push(o);}else{l.LineId=++maxId;novo.push(l);}}
+          cur[k]=novo;
+        }else cur[k]=v;
+      }
+      this.persist();return null;
+    }
+    if(method==='DELETE'){if(idx<0)this.fail(404,'No matching records found (ODBC -2028)',-2028);coll.splice(idx,1);this.persist();return null;}
+    this.fail(405,'Método não suportado');
+  }
+}
+function mockSeed(){
+  const h=hoje(),m0=h.slice(0,8)+'01',mPrev=addDias(m0,-1).slice(0,8)+'01',m2=addDias(mPrev,-1).slice(0,8)+'01';
+  const sets={};
+  sets.UserTablesMD=SCHEMA.tables.map(t=>({...t}));
+  sets.UserFieldsMD=[];Object.entries(SCHEMA.fields).forEach(([t,fs])=>fs.forEach((f,i)=>sets.UserFieldsMD.push({...fieldMD(t,f),FieldID:i})));
+  sets.UserObjectsMD=SCHEMA.udos.map(u=>({...u}));
+  sets.BusinessPartners=[['C0001','Construtora Horizonte Ltda','12.345.678/0001-90'],['C0002','Mineração Serra Azul S.A.','23.456.789/0001-01'],
+    ['C0003','Transportes Rota Sul Ltda','34.567.890/0001-12'],['C0004','Agro Vale Verde Ltda','45.678.901/0001-23'],['C0005','Eventos Prime Montagens ME','56.789.012/0001-34']]
+    .map(([CardCode,CardName,FederalTaxID])=>({CardCode,CardName,FederalTaxID,CardType:'cCustomer'}));
+  sets.Items=[['SLOC001','Locação de máquinas e equipamentos'],['SLOC002','Locação de veículos'],['SLOC003','Locação de geradores e energia'],['SLOC900','Repasse de multa de trânsito']]
+    .map(([ItemCode,ItemName])=>({ItemCode,ItemName,SalesItem:'tYES'}));
+  const A=(Code,Name,U_Tipo,U_Categoria,U_ItemCode,o)=>({Code,Name,U_Tipo,U_Categoria,U_ItemCode,U_Status:'DIS',U_CtrAtual:0,U_Filial:1,...o});
+  sets.SPSLATV=[
+    A('EQP-0001','Retroescavadeira JCB 3CX','EQP','Linha amarela','SLOC001',{U_Serie:'JCB3CX-778812',U_Marca:'JCB',U_Modelo:'3CX',U_Ano:'2021',U_Medidor:4520,U_ValorMes:18000,U_ValorDia:900,U_Status:'LOC',U_CtrAtual:1}),
+    A('EQP-0002','Escavadeira hidráulica CAT 320','EQP','Linha amarela','SLOC001',{U_Serie:'CAT320-55120',U_Marca:'Caterpillar',U_Modelo:'320',U_Ano:'2022',U_Medidor:2210,U_ValorMes:32000,U_ValorDia:1600}),
+    A('EQP-0003','Minicarregadeira Bobcat S450','EQP','Linha amarela','SLOC001',{U_Serie:'BOB-S450-1192',U_Marca:'Bobcat',U_Modelo:'S450',U_Ano:'2020',U_Medidor:3105,U_ValorMes:9500,U_ValorDia:480}),
+    A('EQP-0004','Gerador 180 kVA Cummins','EQP','Energia','SLOC003',{U_Serie:'CUM-C180-3341',U_Marca:'Cummins',U_Modelo:'C180D6',U_Ano:'2023',U_Medidor:860,U_ValorMes:7800,U_ValorDia:390,U_Status:'LOC',U_CtrAtual:1}),
+    A('EQP-0005','Plataforma tesoura Genie GS-1932','EQP','Acesso e elevação','SLOC001',{U_Serie:'GS1932-88310',U_Marca:'Genie',U_Modelo:'GS-1932',U_Ano:'2019',U_Medidor:1290,U_ValorMes:4200,U_ValorDia:210,U_Status:'MAN'}),
+    A('VEI-0001','Picape Toyota Hilux CD 4x4','VEI','Picapes','SLOC002',{U_Placa:'ABC1D23',U_Chassi:'9BRBA3HE0P0123456',U_Renavam:'01234567890',U_Marca:'Toyota',U_Modelo:'Hilux CD SRV',U_Ano:'2024',U_Medidor:48210,U_ValorMes:6500,U_ValorDia:320,U_Status:'LOC',U_CtrAtual:2}),
+    A('VEI-0002','Fiat Strada Freedom CS','VEI','Utilitários leves','SLOC002',{U_Placa:'EFG4H56',U_Chassi:'9BD281A2DRY654321',U_Renavam:'09876543210',U_Marca:'Fiat',U_Modelo:'Strada Freedom',U_Ano:'2024',U_Medidor:22340,U_ValorMes:3200,U_ValorDia:160}),
+    A('VEI-0003','Caminhão VW Delivery 11.180','VEI','Caminhões','SLOC002',{U_Placa:'IJK7L89',U_Chassi:'9535N8243PR112233',U_Renavam:'11223344556',U_Marca:'Volkswagen',U_Modelo:'Delivery 11.180',U_Ano:'2023',U_Medidor:81500,U_ValorMes:9800,U_ValorDia:490})
+  ];
+  const fimAno=addDias(m2,365);
+  sets.SPSLCTR=[
+    {DocEntry:1,DocNum:1,U_CardCode:'C0001',U_CardName:'Construtora Horizonte Ltda',U_Tipo:'LOC',U_DtInicio:m2,U_DtFim:fimAno,U_Cobranca:'M',U_DiaFat:1,U_Status:'ATV',U_Filial:1,
+      U_Obra:'Residencial Parque das Águas — Contagem/MG',U_Indice:'IGP-M',U_Obs:'',
+      [LN]:[{LineId:1,U_Ativo:'EQP-0001',U_AtvDesc:'Retroescavadeira JCB 3CX',U_ItemCode:'SLOC001',U_Valor:18000,U_Franquia:200,U_VlrExced:95,U_DtSaida:m2,U_DtDevol:null,U_Condutor:'',U_StatusL:'LOC'},
+            {LineId:2,U_Ativo:'EQP-0004',U_AtvDesc:'Gerador 180 kVA Cummins',U_ItemCode:'SLOC003',U_Valor:7800,U_Franquia:300,U_VlrExced:30,U_DtSaida:addDias(mPrev,9),U_DtDevol:null,U_Condutor:'',U_StatusL:'LOC'}]},
+    {DocEntry:2,DocNum:2,U_CardCode:'C0003',U_CardName:'Transportes Rota Sul Ltda',U_Tipo:'LOC',U_DtInicio:addDias(mPrev,14),U_DtFim:addDias(h,20),U_Cobranca:'M',U_DiaFat:15,U_Status:'ATV',U_Filial:1,
+      U_Obra:'Base operacional — Betim/MG',U_Indice:'IPCA',U_Obs:'',
+      [LN]:[{LineId:1,U_Ativo:'VEI-0001',U_AtvDesc:'Picape Toyota Hilux CD 4x4',U_ItemCode:'SLOC002',U_Valor:6500,U_Franquia:3000,U_VlrExced:0.85,U_DtSaida:addDias(mPrev,14),U_DtDevol:null,U_Condutor:'Carlos A. Souza — CNH 01234567890',U_StatusL:'LOC'},
+            {LineId:2,U_Ativo:'VEI-0003',U_AtvDesc:'Caminhão VW Delivery 11.180',U_ItemCode:'SLOC002',U_Valor:9800,U_Franquia:5000,U_VlrExced:1.1,U_DtSaida:null,U_DtDevol:null,U_Condutor:'',U_StatusL:'PEN'}]},
+    {DocEntry:3,DocNum:3,U_CardCode:'C0002',U_CardName:'Mineração Serra Azul S.A.',U_Tipo:'LOC',U_DtInicio:addDias(h,7),U_DtFim:addDias(h,187),U_Cobranca:'D',U_DiaFat:1,U_Status:'RAS',U_Filial:1,
+      U_Obra:'Mina Córrego Fundo — Itabirito/MG',U_Indice:'IPCA',U_Obs:'Aguardando aprovação de crédito.',
+      [LN]:[{LineId:1,U_Ativo:'EQP-0002',U_AtvDesc:'Escavadeira hidráulica CAT 320',U_ItemCode:'SLOC001',U_Valor:1600,U_Franquia:0,U_VlrExced:0,U_DtSaida:null,U_DtDevol:null,U_Condutor:'',U_StatusL:'PEN'}]}
+  ];
+  sets.SPSLMOV=[];
+  const mp=compDe(mPrev);
+  sets.U_SPS_LMED=[{Code:'1-1-seed',Name:'1-1-seed',U_CtrEntry:1,U_CtrLine:1,U_Ativo:'EQP-0001',U_Comp:mp,U_Data:addDias(m0,-1),U_LeitIni:4280,U_LeitFim:4520},
+                   {Code:'1-2-seed',Name:'1-2-seed',U_CtrEntry:1,U_CtrLine:2,U_Ativo:'EQP-0004',U_Comp:mp,U_Data:addDias(m0,-1),U_LeitIni:640,U_LeitFim:860}];
+  sets.Drafts=[{DocEntry:1,DocNum:1,DocObjectCode:'oInvoices',CardCode:'C0001',DocDate:m0,U_SPS_CtrEntry:1,U_SPS_Comp:compDe(m2),DocumentLines:[{LineNum:0,ItemCode:'SLOC001',Quantity:1,UnitPrice:25800}]}];
+  sets.U_SPS_LFAT=[{Code:'1-'+compDe(m2),Name:'1-'+compDe(m2),U_CtrEntry:1,U_Comp:compDe(m2),U_Status:'OK',U_DocType:'DRAFT',U_DocEntry:1,U_DocNum:1,U_Valor:25800,U_Data:mPrev}];
+  sets.U_SPS_LMUL=[{Code:'M'+Date.now().toString(36),Name:'AIT A12345678',U_Ativo:'VEI-0001',U_Placa:'ABC1D23',U_DtInfr:addDias(mPrev,20),U_HrInfr:'14:32',U_AIT:'A12345678',
+    U_Descricao:'Excesso de velocidade até 20%',U_Valor:130.16,U_CtrEntry:2,U_CtrLine:1,U_CardName:'Transportes Rota Sul Ltda',U_Condutor:'Carlos A. Souza — CNH 01234567890',U_Status:'REP',U_Comp:''}];
+  sets.U_SPS_LCFG=Object.entries({...CFG_DEF,EMPRESA:'Locadora Demonstração Ltda',ITEM_MULTA:'SLOC900'}).map(([Code,v])=>({Code,Name:Code,U_Valor:v}));
+  return {sets,seq:{SPSLCTR:3,SPSLMOV:0,Drafts:1,Orders:0,Invoices:0}};
+}
+
+/* =========================================================================
+   Estado, sessão e carga de dados
+   ========================================================================= */
+const S={sl:null,mock:false,user:'',db:'',data:{ativos:[],contratos:[],movs:[],meds:[],fats:[],multas:[]},cfg:{...CFG_DEF},faltaEstrutura:false,tab:'painel',
+  ctrEdit:null,mov:null,fatComp:compAtual(),medComp:compAtual(),fatOpen:new Set(),f:{ativos:{tipo:'',status:'',q:''},ctr:{status:'',q:''}}};
+const LS='sps_locacao_login';
+function lsGet(){try{return JSON.parse(localStorage.getItem(LS))||{};}catch(e){return {};}}
+function lsSet(o){try{localStorage.setItem(LS,JSON.stringify(o));}catch(e){}}
+
+async function loadAll(){
+  const sets=[SET.ATV,SET.CTR,SET.MOV,SET.MED,SET.FAT,SET.MUL,SET.CFG];
+  let falta=false;
+  const res=await Promise.all(sets.map(s=>S.sl.getAll(s).catch(e=>{if(e.status===404||e.status===400){falta=true;return [];}throw e;})));
+  const [ativos,contratos,movs,meds,fats,multas,cfg]=res;
+  contratos.forEach(c=>{c[LN]=c[LN]||[];});
+  S.data={ativos,contratos,movs,meds,fats,multas};
+  S.cfg={...CFG_DEF};cfg.forEach(r=>{if(r.U_Valor!=null)S.cfg[r.Code]=r.U_Valor;});
+  S.faltaEstrutura=falta;
+}
+const findAtivo=c=>S.data.ativos.find(a=>a.Code===c);
+const findCtr=e=>S.data.contratos.find(c=>c.DocEntry==e);
+const linhasAbertas=c=>(c[LN]||[]).filter(l=>l.U_StatusL!=='DEV');
+function reservaDe(code){for(const c of S.data.contratos)if(c.U_Status==='ATV')for(const l of c[LN])if(l.U_Ativo===code&&l.U_StatusL==='PEN')return c;return null;}
+function statusAtivo(a){const s=a.U_Status||'DIS';return s==='DIS'&&reservaDe(a.Code)?'RES':s;}
+function alocacaoAberta(code,exceptCtr){
+  for(const c of S.data.contratos){if(c.DocEntry==exceptCtr||!['RAS','ATV','SUS'].includes(c.U_Status))continue;
+    for(const l of c[LN])if(l.U_Ativo===code&&l.U_StatusL!=='DEV')return c;}
+  return null;
+}
+const badge=(cod,map)=>`<span class="badge b-${esc(cod)}">${esc(map[cod]||cod||'—')}</span>`;
+
+/* =========================================================================
+   Regras de negócio
+   ========================================================================= */
+/* Período cobrado de um item na competência. Regra: cobra-se do dia da saída
+   até a véspera da devolução (mínimo 1 dia), limitado à vigência do contrato. */
+function periodoLinha(c,l,comp){
+  if(!l.U_DtSaida)return null;
+  const r=compRange(comp),saida=d10(l.U_DtSaida);
+  const ultimoDia=l.U_DtDevol?maxD(saida,addDias(d10(l.U_DtDevol),-1)):null;
+  const ini=maxD(r.ini,d10(c.U_DtInicio),saida),fim=minD(r.fim,d10(c.U_DtFim),ultimoDia);
+  if(!ini||!fim||ini>fim)return null;
+  return {ini,fim,dias:difDias(ini,fim)+1,diasMes:r.dias};
+}
+function usoNaComp(ctrEntry,lineId,comp){
+  return S.data.meds.filter(m=>m.U_CtrEntry==ctrEntry&&m.U_CtrLine==lineId&&m.U_Comp===comp)
+    .reduce((s,m)=>s+Math.max(0,(+m.U_LeitFim||0)-(+m.U_LeitIni||0)),0);
+}
+function calcFaturamento(c,comp){
+  const out={linhas:[],total:0,avisos:[]},prop=S.cfg.FRANQ_PROP!=='N';
+  for(const l of c[LN]||[]){
+    const p=periodoLinha(c,l,comp);if(!p)continue;
+    const at=findAtivo(l.U_Ativo),un=UN(at&&at.U_Tipo),fator=p.dias/p.diasMes,valor=+l.U_Valor||0;
+    let qtd,preco;
+    if(c.U_Cobranca==='D'){qtd=p.dias;preco=valor;}else{qtd=1;preco=round2(valor*fator);}
+    if(!l.U_ItemCode)out.avisos.push(`Ativo ${l.U_Ativo}: item de faturamento não informado.`);
+    out.linhas.push({tipo:'LOC',ItemCode:l.U_ItemCode,qtd,preco,total:round2(qtd*preco),
+      desc:`Locação ${l.U_Ativo} ${l.U_AtvDesc||''} ${fmtD(p.ini)} a ${fmtD(p.fim)} (${p.dias}${c.U_Cobranca==='D'?' diárias':'/'+p.diasMes+' dias'})`});
+    const fr=(+l.U_Franquia||0)*(prop?fator:1),uso=usoNaComp(c.DocEntry,l.LineId,comp),exc=round2(Math.max(0,uso-fr));
+    if(+l.U_Franquia>0&&+l.U_VlrExced>0&&exc>0)
+      out.linhas.push({tipo:'EXC',ItemCode:l.U_ItemCode,qtd:exc,preco:+l.U_VlrExced,total:round2(exc*l.U_VlrExced),
+        desc:`Excedente ${l.U_Ativo}: uso ${num(uso,1)} ${un}, franquia ${num(fr,1)} ${un}`});
+  }
+  for(const m of S.data.multas.filter(m=>m.U_Status==='REP'&&m.U_CtrEntry==c.DocEntry)){
+    if(!S.cfg.ITEM_MULTA)out.avisos.push('Parâmetro "Item para repasse de multa" não configurado.');
+    out.linhas.push({tipo:'MUL',ItemCode:S.cfg.ITEM_MULTA,qtd:1,preco:+m.U_Valor||0,total:round2(+m.U_Valor||0),multa:m.Code,
+      desc:`Repasse multa AIT ${m.U_AIT||''} ${m.U_Placa||''} ${fmtD(m.U_DtInfr)}`});
+  }
+  out.total=round2(out.linhas.reduce((s,x)=>s+x.total,0));
+  out.avisos=[...new Set(out.avisos)];
+  return out;
+}
+function montarDocumento(c,comp,calc){
+  const tipo=S.cfg.TIPO_DOC||'DRAFT';
+  const doc={CardCode:c.U_CardCode,DocDate:hoje(),U_SPS_CtrEntry:c.DocEntry,U_SPS_Comp:comp,
+    Comments:`Locação - contrato ${c.DocNum} - competência ${compFmt(comp)}${c.U_Obra?' - '+c.U_Obra:''}`.slice(0,254),
+    DocumentLines:calc.linhas.map(x=>{const L={ItemCode:x.ItemCode,Quantity:x.qtd,UnitPrice:x.preco,FreeText:x.desc.slice(0,100)};if(+S.cfg.USAGE)L.Usage=+S.cfg.USAGE;return L;})};
+  if(+c.U_Filial)doc.BPL_IDAssignedToInvoice=+c.U_Filial;
+  if(tipo==='DRAFT')doc.DocObjectCode='oInvoices';
+  if(tipo==='ORDER')doc.DocDueDate=hoje();
+  return {tipo,set:DOCSET[tipo],doc};
+}
+const fatDe=(ctrEntry,comp)=>S.data.fats.find(f=>f.Code===`${ctrEntry}-${comp}`);
+
+/* Fatura um contrato numa competência. O registro em U_SPS_LFAT (Code = contrato-competência)
+   é criado ANTES do documento e serve de trava: impede faturar duas vezes, mesmo com dois usuários. */
+async function faturarContrato(c,comp){
+  const calc=calcFaturamento(c,comp);
+  if(!calc.linhas.length)throw new Error('nada a faturar na competência');
+  if(calc.avisos.length)throw new Error(calc.avisos.join(' '));
+  if(!c.U_CardCode)throw new Error('contrato sem cliente');
+  const code=`${c.DocEntry}-${comp}`,trava={Code:code,Name:code,U_CtrEntry:c.DocEntry,U_Comp:comp,U_Status:'PRO',U_Data:hoje(),U_Valor:calc.total};
+  try{await S.sl.request('POST',SET.FAT,trava);}
+  catch(e){
+    if(e.status!==400&&e.status!==409)throw e;
+    let ex=null;try{ex=await S.sl.request('GET',`${SET.FAT}('${odq(code)}')`);}catch(_){throw e;}
+    if(ex.U_Status!=='CAN')throw new Error(ex.U_Status==='OK'?`já faturado (documento ${ex.U_DocNum||ex.U_DocEntry})`:'faturamento em processamento por outro usuário');
+    await S.sl.request('PATCH',`${SET.FAT}('${odq(code)}')`,{U_Status:'PRO',U_Data:hoje(),U_Valor:calc.total,U_DocEntry:0,U_DocNum:0});
+  }
+  const {tipo,set,doc}=montarDocumento(c,comp,calc);
+  let criado;
+  try{criado=await S.sl.request('POST',set,doc);}
+  catch(e){await S.sl.request('PATCH',`${SET.FAT}('${odq(code)}')`,{U_Status:'CAN'}).catch(()=>{});throw e;}
+  await S.sl.request('PATCH',`${SET.FAT}('${odq(code)}')`,{U_Status:'OK',U_DocType:tipo,U_DocEntry:criado.DocEntry,U_DocNum:criado.DocNum});
+  for(const x of calc.linhas.filter(x=>x.multa))
+    await S.sl.request('PATCH',`${SET.MUL}('${odq(x.multa)}')`,{U_Status:'FAT',U_Comp:comp});
+  return {criado,tipo,total:calc.total};
+}
+
+/* Movimentação: saída, devolução e substituição. Atualiza o contrato, o ativo e,
+   na devolução, registra a medição final do uso. */
+async function registrarMovimento(mv){
+  const c=findCtr(mv.ctr);if(!c)throw new Error('Selecione o contrato.');
+  const l=c[LN].find(x=>x.LineId==mv.line);if(!l)throw new Error('Selecione o item do contrato.');
+  const at=findAtivo(l.U_Ativo);if(!at)throw new Error('Ativo do item não encontrado: '+l.U_Ativo);
+  if(!mv.data)throw new Error('Informe a data.');
+  const leitura=+mv.med||0;
+  if(mv.tipo==='SAI'){
+    if(c.U_Status!=='ATV')throw new Error('O contrato precisa estar Ativo para registrar a saída.');
+    if(l.U_StatusL!=='PEN')throw new Error('Item já saiu.');
+    if(!['DIS','RES'].includes(statusAtivo(at)))throw new Error(`Ativo ${at.Code} está ${ST_ATV[at.U_Status]||at.U_Status}.`);
+    if(d10(c.U_DtInicio)&&mv.data<d10(c.U_DtInicio))throw new Error('Data anterior ao início da vigência.');
+  }else{
+    if(l.U_StatusL!=='LOC')throw new Error('Item não está locado.');
+    if(mv.data<d10(l.U_DtSaida))throw new Error('Data anterior à saída do item.');
+    if(leitura<(+at.U_Medidor||0))throw new Error(`Leitura menor que a última registrada (${num(at.U_Medidor,1)}).`);
+  }
+  let novo=null;
+  if(mv.tipo==='SUB'){
+    novo=findAtivo(mv.novo);if(!novo)throw new Error('Selecione o ativo substituto.');
+    if(statusAtivo(novo)!=='DIS'||alocacaoAberta(novo.Code))throw new Error(`Ativo ${novo.Code} não está disponível.`);
+  }
+  const movDoc={U_Tipo:mv.tipo,U_CtrEntry:c.DocEntry,U_CtrLine:l.LineId,U_CardName:c.U_CardName,U_Ativo:at.Code,U_AtivoNovo:novo?novo.Code:'',
+    U_Data:mv.data,U_Medidor:leitura,U_MedidorN:+mv.medN||0,U_Combust:mv.comb||'',U_Checklist:JSON.stringify(mv.chk||{}),U_Avarias:mv.avarias||'',
+    U_Respons:mv.resp||'',U_DocResp:mv.docResp||'',U_DestAtivo:mv.tipo==='SAI'?'LOC':(mv.dest||'DIS'),U_Assinatura:mv.sig||''};
+  const criado=await S.sl.request('POST',SET.MOV,movDoc);
+  if(mv.tipo==='SAI'){
+    await S.sl.request('PATCH',`${SET.CTR}(${c.DocEntry})`,{[LN]:[{LineId:l.LineId,U_StatusL:'LOC',U_DtSaida:mv.data}]});
+    await S.sl.request('PATCH',`${SET.ATV}('${odq(at.Code)}')`,{U_Status:'LOC',U_CtrAtual:c.DocEntry,U_Medidor:leitura||+at.U_Medidor||0});
+  }else{
+    if(leitura>(+at.U_Medidor||0)){
+      const code=`${c.DocEntry}-${l.LineId}-${Date.now().toString(36)}`;
+      await S.sl.request('POST',SET.MED,{Code:code,Name:code,U_CtrEntry:c.DocEntry,U_CtrLine:l.LineId,U_Ativo:at.Code,U_Comp:compDe(mv.data),U_Data:mv.data,U_LeitIni:+at.U_Medidor||0,U_LeitFim:leitura});
+    }
+    const linhas=[{LineId:l.LineId,U_StatusL:'DEV',U_DtDevol:mv.data}];
+    if(novo)linhas.push({U_Ativo:novo.Code,U_AtvDesc:novo.Name,U_ItemCode:novo.U_ItemCode||l.U_ItemCode,U_Valor:+l.U_Valor||0,U_Franquia:+l.U_Franquia||0,
+      U_VlrExced:+l.U_VlrExced||0,U_DtSaida:mv.data,U_DtDevol:null,U_Condutor:l.U_Condutor||'',U_StatusL:'LOC'});
+    await S.sl.request('PATCH',`${SET.CTR}(${c.DocEntry})`,{[LN]:linhas});
+    await S.sl.request('PATCH',`${SET.ATV}('${odq(at.Code)}')`,{U_Status:mv.dest==='MAN'?'MAN':'DIS',U_CtrAtual:0,U_Medidor:leitura||+at.U_Medidor||0});
+    if(novo)await S.sl.request('PATCH',`${SET.ATV}('${odq(novo.Code)}')`,{U_Status:'LOC',U_CtrAtual:c.DocEntry,U_Medidor:+mv.medN||+novo.U_Medidor||0});
+  }
+  return criado;
+}
+
+/* Contrato que estava com o ativo na data/hora informada (para identificar multas). */
+function contratoNaData(ativoCode,data){
+  for(const c of S.data.contratos)for(const l of c[LN]){
+    if(l.U_Ativo!==ativoCode||!l.U_DtSaida)continue;
+    if(d10(l.U_DtSaida)<=data&&(!l.U_DtDevol||d10(l.U_DtDevol)>=data))return {c,l};
+  }
+  return null;
+}
+
+/* =========================================================================
+   Interface
+   ========================================================================= */
+const TABS=[['painel','Painel'],['ativos','Ativos'],['contratos','Contratos'],['mov','Movimentação'],['med','Medições'],['fat','Faturamento'],['multas','Multas'],['config','Configuração']];
+function renderTabs(){$('#tabs').innerHTML=TABS.map(([k,t])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${t}</button>`).join('');}
+function go(tab){S.tab=tab;renderTabs();render();}
+function render(){
+  msg('#globalMsg','warn',S.faltaEstrutura?'Estruturas de locação não encontradas no B1. Vá em Configuração › Instalar estruturas.':'');
+  const v={painel:vPainel,ativos:vAtivos,contratos:vContratos,mov:vMov,med:vMed,fat:vFat,multas:vMultas,config:vConfig}[S.tab];
+  $('#view').innerHTML=v();
+  const after={contratos:afterContratos,mov:afterMov}[S.tab];if(after)after();
+}
+async function refresh(){await busy(loadAll);render();}
+
+/* ---------- modal ---------- */
+function modal(html){$('#modal').innerHTML=html;$('#modalBg').hidden=false;}
+function closeModal(){$('#modalBg').hidden=true;$('#modal').innerHTML='';}
+
+/* ---------- busca de PN e itens (datalist alimentada pela Service Layer) ---------- */
+let _searchT;
+function buscaDatalist(input,listId,kind){
+  clearTimeout(_searchT);const q=input.value.trim();
+  _searchT=setTimeout(async()=>{
+    try{
+      let rows;
+      if(kind==='bp'){
+        const f=q?`CardType eq 'cCustomer' and (contains(CardName,'${odq(q)}') or contains(CardCode,'${odq(q)}'))`:`CardType eq 'cCustomer'`;
+        rows=(await S.sl.request('GET',qs('BusinessPartners',{$select:'CardCode,CardName,FederalTaxID',$filter:f,$top:20}))).value;
+        rows=rows.filter(r=>!q||(r.CardName+' '+r.CardCode).toLowerCase().includes(q.toLowerCase()));
+        $('#'+listId).innerHTML=rows.map(r=>`<option value="${esc(r.CardCode)} — ${esc(r.CardName)}"></option>`).join('');
+      }else{
+        const f=q?`contains(ItemName,'${odq(q)}') or contains(ItemCode,'${odq(q)}')`:`SalesItem eq 'tYES'`;
+        rows=(await S.sl.request('GET',qs('Items',{$select:'ItemCode,ItemName',$filter:f,$top:20}))).value;
+        rows=rows.filter(r=>!q||(r.ItemName+' '+r.ItemCode).toLowerCase().includes(q.toLowerCase()));
+        $('#'+listId).innerHTML=rows.map(r=>`<option value="${esc(r.ItemCode)}">${esc(r.ItemName)}</option>`).join('');
+      }
+    }catch(e){console.warn('busca',e);}
+  },300);
+}
+
+/* ================= PAINEL ================= */
+function vPainel(){
+  const at=S.data.ativos.filter(a=>a.U_Status!=='BAI'),cont={DIS:0,LOC:0,MAN:0,RES:0};
+  at.forEach(a=>{const s=statusAtivo(a);cont[s]=(cont[s]||0)+1;});
+  const ocup=at.length?cont.LOC/at.length:0,comp=compAtual();
+  const ativos=S.data.contratos.filter(c=>c.U_Status==='ATV');
+  let prev=0,faturado=0;ativos.forEach(c=>{const f=fatDe(c.DocEntry,comp);if(f&&f.U_Status==='OK')faturado+=+f.U_Valor||0;else prev+=calcFaturamento(c,comp).total;});
+  const multas=S.data.multas.filter(m=>['PEN','IND','REP'].includes(m.U_Status));
+  const lim=addDias(hoje(),30),venc=ativos.filter(c=>c.U_DtFim&&d10(c.U_DtFim)<=lim).sort((a,b)=>d10(a.U_DtFim)<d10(b.U_DtFim)?-1:1);
+  const cats={};at.forEach(a=>{const k=(TP_ATV[a.U_Tipo]||'')+' · '+(a.U_Categoria||'Sem categoria');cats[k]=cats[k]||{DIS:0,LOC:0,MAN:0,RES:0,t:0};cats[k][statusAtivo(a)]++;cats[k].t++;});
+  return `<div class="kpis">
+    <div class="kpi"><div class="l">Ativos em operação</div><div class="v">${at.length}</div><div class="sub">${cont.DIS} disponíveis · ${cont.RES} reservados</div></div>
+    <div class="kpi"><div class="l">Taxa de ocupação</div><div class="v">${num(ocup*100,0)}%</div><div class="bar"><i style="width:${(ocup*100).toFixed(1)}%"></i></div><div class="sub">${cont.LOC} locados</div></div>
+    <div class="kpi"><div class="l">Em manutenção</div><div class="v">${cont.MAN}</div></div>
+    <div class="kpi"><div class="l">Contratos ativos</div><div class="v">${ativos.length}</div></div>
+    <div class="kpi"><div class="l">A faturar em ${compFmt(comp)}</div><div class="v" style="font-size:18px">${brl(prev)}</div><div class="sub">já faturado: ${brl(faturado)}</div></div>
+    <div class="kpi"><div class="l">Multas em aberto</div><div class="v">${multas.length}</div><div class="sub">${brl(multas.reduce((s,m)=>s+(+m.U_Valor||0),0))}</div></div>
+  </div>
+  <div class="card"><h2>Disponibilidade por categoria</h2><div class="tbl"><table><thead><tr><th>Categoria</th><th class="num">Disponível</th><th class="num">Reservado</th><th class="num">Locado</th><th class="num">Manutenção</th><th class="num">Total</th></tr></thead><tbody>
+    ${Object.entries(cats).sort().map(([k,v])=>`<tr><td>${esc(k)}</td><td class="num">${v.DIS}</td><td class="num">${v.RES}</td><td class="num">${v.LOC}</td><td class="num">${v.MAN}</td><td class="num"><b>${v.t}</b></td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nenhum ativo cadastrado.</td></tr>'}
+  </tbody></table></div></div>
+  <div class="card"><h2>Contratos vencendo em até 30 dias</h2><div class="tbl"><table><thead><tr><th>Contrato</th><th>Cliente</th><th>Fim</th><th class="num">Itens locados</th></tr></thead><tbody>
+    ${venc.map(c=>`<tr class="click" data-open-ctr="${c.DocEntry}"><td>#${c.DocNum}</td><td>${esc(c.U_CardName)}</td><td>${fmtD(c.U_DtFim)}</td><td class="num">${c[LN].filter(l=>l.U_StatusL==='LOC').length}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Nenhum.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+
+/* ================= ATIVOS ================= */
+function vAtivos(){
+  const f=S.f.ativos,q=f.q.toLowerCase();
+  const rows=S.data.ativos.filter(a=>(!f.tipo||a.U_Tipo===f.tipo)&&(!f.status||statusAtivo(a)===f.status)&&
+    (!q||[a.Code,a.Name,a.U_Placa,a.U_Serie,a.U_Categoria].join(' ').toLowerCase().includes(q))).sort((a,b)=>a.Code<b.Code?-1:1);
+  return `<div class="card"><div class="toolbar">
+    <div><label>Tipo</label><select data-fa="tipo"><option value="">Todos</option>${Object.entries(TP_ATV).map(([k,v])=>`<option value="${k}" ${f.tipo===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div><label>Status</label><select data-fa="status"><option value="">Todos</option>${Object.entries(ST_ATV).map(([k,v])=>`<option value="${k}" ${f.status===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div style="flex:1"><label>Buscar</label><input data-fa="q" value="${esc(f.q)}" placeholder="código, descrição, placa, série..."></div>
+    <button class="primary" data-act="novoAtivo">+ Novo ativo</button></div>
+  <div class="tbl"><table><thead><tr><th>Código</th><th>Descrição</th><th>Tipo</th><th>Categoria</th><th>Placa / Série</th><th class="num">Medidor</th><th class="num">Valor mês</th><th>Status</th><th>Com</th><th></th></tr></thead><tbody>
+  ${rows.map(a=>{const st=statusAtivo(a),c=st==='LOC'?findCtr(a.U_CtrAtual):st==='RES'?reservaDe(a.Code):null;
+    return `<tr><td><b>${esc(a.Code)}</b></td><td>${esc(a.Name)}</td><td>${esc(TP_ATV[a.U_Tipo]||'')}</td><td>${esc(a.U_Categoria)}</td><td>${esc(a.U_Placa||a.U_Serie)}</td>
+    <td class="num">${num(a.U_Medidor,1)} ${UN(a.U_Tipo)}</td><td class="num">${brl(a.U_ValorMes)}</td><td>${badge(st,ST_ATV)}</td>
+    <td>${c?`<a href="#" data-open-ctr="${c.DocEntry}">#${c.DocNum} ${esc(c.U_CardName)}</a>`:''}</td>
+    <td class="right" style="white-space:nowrap"><button class="mini" data-act="editAtivo" data-code="${esc(a.Code)}">Editar</button>
+    ${st==='DIS'?`<button class="mini" data-act="manut" data-code="${esc(a.Code)}" data-st="MAN">Manutenção</button>`:''}
+    ${st==='MAN'?`<button class="mini teal" data-act="manut" data-code="${esc(a.Code)}" data-st="DIS">Liberar</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="10" class="muted">Nenhum ativo.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+function proximoCodigo(tipo){
+  const n=S.data.ativos.filter(a=>a.Code.startsWith(tipo+'-')).map(a=>+a.Code.split('-')[1]||0).reduce((a,b)=>Math.max(a,b),0);
+  return tipo+'-'+String(n+1).padStart(4,'0');
+}
+function formAtivo(a){
+  const novo=!a;a=a||{U_Tipo:'EQP',U_Status:'DIS',Code:proximoCodigo('EQP'),U_Filial:1};
+  const cats=[...new Set(S.data.ativos.map(x=>x.U_Categoria).filter(Boolean))];
+  const i=(k,l,o='')=>`<div><label>${l}</label><input data-af="${k}" value="${esc(a[k]??'')}" ${o}></div>`;
+  modal(`<h2>${novo?'Novo ativo':'Ativo '+esc(a.Code)}</h2><div class="grid">
+    <div><label>Tipo</label><select data-af="U_Tipo" ${novo?'':'disabled'}>${Object.entries(TP_ATV).map(([k,v])=>`<option value="${k}" ${a.U_Tipo===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    ${i('Code','Código',novo?'':'readonly')}
+    <div class="span2"><label>Descrição</label><input data-af="Name" value="${esc(a.Name||'')}"></div>
+    <div><label>Categoria</label><input data-af="U_Categoria" list="dlCat" value="${esc(a.U_Categoria||'')}"><datalist id="dlCat">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+    <div><label>Item de faturamento (B1)</label><input data-af="U_ItemCode" list="dlItem" value="${esc(a.U_ItemCode||'')}" data-search="item"><datalist id="dlItem"></datalist></div>
+    ${i('U_Marca','Marca')}${i('U_Modelo','Modelo')}${i('U_Ano','Ano')}
+    ${i('U_Serie','Nº série / patrimônio')}
+    <div class="veiOnly">${'<label>Placa</label><input data-af="U_Placa" value="'+esc(a.U_Placa||'')+'">'}</div>
+    <div class="veiOnly"><label>Chassi</label><input data-af="U_Chassi" value="${esc(a.U_Chassi||'')}"></div>
+    <div class="veiOnly"><label>Renavam</label><input data-af="U_Renavam" value="${esc(a.U_Renavam||'')}"></div>
+    <div><label id="lblMed">${a.U_Tipo==='VEI'?'Hodômetro (km)':'Horímetro (h)'}</label><input type="number" step="0.1" data-af="U_Medidor" value="${esc(a.U_Medidor??0)}"></div>
+    <div><label>Valor mensal (R$)</label><input type="number" step="0.01" data-af="U_ValorMes" value="${esc(a.U_ValorMes??'')}"></div>
+    <div><label>Valor diária (R$)</label><input type="number" step="0.01" data-af="U_ValorDia" value="${esc(a.U_ValorDia??'')}"></div>
+    <div><label>Filial (BPLId)</label><input type="number" data-af="U_Filial" value="${esc(a.U_Filial??'')}"></div>
+    <div><label>Status</label><select data-af="U_Status" ${a.U_Status==='LOC'?'disabled':''}>${['DIS','MAN','BAI',...(a.U_Status==='LOC'?['LOC']:[])].map(k=>`<option value="${k}" ${a.U_Status===k?'selected':''}>${ST_ATV[k]}</option>`).join('')}</select></div>
+    <div class="span2"><label>Observações</label><textarea data-af="U_Obs">${esc(a.U_Obs||'')}</textarea></div>
+  </div><div id="afMsg"></div><div class="row" style="margin-top:12px"><span class="spacer"></span><button data-act="closeModal">Cancelar</button><button class="primary" data-act="salvarAtivo" data-novo="${novo?1:0}">Salvar</button></div>`);
+  const tipoSel=$('[data-af=U_Tipo]');
+  const sync=()=>{const v=tipoSel.value==='VEI';$$('.veiOnly').forEach(e=>e.hidden=!v);$('#lblMed').textContent=v?'Hodômetro (km)':'Horímetro (h)';};
+  tipoSel.onchange=()=>{if(novo)$('[data-af=Code]').value=proximoCodigo(tipoSel.value);sync();};sync();
+}
+async function salvarAtivo(novo){
+  const o={};$$('[data-af]').forEach(e=>{if(!e.disabled)o[e.dataset.af]=e.value;});
+  ['U_Medidor','U_ValorMes','U_ValorDia','U_Filial'].forEach(k=>{if(k in o)o[k]=+o[k]||0;});
+  o.Code=(o.Code||'').trim();o.Name=(o.Name||'').trim();
+  if(!o.Code||!o.Name)return msg('#afMsg','err','Informe código e descrição.');
+  if(o.Code.length>50)return msg('#afMsg','err','Código com mais de 50 caracteres.');
+  if(o.U_Status==='BAI'&&alocacaoAberta(o.Code))return msg('#afMsg','err','Ativo está em contrato aberto; não pode ser baixado.');
+  await acao(async()=>{
+    if(novo){o.U_CtrAtual=0;await S.sl.request('POST',SET.ATV,o);}
+    else{const code=o.Code;delete o.Code;await S.sl.request('PATCH',`${SET.ATV}('${odq(code)}')`,o);}
+    closeModal();toast('Ativo salvo.');await refresh();
+  });
+}
+
+/* ================= CONTRATOS ================= */
+function vContratos(){
+  if(S.ctrEdit)return vContratoEditor();
+  const f=S.f.ctr,q=f.q.toLowerCase();
+  const rows=S.data.contratos.filter(c=>(!f.status||c.U_Status===f.status)&&(!q||[c.DocNum,c.U_CardCode,c.U_CardName,c.U_Obra,...c[LN].map(l=>l.U_Ativo)].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>b.DocEntry-a.DocEntry);
+  return `<div class="card"><div class="toolbar">
+    <div><label>Status</label><select data-fc="status"><option value="">Todos</option>${Object.entries(ST_CTR).map(([k,v])=>`<option value="${k}" ${f.status===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div style="flex:1"><label>Buscar</label><input data-fc="q" value="${esc(f.q)}" placeholder="nº, cliente, obra, ativo..."></div>
+    <button class="primary" data-act="novoCtr">+ Novo contrato</button></div>
+  <div class="tbl"><table><thead><tr><th>Nº</th><th>Cliente</th><th>Obra / local</th><th>Tipo</th><th>Cobrança</th><th>Início</th><th>Fim</th><th class="num">Itens</th><th class="num">Valor/período</th><th>Status</th></tr></thead><tbody>
+  ${rows.map(c=>{const ab=linhasAbertas(c);return `<tr class="click" data-open-ctr="${c.DocEntry}"><td><b>#${c.DocNum}</b></td><td>${esc(c.U_CardName)}</td><td>${esc(c.U_Obra)}</td><td>${esc(TP_CTR[c.U_Tipo]||'')}</td>
+    <td>${esc(COBR[c.U_Cobranca]||'')}</td><td>${fmtD(c.U_DtInicio)}</td><td>${fmtD(c.U_DtFim)}</td><td class="num">${ab.length}</td>
+    <td class="num">${brl(ab.reduce((s,l)=>s+(+l.U_Valor||0),0))}</td><td>${badge(c.U_Status,ST_CTR)}</td></tr>`;}).join('')||'<tr><td colspan="10" class="muted">Nenhum contrato.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+function abrirContrato(docEntry){
+  const c=docEntry?findCtr(docEntry):null;
+  S.ctrEdit=c?JSON.parse(JSON.stringify(c)):{U_Tipo:'LOC',U_Cobranca:'M',U_Status:'RAS',U_DtInicio:hoje(),U_DtFim:'',U_DiaFat:1,U_Filial:1,U_CardCode:'',U_CardName:'',U_Obra:'',U_Indice:'',U_Obs:'',[LN]:[]};
+  S.tab='contratos';renderTabs();render();window.scrollTo(0,0);
+}
+function vContratoEditor(){
+  const c=S.ctrEdit,novo=!c.DocEntry,ed=c.U_Status!=='ENC';
+  const disp=S.data.ativos.filter(a=>statusAtivo(a)==='DIS'&&!alocacaoAberta(a.Code,c.DocEntry)&&!c[LN].some(l=>l.U_Ativo===a.Code&&l.U_StatusL!=='DEV'));
+  const sel=(k,map)=>`<select data-cf="${k}" ${ed?'':'disabled'}>${Object.entries(map).map(([v,t])=>`<option value="${v}" ${c[k]===v?'selected':''}>${t}</option>`).join('')}</select>`;
+  const inp=(k,t='text',o='')=>`<input type="${t}" data-cf="${k}" value="${esc(t==='date'?d10(c[k]):(c[k]??''))}" ${ed?'':'readonly'} ${o}>`;
+  const fat=S.data.fats.filter(f=>f.U_CtrEntry==c.DocEntry).sort((a,b)=>a.U_Comp<b.U_Comp?1:-1);
+  const movs=S.data.movs.filter(m=>m.U_CtrEntry==c.DocEntry).sort((a,b)=>b.DocEntry-a.DocEntry);
+  return `<div class="card"><div class="row"><h2 style="margin:0">${novo?'Novo contrato':'Contrato #'+c.DocNum}</h2>${badge(c.U_Status,ST_CTR)}<span class="spacer"></span>
+    <button data-act="voltarCtr">← Voltar</button>
+    ${!novo?`<button data-act="printCtr">Imprimir</button>`:''}
+    ${ed?`<button class="primary" data-act="salvarCtr">Salvar</button>`:''}
+    ${c.U_Status==='RAS'&&!novo?`<button class="teal" data-act="statusCtr" data-st="ATV">Ativar</button>`:''}
+    ${c.U_Status==='ATV'?`<button data-act="statusCtr" data-st="SUS">Suspender</button>`:''}
+    ${c.U_Status==='SUS'?`<button class="teal" data-act="statusCtr" data-st="ATV">Reativar</button>`:''}
+    ${['ATV','SUS'].includes(c.U_Status)?`<button class="danger" data-act="statusCtr" data-st="ENC">Encerrar</button>`:''}
+  </div><div id="ctrMsg"></div>
+  <div class="grid" style="margin-top:10px">
+    <div class="span2"><label>Cliente (parceiro de negócio B1)</label><input data-cf="_bp" list="dlBP" data-search="bp" value="${esc(c.U_CardCode?c.U_CardCode+' — '+c.U_CardName:'')}" ${ed&&!c[LN].some(l=>l.U_StatusL!=='PEN')?'':'readonly'} placeholder="digite nome ou código"><datalist id="dlBP"></datalist></div>
+    <div><label>Tipo</label>${sel('U_Tipo',TP_CTR)}</div>
+    <div><label>Cobrança</label>${sel('U_Cobranca',COBR)}</div>
+    <div><label>Início da vigência</label>${inp('U_DtInicio','date')}</div>
+    <div><label>Fim da vigência</label>${inp('U_DtFim','date')}</div>
+    <div><label>Dia de faturamento</label>${inp('U_DiaFat','number','min="1" max="31"')}</div>
+    <div><label>Filial (BPLId)</label>${inp('U_Filial','number')}</div>
+    <div class="span2"><label>Obra / local de uso</label>${inp('U_Obra')}</div>
+    <div><label>Índice de reajuste</label>${inp('U_Indice','text','placeholder="IGP-M, IPCA..."')}</div>
+    <div class="span2"><label>Observações</label><textarea data-cf="U_Obs" ${ed?'':'readonly'}>${esc(c.U_Obs||'')}</textarea></div>
+  </div>
+  <h3>Itens locados</h3>
+  <div class="tbl"><table><thead><tr><th>Ativo</th><th>Item faturamento</th><th class="num">Valor ${c.U_Cobranca==='D'?'diária':'mensal'}</th><th class="num">Franquia/mês</th><th class="num">R$ excedente</th><th>Condutor</th><th>Saída</th><th>Devolução</th><th>Status</th><th></th></tr></thead><tbody>
+  ${c[LN].map((l,i)=>{const at=findAtivo(l.U_Ativo),un=UN(at&&at.U_Tipo),le=ed&&l.U_StatusL!=='DEV';
+    const li=(k,t='text',w='')=>`<input type="${t}" step="0.01" data-ln="${i}" data-lf="${k}" value="${esc(l[k]??'')}" ${le?'':'readonly'} style="${w}">`;
+    return `<tr><td><b>${esc(l.U_Ativo)}</b><div class="sub">${esc(l.U_AtvDesc)}</div></td>
+      <td><input data-ln="${i}" data-lf="U_ItemCode" list="dlItem" data-search="item" value="${esc(l.U_ItemCode||'')}" ${le?'':'readonly'} style="width:110px"></td>
+      <td class="num">${li('U_Valor','number','width:110px')}</td><td class="num">${li('U_Franquia','number','width:80px')} ${un}</td><td class="num">${li('U_VlrExced','number','width:80px')}</td>
+      <td>${at&&at.U_Tipo==='VEI'?li('U_Condutor','text','width:180px'):''}</td><td>${fmtD(l.U_DtSaida)}</td><td>${fmtD(l.U_DtDevol)}</td><td>${badge(l.U_StatusL,ST_LIN)}</td>
+      <td style="white-space:nowrap">${l.U_StatusL==='PEN'&&ed?`<button class="mini danger" data-act="rmLinha" data-i="${i}">Remover</button>`:''}
+        ${!novo&&c.U_Status==='ATV'&&l.U_StatusL==='PEN'&&l.LineId?`<button class="mini teal" data-act="irMov" data-tipo="SAI" data-line="${l.LineId}">Saída</button>`:''}
+        ${!novo&&l.U_StatusL==='LOC'?`<button class="mini" data-act="irMov" data-tipo="DEV" data-line="${l.LineId}">Devolução</button><button class="mini" data-act="irMov" data-tipo="SUB" data-line="${l.LineId}">Substituir</button>`:''}</td></tr>`;}).join('')||'<tr><td colspan="10" class="muted">Nenhum item. Adicione ativos abaixo.</td></tr>'}
+  </tbody></table><datalist id="dlItem"></datalist></div>
+  ${ed?`<div class="row" style="margin-top:8px"><select id="addAtivo" style="max-width:420px"><option value="">+ Adicionar ativo disponível...</option>
+    ${disp.map(a=>`<option value="${esc(a.Code)}">${esc(a.Code)} — ${esc(a.Name)} (${esc(TP_ATV[a.U_Tipo])})</option>`).join('')}</select></div>`:''}
+  ${!novo?`<h3>Faturamentos</h3><div class="tbl"><table><thead><tr><th>Competência</th><th>Documento</th><th class="num">Valor</th><th>Status</th></tr></thead><tbody>
+    ${fat.map(f=>`<tr><td>${compFmt(f.U_Comp)}</td><td>${esc(DOCTYPES[f.U_DocType]||'')} ${f.U_DocNum?'nº '+f.U_DocNum:''}</td><td class="num">${brl(f.U_Valor)}</td><td>${badge(f.U_Status,ST_FAT)}</td></tr>`).join('')||'<tr><td colspan="4" class="muted">Nenhum.</td></tr>'}
+    </tbody></table></div>
+    <h3>Movimentações</h3><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Ativo</th><th>Responsável</th><th></th></tr></thead><tbody>
+    ${movs.map(m=>`<tr><td>${m.DocNum}</td><td>${fmtD(m.U_Data)}</td><td>${esc(TP_MOV[m.U_Tipo])}</td><td>${esc(m.U_Ativo)}${m.U_AtivoNovo?' → '+esc(m.U_AtivoNovo):''}</td><td>${esc(m.U_Respons)}</td>
+      <td class="right"><button class="mini" data-act="printMov" data-de="${m.DocEntry}">Termo</button></td></tr>`).join('')||'<tr><td colspan="6" class="muted">Nenhuma.</td></tr>'}
+    </tbody></table></div>`:''}
+  </div>`;
+}
+function afterContratos(){
+  const a=$('#addAtivo');if(a)a.onchange=()=>{
+    const at=findAtivo(a.value);if(!at)return;const c=lerEditorCtr();
+    c[LN].push({U_Ativo:at.Code,U_AtvDesc:at.Name,U_ItemCode:at.U_ItemCode||'',U_Valor:c.U_Cobranca==='D'?(+at.U_ValorDia||0):(+at.U_ValorMes||0),
+      U_Franquia:0,U_VlrExced:0,U_DtSaida:null,U_DtDevol:null,U_Condutor:'',U_StatusL:'PEN'});
+    render();
+  };
+}
+function lerEditorCtr(){
+  const c=S.ctrEdit;
+  $$('[data-cf]').forEach(e=>{const k=e.dataset.cf;if(k==='_bp'){if(!e.readOnly){const v=e.value.trim(),i=v.indexOf(' — ');c.U_CardCode=i>0?v.slice(0,i).trim():v;c.U_CardName=i>0?v.slice(i+3).trim():c.U_CardName;}}
+    else c[k]=['U_DiaFat','U_Filial'].includes(k)?(+e.value||0):e.value;});
+  $$('[data-lf]').forEach(e=>{const l=c[LN][+e.dataset.ln],k=e.dataset.lf;l[k]=['U_Valor','U_Franquia','U_VlrExced'].includes(k)?(+e.value||0):e.value;});
+  return c;
+}
+async function validarBP(c){
+  if(!c.U_CardCode)throw new Error('Informe o cliente.');
+  try{const bp=await S.sl.request('GET',`BusinessPartners('${odq(c.U_CardCode)}')`);c.U_CardName=bp.CardName;}
+  catch(e){if(e.status===404)throw new Error('Cliente não encontrado no B1: '+c.U_CardCode);throw e;}
+}
+function validarCtr(c,ativar){
+  if(!c.U_DtInicio)throw new Error('Informe o início da vigência.');
+  if(c.U_DtFim&&d10(c.U_DtFim)<d10(c.U_DtInicio))throw new Error('Fim da vigência anterior ao início.');
+  if(+c.U_DiaFat<1||+c.U_DiaFat>31)throw new Error('Dia de faturamento deve estar entre 1 e 31.');
+  for(const l of c[LN]){
+    if(l.U_StatusL==='DEV')continue;
+    const outro=alocacaoAberta(l.U_Ativo,c.DocEntry);if(outro)throw new Error(`Ativo ${l.U_Ativo} já está no contrato #${outro.DocNum}.`);
+    if(ativar&&!l.U_ItemCode)throw new Error(`Ativo ${l.U_Ativo}: informe o item de faturamento.`);
+    if(ativar&&!(+l.U_Valor>0))throw new Error(`Ativo ${l.U_Ativo}: informe o valor.`);
+  }
+  if(ativar&&!c[LN].length)throw new Error('Inclua ao menos um ativo.');
+}
+function payloadCtr(c){
+  const p={};['U_CardCode','U_CardName','U_Tipo','U_DtInicio','U_DtFim','U_Cobranca','U_DiaFat','U_Status','U_Filial','U_Obra','U_Indice','U_Obs'].forEach(k=>p[k]=c[k]===''&&k.startsWith('U_Dt')?null:c[k]);
+  p[LN]=c[LN].map(l=>{const o={};['LineId','U_Ativo','U_AtvDesc','U_ItemCode','U_Valor','U_Franquia','U_VlrExced','U_DtSaida','U_DtDevol','U_Condutor','U_StatusL'].forEach(k=>{if(l[k]!==undefined)o[k]=l[k]===''&&k.startsWith('U_Dt')?null:l[k];});return o;});
+  return p;
+}
+async function salvarCtr(novoStatus){
+  const c=lerEditorCtr();
+  await acao(async()=>{
+    try{
+      await validarBP(c);
+      const alvo=novoStatus||c.U_Status;
+      if(alvo==='ENC'&&c[LN].some(l=>l.U_StatusL==='LOC'))throw new Error('Registre a devolução de todos os itens antes de encerrar.');
+      validarCtr(c,alvo==='ATV');
+      const p=payloadCtr(c);p.U_Status=alvo;
+      if(alvo==='ENC'){p[LN]=p[LN].filter(l=>l.U_StatusL!=='PEN');if(!p.U_DtFim)p.U_DtFim=hoje();}
+      let de=c.DocEntry;
+      if(!de){const r=await S.sl.request('POST',SET.CTR,p);de=r.DocEntry;}
+      else await S.sl.request('PATCH',`${SET.CTR}(${de})`,p,{'B1S-ReplaceCollectionsOnPatch':'true'});
+      await loadAll();S.ctrEdit=JSON.parse(JSON.stringify(findCtr(de)));render();toast(alvo!==c.U_Status&&novoStatus?'Contrato '+ST_CTR[alvo].toLowerCase()+'.':'Contrato salvo.');
+    }catch(e){msg('#ctrMsg','err',e.message);window.scrollTo(0,0);}
+  });
+}
+
+/* ================= MOVIMENTAÇÃO ================= */
+function novoMov(tipo='SAI',ctr='',line=''){return {tipo,ctr,line,novo:'',data:hoje(),med:'',medN:'',comb:'',chk:{},avarias:'',resp:'',docResp:'',dest:'DIS',sig:''};}
+function checklistDe(tipo){return String(S.cfg[tipo==='VEI'?'CHK_VEI':'CHK_EQP']||'').split('\n').map(s=>s.trim()).filter(Boolean);}
+function vMov(){
+  const m=S.mov=S.mov||novoMov();
+  const ctrs=S.data.contratos.filter(c=>m.tipo==='SAI'?c.U_Status==='ATV':['ATV','SUS','ENC'].includes(c.U_Status)).filter(c=>c[LN].some(l=>l.U_StatusL===(m.tipo==='SAI'?'PEN':'LOC')));
+  const c=findCtr(m.ctr),linhas=c?c[LN].filter(l=>l.U_StatusL===(m.tipo==='SAI'?'PEN':'LOC')):[];
+  const l=c&&linhas.find(x=>x.LineId==m.line),at=l&&findAtivo(l.U_Ativo),un=UN(at&&at.U_Tipo);
+  const subs=at?S.data.ativos.filter(a=>a.U_Tipo===at.U_Tipo&&statusAtivo(a)==='DIS'&&!alocacaoAberta(a.Code)):[];
+  const itens=at?checklistDe(at.U_Tipo):[];
+  const hist=[...S.data.movs].sort((a,b)=>b.DocEntry-a.DocEntry).slice(0,50);
+  return `<div class="card"><h2>Registrar movimentação</h2>
+  <div class="grid">
+    <div><label>Tipo</label><select data-mf="tipo">${Object.entries(TP_MOV).map(([k,v])=>`<option value="${k}" ${m.tipo===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div class="span2"><label>Contrato</label><select data-mf="ctr"><option value="">Selecione...</option>${ctrs.map(x=>`<option value="${x.DocEntry}" ${x.DocEntry==m.ctr?'selected':''}>#${x.DocNum} — ${esc(x.U_CardName)}</option>`).join('')}</select></div>
+    <div class="span2"><label>Item / ativo</label><select data-mf="line"><option value="">Selecione...</option>${linhas.map(x=>`<option value="${x.LineId}" ${x.LineId==m.line?'selected':''}>${esc(x.U_Ativo)} — ${esc(x.U_AtvDesc)}</option>`).join('')}</select></div>
+    <div><label>Data</label><input type="date" data-mf="data" value="${esc(m.data)}"></div>
+  </div>
+  ${at?`<div class="msg info">${esc(at.Code)} · ${esc(at.Name)} ${at.U_Placa?'· placa '+esc(at.U_Placa):''} ${at.U_Serie?'· série '+esc(at.U_Serie):''} · última leitura ${num(at.U_Medidor,1)} ${un}</div>
+  <div class="grid">
+    <div><label>${at.U_Tipo==='VEI'?'Hodômetro (km)':'Horímetro (h)'}${m.tipo==='SUB'?' do ativo devolvido':''}</label><input type="number" step="0.1" data-mf="med" value="${esc(m.med)}" placeholder="${esc(at.U_Medidor??'')}"></div>
+    <div><label>Combustível</label><select data-mf="comb">${COMBUST.map(v=>`<option ${m.comb===v?'selected':''}>${v}</option>`).join('')}</select></div>
+    ${m.tipo!=='SAI'?`<div><label>Status do ativo devolvido</label><select data-mf="dest"><option value="DIS" ${m.dest==='DIS'?'selected':''}>Disponível</option><option value="MAN" ${m.dest==='MAN'?'selected':''}>Manutenção</option></select></div>`:''}
+    ${m.tipo==='SUB'?`<div class="span2"><label>Ativo substituto</label><select data-mf="novo"><option value="">Selecione...</option>${subs.map(a=>`<option value="${esc(a.Code)}" ${a.Code===m.novo?'selected':''}>${esc(a.Code)} — ${esc(a.Name)}</option>`).join('')}</select></div>
+      <div><label>Leitura do substituto (${un})</label><input type="number" step="0.1" data-mf="medN" value="${esc(m.medN)}"></div>`:''}
+  </div>
+  <h3>Checklist ${m.tipo==='SAI'?'de saída':'de entrada'}</h3>
+  <table class="chk"><tbody>${itens.map((it,i)=>{const v=(m.chk[it]||{}).r||'';return `<tr><td>${esc(it)}</td><td style="white-space:nowrap">
+    ${['OK','NOK','NA'].map(o=>`<label><input type="radio" name="chk${i}" data-chk="${esc(it)}" value="${o}" ${v===o?'checked':''}> ${o==='NOK'?'Não OK':o==='NA'?'N/A':'OK'}</label>`).join('')}</td>
+    <td><input data-chko="${esc(it)}" value="${esc((m.chk[it]||{}).o||'')}" placeholder="observação"></td></tr>`;}).join('')}</tbody></table>
+  <div class="grid" style="margin-top:10px">
+    <div class="span2"><label>Avarias / observações gerais</label><textarea data-mf="avarias">${esc(m.avarias)}</textarea></div>
+    <div><label>Responsável (cliente)</label><input data-mf="resp" value="${esc(m.resp)}"></div>
+    <div><label>Documento (CPF/RG)</label><input data-mf="docResp" value="${esc(m.docResp)}"></div>
+  </div>
+  <h3>Assinatura do responsável</h3>
+  <canvas class="sig" id="sig" width="1040" height="320"></canvas>
+  <div class="row"><button class="mini" data-act="limparSig">Limpar assinatura</button></div>
+  <div id="movMsg"></div>
+  <div class="row" style="margin-top:12px"><span class="spacer"></span><button data-act="cancelMov">Limpar</button><button class="primary" data-act="salvarMov">Registrar ${esc(TP_MOV[m.tipo].toLowerCase())}</button></div>`:'<p class="muted">Selecione o contrato e o item.</p>'}
+  </div>
+  <div class="card"><h2>Últimas movimentações</h2><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Contrato</th><th>Cliente</th><th>Ativo</th><th class="num">Leitura</th><th>Responsável</th><th></th></tr></thead><tbody>
+  ${hist.map(x=>{const cc=findCtr(x.U_CtrEntry);return `<tr><td>${x.DocNum}</td><td>${fmtD(x.U_Data)}</td><td>${badge(x.U_Tipo==='SAI'?'LOC':'DEV',{LOC:'Saída',DEV:TP_MOV[x.U_Tipo]})}</td><td>#${cc?cc.DocNum:x.U_CtrEntry}</td>
+    <td>${esc(x.U_CardName)}</td><td>${esc(x.U_Ativo)}${x.U_AtivoNovo?' → '+esc(x.U_AtivoNovo):''}</td><td class="num">${num(x.U_Medidor,1)}</td><td>${esc(x.U_Respons)}</td>
+    <td class="right"><button class="mini" data-act="printMov" data-de="${x.DocEntry}">Termo</button></td></tr>`;}).join('')||'<tr><td colspan="9" class="muted">Nenhuma.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+function lerMov(){
+  const m=S.mov;
+  $$('[data-mf]').forEach(e=>m[e.dataset.mf]=e.value);
+  $$('[data-chk]').forEach(e=>{if(e.checked){m.chk[e.dataset.chk]=m.chk[e.dataset.chk]||{};m.chk[e.dataset.chk].r=e.value;}});
+  $$('[data-chko]').forEach(e=>{const k=e.dataset.chko;if(e.value||m.chk[k]){m.chk[k]=m.chk[k]||{};m.chk[k].o=e.value;}});
+  const cv=$('#sig');if(cv&&cv.dataset.dirty==='1')m.sig=cv.toDataURL('image/png');
+  return m;
+}
+function afterMov(){
+  const cv=$('#sig');if(!cv)return;
+  const ctx=cv.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';ctx.strokeStyle='#0A0A5E';
+  if(S.mov.sig){const img=new Image();img.onload=()=>ctx.drawImage(img,0,0);img.src=S.mov.sig;cv.dataset.dirty='1';}
+  let dw=false;const pos=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height];};
+  cv.onpointerdown=e=>{dw=true;cv.setPointerCapture(e.pointerId);ctx.beginPath();ctx.moveTo(...pos(e));};
+  cv.onpointermove=e=>{if(!dw)return;ctx.lineTo(...pos(e));ctx.stroke();cv.dataset.dirty='1';};
+  cv.onpointerup=cv.onpointercancel=()=>{dw=false;};
+}
+async function salvarMov(){
+  const m=lerMov();
+  const c=findCtr(m.ctr),l=c&&c[LN].find(x=>x.LineId==m.line),at=l&&findAtivo(l.U_Ativo);
+  const falt=(at?checklistDe(at.U_Tipo):[]).filter(i=>!(m.chk[i]&&m.chk[i].r));
+  if(falt.length)return msg('#movMsg','err','Checklist incompleto: '+falt.join(', '));
+  if(!m.resp.trim())return msg('#movMsg','err','Informe o responsável pelo recebimento/entrega.');
+  if(m.med===''&&m.tipo!=='SAI')return msg('#movMsg','err','Informe a leitura do medidor.');
+  await acao(async()=>{
+    try{const r=await registrarMovimento(m);S.mov=null;await loadAll();render();toast(`${TP_MOV[m.tipo]} registrada (nº ${r.DocNum}).`);
+      if(confirm('Imprimir o termo agora?'))imprimirMov(r.DocEntry);}
+    catch(e){msg('#movMsg','err',e.message);}
+  });
+}
+
+/* ================= MEDIÇÕES ================= */
+function vMed(){
+  const comp=S.medComp,lin=[];
+  S.data.contratos.filter(c=>['ATV','SUS'].includes(c.U_Status)).forEach(c=>c[LN].filter(l=>l.U_StatusL==='LOC').forEach(l=>lin.push({c,l,at:findAtivo(l.U_Ativo)})));
+  const meds=S.data.meds.filter(m=>m.U_Comp===comp).sort((a,b)=>d10(b.U_Data)<d10(a.U_Data)?-1:1);
+  return `<div class="card"><div class="toolbar"><div><label>Competência</label><input type="month" id="medComp" value="${compInput(comp)}"></div>
+    <div class="sub" style="flex:1">Informe a leitura atual do horímetro/hodômetro. O uso (leitura atual − última) entra no cálculo de excedente da competência.</div></div>
+  <div class="tbl"><table><thead><tr><th>Contrato</th><th>Cliente</th><th>Ativo</th><th class="num">Franquia/mês</th><th class="num">Uso na comp.</th><th class="num">Última leitura</th><th>Leitura atual</th><th>Data</th><th></th></tr></thead><tbody>
+  ${lin.map(({c,l,at},i)=>{const un=UN(at&&at.U_Tipo);return `<tr><td>#${c.DocNum}</td><td>${esc(c.U_CardName)}</td><td><b>${esc(l.U_Ativo)}</b> <span class="sub">${esc(l.U_AtvDesc)}</span></td>
+    <td class="num">${num(l.U_Franquia,0)} ${un}</td><td class="num">${num(usoNaComp(c.DocEntry,l.LineId,comp),1)} ${un}</td><td class="num">${num(at&&at.U_Medidor,1)}</td>
+    <td><input type="number" step="0.1" id="ml${i}" style="width:110px"></td><td><input type="date" id="md${i}" value="${hoje()}" style="width:140px"></td>
+    <td><button class="mini primary" data-act="regMed" data-i="${i}" data-ctr="${c.DocEntry}" data-line="${l.LineId}">Registrar</button></td></tr>`;}).join('')||'<tr><td colspan="9" class="muted">Nenhum item locado.</td></tr>'}
+  </tbody></table></div></div>
+  <div class="card"><h2>Medições de ${compFmt(comp)}</h2><div class="tbl"><table><thead><tr><th>Data</th><th>Contrato</th><th>Ativo</th><th class="num">Inicial</th><th class="num">Final</th><th class="num">Uso</th></tr></thead><tbody>
+  ${meds.map(m=>{const c=findCtr(m.U_CtrEntry);return `<tr><td>${fmtD(m.U_Data)}</td><td>#${c?c.DocNum:m.U_CtrEntry}</td><td>${esc(m.U_Ativo)}</td><td class="num">${num(m.U_LeitIni,1)}</td><td class="num">${num(m.U_LeitFim,1)}</td><td class="num"><b>${num(m.U_LeitFim-m.U_LeitIni,1)}</b></td></tr>`;}).join('')||'<tr><td colspan="6" class="muted">Nenhuma medição.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+async function registrarMedicao(btn){
+  const i=btn.dataset.i,c=findCtr(btn.dataset.ctr),l=c[LN].find(x=>x.LineId==btn.dataset.line),at=findAtivo(l.U_Ativo);
+  const v=$('#ml'+i).value,data=$('#md'+i).value;
+  if(v==='')return alert('Informe a leitura atual.');
+  const ini=+at.U_Medidor||0,fim=+v;
+  if(fim<ini)return alert(`Leitura menor que a última registrada (${num(ini,1)}).`);
+  await acao(async()=>{
+    const code=`${c.DocEntry}-${l.LineId}-${Date.now().toString(36)}`;
+    await S.sl.request('POST',SET.MED,{Code:code,Name:code,U_CtrEntry:c.DocEntry,U_CtrLine:l.LineId,U_Ativo:at.Code,U_Comp:S.medComp,U_Data:data||hoje(),U_LeitIni:ini,U_LeitFim:fim});
+    await S.sl.request('PATCH',`${SET.ATV}('${odq(at.Code)}')`,{U_Medidor:fim});
+    toast('Medição registrada.');await refresh();
+  });
+}
+
+/* ================= FATURAMENTO ================= */
+function vFat(){
+  const comp=S.fatComp;
+  const ctrs=S.data.contratos.filter(c=>['ATV','SUS','ENC'].includes(c.U_Status)).map(c=>({c,calc:calcFaturamento(c,comp),fat:fatDe(c.DocEntry,comp)}))
+    .filter(x=>x.calc.linhas.length||x.fat).sort((a,b)=>a.c.DocNum-b.c.DocNum);
+  const pend=ctrs.filter(x=>!x.fat||x.fat.U_Status==='CAN');
+  return `<div class="card"><div class="toolbar"><div><label>Competência</label><input type="month" id="fatComp" value="${compInput(comp)}"></div>
+    <div class="sub" style="flex:1">Documento gerado no B1: <b>${esc(DOCTYPES[S.cfg.TIPO_DOC]||S.cfg.TIPO_DOC)}</b>. A NF e o boleto são emitidos no B1 a partir dele. Altere em Configuração.</div>
+    <button class="primary" data-act="faturarSel" ${pend.length?'':'disabled'}>Gerar documentos selecionados</button></div>
+  <div class="tbl"><table><thead><tr><th><input type="checkbox" id="fatAll" style="width:auto" checked></th><th>Contrato</th><th>Cliente</th><th>Cobrança</th><th class="num">Linhas</th><th class="num">Total</th><th>Situação</th><th></th></tr></thead><tbody>
+  ${ctrs.map(({c,calc,fat})=>{const open=S.fatOpen.has(c.DocEntry),pode=!fat||fat.U_Status==='CAN';
+    return `<tr><td>${pode?`<input type="checkbox" class="fatSel" value="${c.DocEntry}" style="width:auto" ${calc.avisos.length?'':'checked'}>`:''}</td>
+    <td><a href="#" data-open-ctr="${c.DocEntry}">#${c.DocNum}</a></td><td>${esc(c.U_CardName)}</td><td>${esc(COBR[c.U_Cobranca])}</td><td class="num">${calc.linhas.length}</td>
+    <td class="num"><b>${brl(fat&&fat.U_Status==='OK'?fat.U_Valor:calc.total)}</b></td>
+    <td>${fat?badge(fat.U_Status,ST_FAT)+(fat.U_DocNum?` <span class="sub">${esc(DOCTYPES[fat.U_DocType]||'')} nº ${fat.U_DocNum}</span>`:''):calc.avisos.length?'<span class="badge b-MAN">Pendência</span>':'<span class="badge b-RES">A faturar</span>'}</td>
+    <td class="right" style="white-space:nowrap"><button class="mini" data-act="fatToggle" data-de="${c.DocEntry}">${open?'Ocultar':'Detalhar'}</button>
+      ${fat&&fat.U_Status!=='CAN'?`<button class="mini danger" data-act="fatCancel" data-code="${esc(fat.Code)}" title="Use após cancelar o documento no B1">Liberar refaturamento</button>`:''}</td></tr>
+    ${open?`<tr><td></td><td colspan="7">${calc.avisos.map(a=>`<div class="msg warn">${esc(a)}</div>`).join('')}
+      <table><thead><tr><th>Item</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Preço</th><th class="num">Total</th></tr></thead><tbody>
+      ${calc.linhas.map(x=>`<tr><td>${esc(x.ItemCode||'—')}</td><td>${esc(x.desc)}</td><td class="num">${num(x.qtd,x.qtd%1?2:0)}</td><td class="num">${brl(x.preco)}</td><td class="num">${brl(x.total)}</td></tr>`).join('')}
+      </tbody></table></td></tr>`:''}`;}).join('')||'<tr><td colspan="8" class="muted">Nada a faturar nesta competência.</td></tr>'}
+  </tbody></table></div><div id="fatLog"></div></div>`;
+}
+async function faturarSelecionados(){
+  const ids=$$('.fatSel').filter(e=>e.checked).map(e=>e.value);
+  if(!ids.length)return alert('Selecione ao menos um contrato.');
+  if(!confirm(`Gerar ${ids.length} documento(s) no B1 (${DOCTYPES[S.cfg.TIPO_DOC]}) para ${compFmt(S.fatComp)}?`))return;
+  const log=[];const out=()=>{$('#fatLog').innerHTML=`<h3>Resultado</h3><div class="log">${esc(log.join('\n'))}</div>`;};
+  await busy(async()=>{
+    for(const id of ids){
+      const c=findCtr(id);
+      try{const r=await faturarContrato(c,S.fatComp);log.push(`✓ Contrato #${c.DocNum} ${c.U_CardName}: ${DOCTYPES[r.tipo]} nº ${r.criado.DocNum} — ${brl(r.total)}`);}
+      catch(e){log.push(`✗ Contrato #${c.DocNum} ${c.U_CardName}: ${e.message}`);}
+      out();
+    }
+    await loadAll();
+  });
+  render();out();
+}
+
+/* ================= MULTAS ================= */
+function vMultas(){
+  const rows=[...S.data.multas].sort((a,b)=>d10(b.U_DtInfr)<d10(a.U_DtInfr)?-1:1);
+  const acoes=m=>({PEN:[['IND','Condutor indicado'],['REP','Repassar ao cliente'],['PAG','Paga pela locadora']],IND:[['REP','Repassar ao cliente'],['PAG','Paga pela locadora']],REP:[['IND','Voltar p/ indicado'],['PAG','Paga pela locadora']]}[m.U_Status]||[]);
+  return `<div class="card"><div class="toolbar"><div class="sub" style="flex:1">A multa é vinculada automaticamente ao contrato que estava com o veículo na data da infração. Multas "A repassar" entram no próximo faturamento do contrato.</div>
+    <button class="primary" data-act="novaMulta">+ Nova multa</button></div>
+  <div class="tbl"><table><thead><tr><th>Data</th><th>Placa</th><th>AIT</th><th>Descrição</th><th class="num">Valor</th><th>Contrato / cliente</th><th>Condutor</th><th>Status</th><th></th></tr></thead><tbody>
+  ${rows.map(m=>{const c=findCtr(m.U_CtrEntry);return `<tr><td>${fmtD(m.U_DtInfr)} ${esc(m.U_HrInfr)}</td><td>${esc(m.U_Placa)}</td><td>${esc(m.U_AIT)}</td><td>${esc(m.U_Descricao)}</td><td class="num">${brl(m.U_Valor)}</td>
+    <td>${c?`<a href="#" data-open-ctr="${c.DocEntry}">#${c.DocNum}</a> ${esc(m.U_CardName)}`:'<span class="muted">não identificado</span>'}</td><td>${esc(m.U_Condutor)}</td>
+    <td>${badge(m.U_Status,ST_MUL)}${m.U_Comp?` <span class="sub">${compFmt(m.U_Comp)}</span>`:''}</td>
+    <td class="right" style="white-space:nowrap">${acoes(m).filter(([s])=>s!=='REP'||c).map(([s,t])=>`<button class="mini" data-act="stMulta" data-code="${esc(m.Code)}" data-st="${s}">${t}</button>`).join('')}</td></tr>`;}).join('')||'<tr><td colspan="9" class="muted">Nenhuma multa.</td></tr>'}
+  </tbody></table></div></div>`;
+}
+function formMulta(){
+  const veis=S.data.ativos.filter(a=>a.U_Tipo==='VEI');
+  modal(`<h2>Nova multa</h2><div class="grid">
+    <div class="span2"><label>Veículo</label><select id="muAtv"><option value="">Selecione...</option>${veis.map(a=>`<option value="${esc(a.Code)}">${esc(a.U_Placa)} — ${esc(a.Name)}</option>`).join('')}</select></div>
+    <div><label>Data da infração</label><input type="date" id="muData"></div><div><label>Hora</label><input type="time" id="muHora"></div>
+    <div><label>Auto de infração (AIT)</label><input id="muAit"></div><div><label>Valor (R$)</label><input type="number" step="0.01" id="muVal"></div>
+    <div class="span2"><label>Descrição</label><input id="muDesc" maxlength="100"></div>
+  </div><div id="muInfo"></div><div class="row" style="margin-top:12px"><span class="spacer"></span><button data-act="closeModal">Cancelar</button><button class="primary" data-act="salvarMulta">Salvar</button></div>`);
+  const upd=()=>{const a=$('#muAtv').value,d=$('#muData').value;if(!a||!d)return msg('#muInfo','','');const r=contratoNaData(a,d);
+    msg('#muInfo',r?'ok':'warn',r?`Contrato #${r.c.DocNum} — ${r.c.U_CardName}${r.l.U_Condutor?' — condutor: '+r.l.U_Condutor:''}`:'Nenhum contrato com este veículo na data. A multa ficará como pendente da locadora.');};
+  $('#muAtv').onchange=upd;$('#muData').onchange=upd;
+}
+async function salvarMulta(){
+  const a=findAtivo($('#muAtv').value),d=$('#muData').value,v=+$('#muVal').value;
+  if(!a||!d||!(v>0))return msg('#muInfo','err','Informe veículo, data e valor.');
+  const r=contratoNaData(a.Code,d),code='M'+Date.now().toString(36);
+  await acao(async()=>{
+    await S.sl.request('POST',SET.MUL,{Code:code,Name:('AIT '+$('#muAit').value).slice(0,100),U_Ativo:a.Code,U_Placa:a.U_Placa||'',U_DtInfr:d,U_HrInfr:$('#muHora').value,
+      U_AIT:$('#muAit').value,U_Descricao:$('#muDesc').value,U_Valor:v,U_CtrEntry:r?r.c.DocEntry:0,U_CtrLine:r?r.l.LineId:0,U_CardName:r?r.c.U_CardName:'',U_Condutor:r?r.l.U_Condutor||'':'',U_Status:'PEN',U_Comp:''});
+    closeModal();toast('Multa registrada.');await refresh();
+  });
+}
+
+/* ================= CONFIGURAÇÃO / INSTALAÇÃO ================= */
+function vConfig(){
+  const c=S.cfg;
+  return `<div class="card"><h2>Parâmetros</h2><div class="grid">
+    <div class="span2"><label>Nome da locadora (impressos)</label><input data-cfg="EMPRESA" value="${esc(c.EMPRESA)}"></div>
+    <div><label>Documento gerado no faturamento</label><select data-cfg="TIPO_DOC">${Object.entries(DOCTYPES).map(([k,v])=>`<option value="${k}" ${c.TIPO_DOC===k?'selected':''}>${v}</option>`).join('')}</select></div>
+    <div><label>Item para repasse de multa</label><input data-cfg="ITEM_MULTA" list="dlItem" data-search="item" value="${esc(c.ITEM_MULTA)}"><datalist id="dlItem"></datalist></div>
+    <div><label>Utilização (Usage) nas linhas — opcional</label><input type="number" data-cfg="USAGE" value="${esc(c.USAGE)}" placeholder="padrão do item"></div>
+    <div><label>Franquia proporcional aos dias</label><select data-cfg="FRANQ_PROP"><option value="S" ${c.FRANQ_PROP!=='N'?'selected':''}>Sim</option><option value="N" ${c.FRANQ_PROP==='N'?'selected':''}>Não (franquia cheia)</option></select></div>
+    <div class="span2"><label>Checklist — máquinas e equipamentos (um item por linha)</label><textarea data-cfg="CHK_EQP" rows="7">${esc(c.CHK_EQP)}</textarea></div>
+    <div class="span2"><label>Checklist — veículos (um item por linha)</label><textarea data-cfg="CHK_VEI" rows="7">${esc(c.CHK_VEI)}</textarea></div>
+  </div><div class="row" style="margin-top:10px"><span class="spacer"></span><button class="primary" data-act="salvarCfg">Salvar parâmetros</button></div></div>
+  <div class="card"><h2>Estruturas no SAP Business One</h2>
+    <p class="sub">Cria (ou completa) as tabelas de usuário <b>@SPS_L*</b>, os campos e os objetos SPSLATV, SPSLCTR e SPSLMOV, além dos campos U_SPS_CtrEntry e U_SPS_Comp nos documentos de marketing.
+    Rode com um usuário superusuário, de preferência sem outros usuários conectados. Itens que já existem são ignorados.
+    Depois de instalar, saia e entre de novo para a Service Layer carregar os novos objetos.</p>
+    <div class="row"><button class="teal" data-act="instalar">Instalar / verificar estruturas</button>${S.mock?'<button class="danger" data-act="resetMock">Restaurar dados de demonstração</button>':''}</div>
+    <div id="instLog"></div></div>`;
+}
+async function salvarCfg(){
+  await acao(async()=>{
+    for(const e of $$('[data-cfg]')){
+      const k=e.dataset.cfg,v=e.value;if(String(S.cfg[k]??'')===v)continue;
+      try{await S.sl.request('PATCH',`${SET.CFG}('${k}')`,{U_Valor:v});}
+      catch(err){if(err.status!==404)throw err;await S.sl.request('POST',SET.CFG,{Code:k,Name:k,U_Valor:v});}
+    }
+    toast('Parâmetros salvos.');await refresh();
+  });
+}
+async function instalarEstruturas(){
+  const log=[];const out=t=>{log.push(t);$('#instLog').innerHTML=`<div class="log">${esc(log.join('\n'))}</div>`;const l=$('#instLog .log');l.scrollTop=l.scrollHeight;};
+  const sl=S.sl;let erros=0;
+  await busy(async()=>{
+    for(const t of SCHEMA.tables){
+      try{await sl.request('GET',`UserTablesMD('${t.TableName}')`);out(`= tabela @${t.TableName} já existe`);}
+      catch(e){if(e.status!==404){out(`✗ tabela @${t.TableName}: ${e.message}`);erros++;continue;}
+        try{await sl.request('POST','UserTablesMD',t);out(`+ tabela @${t.TableName} criada`);}catch(e2){out(`✗ tabela @${t.TableName}: ${e2.message}`);erros++;}}
+    }
+    for(const [tab,fs] of Object.entries(SCHEMA.fields)){
+      let exist=[];try{exist=(await sl.getAll(qs('UserFieldsMD',{$select:'Name,TableName',$filter:`TableName eq '${tab}'`}))).map(f=>f.Name);}catch(e){out(`✗ campos de ${tab}: ${e.message}`);erros++;continue;}
+      for(const f of fs){
+        if(exist.includes(f.n)){out(`= campo ${tab}.U_${f.n} já existe`);continue;}
+        try{await sl.request('POST','UserFieldsMD',fieldMD(tab,f));out(`+ campo ${tab}.U_${f.n} criado`);}catch(e){out(`✗ campo ${tab}.U_${f.n}: ${e.message}`);erros++;}
+      }
+    }
+    for(const u of SCHEMA.udos){
+      try{await sl.request('GET',`UserObjectsMD('${u.Code}')`);out(`= objeto ${u.Code} já existe`);}
+      catch(e){if(e.status!==404){out(`✗ objeto ${u.Code}: ${e.message}`);erros++;continue;}
+        try{await sl.request('POST','UserObjectsMD',u);out(`+ objeto ${u.Code} criado`);}catch(e2){out(`✗ objeto ${u.Code}: ${e2.message}`);erros++;}}
+    }
+    for(const [k,v] of Object.entries(CFG_DEF)){
+      try{await sl.request('GET',`${SET.CFG}('${k}')`);}catch(e){if(e.status===404){try{await sl.request('POST',SET.CFG,{Code:k,Name:k,U_Valor:v});out(`+ parâmetro ${k}`);}catch(e2){out(`· parâmetro ${k}: ${e2.message}`);}}}
+    }
+  });
+  out(erros?`\nConcluído com ${erros} erro(s).`:'\nConcluído. Saia e entre novamente para usar as novas estruturas.');
+}
+
+/* ================= IMPRESSÃO ================= */
+function imprimir(titulo,corpo){
+  const css=`body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px}h1{font-size:17px;margin:0 0 4px}h2{font-size:13px;margin:16px 0 6px;border-bottom:1px solid #999}
+    table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eee}.r{text-align:right}.ass{margin-top:40px;display:flex;gap:40px}.ass div{flex:1;border-top:1px solid #000;padding-top:4px;text-align:center}`;
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>${css}</style></head><body>${corpo}</body></html>`);d.close();
+  setTimeout(()=>{f.contentWindow.focus();f.contentWindow.print();setTimeout(()=>f.remove(),1500);},300);
+}
+function imprimirCtr(){
+  const c=S.ctrEdit;if(!c||!c.DocEntry)return;
+  imprimir('Contrato '+c.DocNum,`<h1>Contrato de ${esc((TP_CTR[c.U_Tipo]||'').toLowerCase())} nº ${c.DocNum}</h1><div>${esc(S.cfg.EMPRESA||'')}</div>
+   <h2>Partes</h2><p><b>Locadora:</b> ${esc(S.cfg.EMPRESA||'')}<br><b>Locatário:</b> ${esc(c.U_CardName)} (${esc(c.U_CardCode)})<br><b>Local de uso:</b> ${esc(c.U_Obra||'')}</p>
+   <h2>Condições</h2><p>Vigência: ${fmtD(c.U_DtInicio)} a ${fmtD(c.U_DtFim)||'indeterminado'} · Cobrança ${esc((COBR[c.U_Cobranca]||'').toLowerCase())} · Faturamento no dia ${c.U_DiaFat} · Reajuste: ${esc(c.U_Indice||'—')}</p>
+   <h2>Itens</h2><table><tr><th>Ativo</th><th>Descrição</th><th class="r">Valor ${c.U_Cobranca==='D'?'diária':'mensal'}</th><th class="r">Franquia/mês</th><th class="r">R$ excedente</th></tr>
+   ${c[LN].filter(l=>l.U_StatusL!=='DEV').map(l=>{const at=findAtivo(l.U_Ativo);return `<tr><td>${esc(l.U_Ativo)}</td><td>${esc(l.U_AtvDesc)}${at&&at.U_Placa?' — placa '+esc(at.U_Placa):''}${at&&at.U_Serie?' — série '+esc(at.U_Serie):''}</td><td class="r">${brl(l.U_Valor)}</td><td class="r">${num(l.U_Franquia,0)} ${UN(at&&at.U_Tipo)}</td><td class="r">${brl(l.U_VlrExced)}</td></tr>`;}).join('')}</table>
+   ${c.U_Obs?`<h2>Observações</h2><p>${esc(c.U_Obs)}</p>`:''}
+   <div class="ass"><div>${esc(S.cfg.EMPRESA||'Locadora')}</div><div>${esc(c.U_CardName)}</div></div>`);
+}
+function imprimirMov(de){
+  const m=S.data.movs.find(x=>x.DocEntry==de);if(!m)return;
+  const c=findCtr(m.U_CtrEntry),at=findAtivo(m.U_Ativo),nv=m.U_AtivoNovo?findAtivo(m.U_AtivoNovo):null;let chk={};try{chk=JSON.parse(m.U_Checklist||'{}');}catch(e){}
+  const tit=`Termo de ${TP_MOV[m.U_Tipo].toLowerCase()} nº ${m.DocNum}`;
+  imprimir(tit,`<h1>${esc(tit)}</h1><div>${esc(S.cfg.EMPRESA||'')} · ${fmtD(m.U_Data)}</div>
+   <h2>Contrato</h2><p>Nº ${c?c.DocNum:m.U_CtrEntry} — ${esc(m.U_CardName)}${c&&c.U_Obra?'<br>Local: '+esc(c.U_Obra):''}</p>
+   <h2>Ativo</h2><p>${esc(m.U_Ativo)} — ${esc(at?at.Name:'')}${at&&at.U_Placa?' · placa '+esc(at.U_Placa):''}${at&&at.U_Serie?' · série '+esc(at.U_Serie):''}<br>
+   Leitura: ${num(m.U_Medidor,1)} ${UN(at&&at.U_Tipo)} · Combustível: ${esc(m.U_Combust||'—')}
+   ${nv?`<br><b>Substituído por:</b> ${esc(nv.Code)} — ${esc(nv.Name)} · leitura ${num(m.U_MedidorN,1)}`:''}</p>
+   <h2>Checklist</h2><table><tr><th>Item</th><th>Situação</th><th>Observação</th></tr>${Object.entries(chk).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc({OK:'OK',NOK:'Não OK',NA:'N/A'}[v.r]||'')}</td><td>${esc(v.o||'')}</td></tr>`).join('')}</table>
+   ${m.U_Avarias?`<h2>Avarias / observações</h2><p>${esc(m.U_Avarias)}</p>`:''}
+   <div class="ass"><div>${esc(S.cfg.EMPRESA||'Locadora')}</div><div>${m.U_Assinatura?`<img src="${esc(m.U_Assinatura)}" style="max-height:70px;display:block;margin:-80px auto 4px">`:''}${esc(m.U_Respons)}${m.U_DocResp?' — '+esc(m.U_DocResp):''}</div></div>`);
+}
+
+/* =========================================================================
+   Eventos
+   ========================================================================= */
+document.addEventListener('click',async ev=>{
+  const t=ev.target.closest('[data-tab],[data-act],[data-open-ctr]');if(!t)return;
+  if(t.dataset.tab){if(S.tab==='mov'&&S.mov)lerMov();return go(t.dataset.tab);}
+  if(t.dataset.openCtr){ev.preventDefault();return abrirContrato(t.dataset.openCtr);}
+  const a=t.dataset.act;
+  switch(a){
+    case 'closeModal':return closeModal();
+    case 'novoAtivo':return formAtivo(null);
+    case 'editAtivo':return formAtivo(JSON.parse(JSON.stringify(findAtivo(t.dataset.code))));
+    case 'salvarAtivo':return salvarAtivo(t.dataset.novo==='1');
+    case 'manut':return acao(async()=>{await S.sl.request('PATCH',`${SET.ATV}('${odq(t.dataset.code)}')`,{U_Status:t.dataset.st});await refresh();});
+    case 'novoCtr':return abrirContrato(null);
+    case 'voltarCtr':S.ctrEdit=null;return render();
+    case 'salvarCtr':return salvarCtr(null);
+    case 'statusCtr':{const st=t.dataset.st;if(st==='ENC'&&!confirm('Encerrar o contrato? Itens aguardando saída serão removidos.'))return;return salvarCtr(st);}
+    case 'rmLinha':lerEditorCtr();S.ctrEdit[LN].splice(+t.dataset.i,1);return render();
+    case 'printCtr':return imprimirCtr();
+    case 'irMov':S.mov=novoMov(t.dataset.tipo,S.ctrEdit.DocEntry,t.dataset.line);S.ctrEdit=null;return go('mov');
+    case 'limparSig':{const cv=$('#sig');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);cv.dataset.dirty='';S.mov.sig='';return;}
+    case 'cancelMov':S.mov=null;return render();
+    case 'salvarMov':return salvarMov();
+    case 'printMov':return imprimirMov(t.dataset.de);
+    case 'regMed':return registrarMedicao(t);
+    case 'fatToggle':{const d=+t.dataset.de;S.fatOpen.has(d)?S.fatOpen.delete(d):S.fatOpen.add(d);return render();}
+    case 'faturarSel':return faturarSelecionados();
+    case 'fatCancel':{if(!confirm('Confirme que o documento foi cancelado no B1. Liberar esta competência para novo faturamento?'))return;
+      const f=S.data.fats.find(x=>x.Code===t.dataset.code);
+      return acao(async()=>{await S.sl.request('PATCH',`${SET.FAT}('${odq(f.Code)}')`,{U_Status:'CAN'});
+        for(const m of S.data.multas.filter(m=>m.U_Status==='FAT'&&m.U_CtrEntry==f.U_CtrEntry&&m.U_Comp===f.U_Comp))await S.sl.request('PATCH',`${SET.MUL}('${odq(m.Code)}')`,{U_Status:'REP',U_Comp:''});
+        await refresh();});}
+    case 'novaMulta':return formMulta();
+    case 'salvarMulta':return salvarMulta();
+    case 'stMulta':return acao(async()=>{await S.sl.request('PATCH',`${SET.MUL}('${odq(t.dataset.code)}')`,{U_Status:t.dataset.st});await refresh();});
+    case 'salvarCfg':return salvarCfg();
+    case 'instalar':if(!confirm('Criar/verificar as estruturas de locação no B1?'))return;return instalarEstruturas();
+    case 'resetMock':if(!confirm('Apagar os dados de demonstração e restaurar o exemplo?'))return;S.sl.reset();S.ctrEdit=null;S.mov=null;return refresh();
+  }
+});
+document.addEventListener('input',ev=>{
+  const e=ev.target;
+  if(e.dataset.search)return buscaDatalist(e,e.getAttribute('list'),e.dataset.search);
+  if(e.dataset.fa){S.f.ativos[e.dataset.fa]=e.value;const pos=e.selectionStart;render();const n=$(`[data-fa="${e.dataset.fa}"]`);if(n&&n.tagName==='INPUT'){n.focus();n.setSelectionRange(pos,pos);}return;}
+  if(e.dataset.fc){S.f.ctr[e.dataset.fc]=e.value;const pos=e.selectionStart;render();const n=$(`[data-fc="${e.dataset.fc}"]`);if(n&&n.tagName==='INPUT'){n.focus();n.setSelectionRange(pos,pos);}return;}
+});
+document.addEventListener('change',ev=>{
+  const e=ev.target;
+  if(e.dataset.mf&&['tipo','ctr','line','novo'].includes(e.dataset.mf)){lerMov();if(e.dataset.mf==='tipo'){S.mov.ctr='';S.mov.line='';S.mov.chk={};}if(e.dataset.mf==='ctr'){S.mov.line='';S.mov.chk={};}return render();}
+  if(e.dataset.cf==='U_Cobranca'){lerEditorCtr();return render();}
+  if(e.id==='fatComp'&&e.value){S.fatComp=e.value.replace('-','');S.fatOpen.clear();return render();}
+  if(e.id==='medComp'&&e.value){S.medComp=e.value.replace('-','');return render();}
+  if(e.id==='fatAll'){$$('.fatSel').forEach(x=>x.checked=e.checked);}
+});
+$('#modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal();});
+
+/* ---------- login / logout ---------- */
+function syncLoginModo(){const sl=$('#lgModo').value==='sl';$$('.slOnly').forEach(e=>e.hidden=!sl);}
+$('#lgModo').onchange=syncLoginModo;
+(function initLogin(){const l=lsGet();if(l.modo)$('#lgModo').value=l.modo;$('#lgUrl').value=l.url||'/b1s/v1';$('#lgDb').value=l.db||'';$('#lgUser').value=l.user||'';syncLoginModo();})();
+$('#lgPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#lgBtn').click();});
+$('#lgBtn').onclick=async()=>{
+  const modo=$('#lgModo').value;msg('#lgMsg','info','conectando...');
+  try{
+    if(modo==='mock'){S.sl=new MockServiceLayer();S.mock=true;S.user='demo';S.db='DEMONSTRAÇÃO';}
+    else{
+      const url=$('#lgUrl').value.trim(),db=$('#lgDb').value.trim(),user=$('#lgUser').value.trim(),pass=$('#lgPass').value;
+      if(!url||!db||!user||!pass)return msg('#lgMsg','err','Preencha URL, banco, usuário e senha.');
+      S.sl=new ServiceLayer(url);S.mock=false;await S.sl.login(db,user,pass);S.user=user;S.db=db;
+    }
+    lsSet({modo,url:$('#lgUrl').value.trim(),db:$('#lgDb').value.trim(),user:$('#lgUser').value.trim()});
+    $('#lgPass').value='';
+    await busy(loadAll);
+    $('#login').hidden=true;$('#app').hidden=false;$('#hdrInfo').textContent=`${S.db} · usuário ${S.user}`;$('#hdrMode').hidden=!S.mock;msg('#lgMsg','','');
+    if(S.faltaEstrutura)S.tab='config';
+    renderTabs();render();
+  }catch(e){console.error(e);msg('#lgMsg','err','Falha ao conectar: '+(e.message||e)+(e instanceof TypeError?' — verifique a URL e o CORS/proxy da Service Layer.':''));}
+};
+function sair(){S.sl=null;S.ctrEdit=null;S.mov=null;$('#app').hidden=true;$('#login').hidden=false;}
+$('#btnLogout').onclick=async()=>{if(S.sl)await S.sl.logout();sair();};
+$('#btnReload').onclick=()=>refresh().catch(e=>alert(e.message));
+let _expirou=false;
+function sessaoExpirada(){if(_expirou)return;_expirou=true;setTimeout(()=>{_expirou=false;},2000);alert('Sessão do B1 expirada. Entre novamente.');sair();}
+</script>
+</body></html>

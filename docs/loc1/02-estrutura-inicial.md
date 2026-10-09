@@ -76,9 +76,11 @@ de auditoria.
 5. Usar o Book de Levantamento (`index.html`) como catálogo para mapear processos e GAPs
    de locação, criando um módulo "Locação" no modelo-mestre.
 
-## 6. Decisões em aberto
+## 6. Decisões tomadas
 
-1. **Plataforma**: add-on SAP B1 (A) ou SaaS independente (B)?
-2. **Segmento inicial**: máquinas e equipamentos, veículos ou eletrônicos?
-3. **Escopo fiscal**: emitir NFS-e e boleto no próprio sistema ou delegar ao ERP?
-4. **Mobile**: app nativo com modo offline ou PWA?
+1. **Plataforma:** add-on do SAP Business One (opção A), com integração pela **Service Layer**.
+2. **Segmentos:** máquinas e equipamentos **e** veículos, desde a primeira versão.
+3. **Fiscal:** NF e boleto ficam no B1. O sistema só gera o documento de venda.
+4. **Front-end:** páginas HTML publicadas no **Áster**, a plataforma web da SPS.
+
+A primeira versão está em `locacao/locacao.html`, e a especificação técnica em `03-especificacao-b1.md`.
