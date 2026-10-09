@@ -28,6 +28,10 @@ button.primary:hover{filter:brightness(1.15)}
 button.danger{color:var(--coral)}
 button.mini{font-size:12px;padding:3px 8px}
 button:disabled{opacity:.5;cursor:not-allowed}
+.ovl{position:fixed;inset:0;background:rgba(10,10,40,.45);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.dlg{background:var(--card);color:var(--ink);border-radius:12px;padding:18px 20px;max-width:560px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);display:grid;gap:10px;max-height:90vh;overflow:auto}
+.dlg p{margin:0}.dlg-a{justify-content:flex-end}
+button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 nav{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 18px}
 nav button{border-radius:20px;padding:7px 15px;font-weight:500;color:var(--navy2)}
 nav button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
@@ -227,7 +231,7 @@ function fromV1(d){d.processos.forEach(p=>{const c=p.custos||{};p.frete=c.frete;
   const fs=d.fornecedores||[];delete d.config;d.seq={ped:0,proc:typeof d.seq==='number'?d.seq:0};d.fornecedores=fs;return d;}
 function load(){try{const s=localStorage.getItem(STORE);if(s)return migrate(JSON.parse(s));
   const v1=localStorage.getItem('sps_importacao_v1');if(v1){const d=migrate(fromV1(JSON.parse(v1)));localStorage.setItem(STORE,JSON.stringify(d));return d;}}catch(e){}return blank();}
-function save(){try{localStorage.setItem(STORE,JSON.stringify(db));}catch(e){alert('Não foi possível salvar no navegador: '+e.message);}}
+function save(){try{localStorage.setItem(STORE,JSON.stringify(db));}catch(e){notify('Não foi possível salvar no navegador: '+e.message);}}
 let db=load();
 let ui={view:'painel',pid:null,pedId:null,sub:'geral',psub:'geral',cad:'fornecedores',fin:'fluxo',rel:'gerencial',kmode:'etapa',cx:'abertos',showAdd:false,toast:null,
   f:{q:'',grp:'ativos',modal:'',forn:'',sit:''},pf:{q:'',st:'abertos'},prodSel:{},fluxo:{hor:180,filial:''},rb:{ent:'processos',cols:null,q:''}};
@@ -283,6 +287,21 @@ const fld=(label,html,cls='')=>`<div class="fld ${cls}"><label>${label}</label>$
 const optsArr=a=>a.map(x=>[x,x]);
 const optsObj=o=>Object.entries(o);
 const optsL=(L,lab,empty='— selecione —')=>[['',empty],...L.map(x=>[x.id,lab(x)||'(sem nome)'])];
+
+// ----- janelas da página (substituem alert/confirm/prompt) -----
+function modal(html,buttons){return new Promise(res=>{const o=document.createElement('div');o.className='ovl';
+  o.innerHTML=`<div class="dlg" role="dialog" aria-modal="true">${html}<div class="row dlg-a">${buttons.map((b,i)=>`<button type="button" data-i="${i}" class="${b.cls||''}">${b.t}</button>`).join('')}</div></div>`;
+  document.body.appendChild(o);const inp=o.querySelector('input');(inp||o.querySelector('button.primary')||o.querySelector('button')).focus();
+  const done=v=>{o.remove();res(v);};
+  o.addEventListener('click',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i==null)return;const b=buttons[+i];if(b.fn){b.fn(o);return;}done(b.v==='__input'?(inp?inp.value:''):b.v);});
+  o.addEventListener('keydown',e=>{if(e.key==='Escape')done(buttons.some(b=>b.v===null)?null:false);if(e.key==='Enter'&&inp)done(inp.value);});});}
+const ask=(msg,ok='Confirmar')=>modal(`<p>${esc(msg)}</p>`,[{t:'Cancelar',v:false},{t:ok,v:true,cls:'primary'}]);
+const askText=(msg,def='')=>modal(`<p>${esc(msg)}</p><input id="dlgIn" value="${esc(def)}">`,[{t:'Cancelar',v:null},{t:'OK',v:'__input',cls:'primary'}]);
+const notify=msg=>modal(`<p>${esc(msg).replace(/\n/g,'<br>')}</p>`,[{t:'OK',v:true,cls:'primary'}]);
+function copyBox(intro,text){return modal(`${intro}<textarea id="dlgTxt" readonly style="min-height:180px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px">${esc(text)}</textarea><p class="note" id="dlgMsg"></p>`,
+  [{t:'Copiar',cls:'primary',fn:o=>{const m=o.querySelector('#dlgMsg'),ta=o.querySelector('#dlgTxt');
+    try{navigator.clipboard.writeText(text).then(()=>{m.textContent='Copiado.';},()=>{ta.select();m.textContent='Texto selecionado: use Ctrl+C.';});}catch(e){ta.select();m.textContent='Texto selecionado: use Ctrl+C.';}}},{t:'Fechar',v:null}]);}
+const ART=!!window.ART_MODE;
 
 // ===================== Pedidos / produção =====================
 function codItem(it){return it.cod||(produto(it.produtoId)||{}).cod||'';}
@@ -610,7 +629,7 @@ function vProc(){
   const p=db.processos[idx],P='processos.'+idx,T=C(p),si=stageIdx(p),al=alertasProc(p);
   let h=`<div class="phead"><div><h2>${sem(semaforo(al))}${esc(p.numero)} ${pill(p)} ${sitPill(p.situacaoId)} ${p.canal?canalPill(p.canal):''}</h2>
     <div class="meta">${esc(fornNome(p.fornecedorId))} · ${MODAIS[p.modal]||'—'} · ${esc(p.incoterm||'—')} · ${esc(p.moeda||'')} · ${esc((filial(p.filialId)||{}).nome||'filial não informada')} · resp.: ${esc((pessoa(p.responsavelId)||{}).nome||'—')}</div></div>
-    <div class="row noprint"><button onclick="go('processos')">← voltar</button><button onclick="followup('${p.id}')">✉ follow-up</button><button onclick="duplicar('${p.id}')">duplicar</button><button onclick="imprimir()">imprimir</button>
+    <div class="row noprint"><button onclick="go('processos')">← voltar</button><button onclick="followup('${p.id}')">✉ follow-up</button><button onclick="duplicar('${p.id}')">duplicar</button>${ART?'':'<button onclick="imprimir()">imprimir</button>'}
     <button onclick="cancelar('${p.id}')">${p.cancelado?'reativar':'cancelar'}</button><button class="danger" onclick="excluir('${p.id}')">excluir</button></div></div>`;
   h+=`<div class="steps">${STAGES.map((s,i)=>`<div class="step ${p.etapas[s.k]?'done':''} ${i===si+1&&!p.cancelado?'cur':''}"><div class="dot">${p.etapas[s.k]?'✓':''}</div>${s.t}<span class="dt">${p.etapas[s.k]?fd(p.etapas[s.k]):''}</span></div>`).join('')}</div>`;
   if(al.length)h+=`<div class="card" style="padding:10px 14px"><ul class="alerts">${al.map(a=>`<li style="cursor:default"><span class="pill lv-${a.lvl}">${LVTXT[a.lvl]}</span><span>${esc(a.msg)}</span></li>`).join('')}</ul></div>`;
@@ -895,7 +914,7 @@ function vBuilder(){
   <div class="row" style="margin-bottom:8px"><b>${rows.length} linha(s)</b><button class="right" onclick="csvBuilder()">⤓ CSV / Excel</button></div>
   <div class="tw"><table><thead><tr>${F.map(f=>`<th class="${f[3]==='n'?'r':''}">${esc(f[1])}</th>`).join('')}</tr></thead><tbody>${rows.map(v=>`<tr>${v.map((x,i)=>`<td class="${F[i][3]==='n'?'r':''}">${fmt(x,F[i])}</td>`).join('')}</tr>`).join('')||`<tr><td colspan="${F.length||1}" class="empty">Sem dados.</td></tr>`}</tbody></table></div>`;}
 window.toggleCol=(k,on)=>{const c=ui.rb.cols;if(on&&!c.includes(k))c.push(k);if(!on)ui.rb.cols=c.filter(x=>x!==k);render();};
-window.saveRel=()=>{const nm=prompt('Nome do relatório:');if(!nm)return;db.config.relatorios.push({id:uid(),nome:nm,ent:ui.rb.ent,cols:ui.rb.cols.slice(),q:ui.rb.q||''});save();render();};
+window.saveRel=async()=>{const nm=await askText('Nome do relatório:');if(!nm)return;db.config.relatorios.push({id:uid(),nome:nm,ent:ui.rb.ent,cols:ui.rb.cols.slice(),q:ui.rb.q||''});save();render();};
 window.loadRel=id=>{const r=byId(db.config.relatorios,id);if(!r)return;ui.rb={ent:r.ent,cols:r.cols.slice(),q:r.q||''};render();};
 
 // ----- Cadastros -----
@@ -943,11 +962,11 @@ window.aplicarDespAuto=id=>{const p=processo(id);aplicarAuto(p);save();render();
 window.novoProc=()=>{const p=novoProcObj();db.processos.unshift(p);save();ui.sub='geral';abrir(p.id);};
 function addPI(p,pe,it,q){const nc=ncmRec(ncmItem(it))||{},F=filial(p.filialId)||{};
   p.itens.push({id:uid(),pedidoId:pe.id,pedItemId:it.id,qtd:q,ii:nc.ii??null,ipi:nc.ipi??null,pis:nc.pis??null,cofins:nc.cofins??null,icms:has(F.icms)?F.icms:db.config.icms});}
-window.criarEmbarque=pedId=>{const pe=pedido(pedId);const av=pe.itens.filter(it=>qtdInfo(it).saldo>0);if(!av.length){alert('Este pedido não tem saldo a embarcar.');return;}
+window.criarEmbarque=pedId=>{const pe=pedido(pedId);const av=pe.itens.filter(it=>qtdInfo(it).saldo>0);if(!av.length){notify('Este pedido não tem saldo a embarcar.');return;}
   const p=novoProcObj({fornecedorId:pe.fornecedorId,filialId:pe.filialId,moeda:pe.moeda,incoterm:pe.incoterm});av.forEach(it=>addPI(p,pe,it,qtdInfo(it).saldo));
   db.processos.unshift(p);log(pe,`Embarque ${p.numero} criado`);save();ui.sub='itens';abrir(p.id);};
 window.embarcarSelecionados=()=>{const sel=[];db.pedidos.forEach(pe=>pe.itens.forEach(it=>{if(ui.prodSel[it.id])sel.push({pe,it});}));if(!sel.length)return;
-  const fs=new Set(sel.map(s=>s.pe.fornecedorId)),ms=new Set(sel.map(s=>s.pe.moeda));if(fs.size>1||ms.size>1){alert('Selecione itens de um único fornecedor e moeda.');return;}
+  const fs=new Set(sel.map(s=>s.pe.fornecedorId)),ms=new Set(sel.map(s=>s.pe.moeda));if(fs.size>1||ms.size>1){notify('Selecione itens de um único fornecedor e moeda.');return;}
   const pe0=sel[0].pe;const p=novoProcObj({fornecedorId:pe0.fornecedorId,filialId:pe0.filialId,moeda:pe0.moeda,incoterm:pe0.incoterm});
   sel.forEach(s=>{const q=qtdInfo(s.it).saldo;if(q>0)addPI(p,s.pe,s.it,q);});[...new Set(sel.map(s=>s.pe))].forEach(pe=>log(pe,`Embarque ${p.numero} criado`));
   db.processos.unshift(p);ui.prodSel={};save();ui.sub='itens';abrir(p.id);};
@@ -957,50 +976,51 @@ window.addSelecionados=pid=>{const p=processo(pid);let k=0;document.querySelecto
 window.duplicar=id=>{const o=processo(id);const p=novoProcObj({fornecedorId:o.fornecedorId,filialId:o.filialId,moeda:o.moeda,incoterm:o.incoterm,modal:o.modal,recintoId:o.recintoId,despachanteId:o.despachanteId,agenteId:o.agenteId,origem:o.origem,destino:o.destino,freeTime:o.freeTime,demurrageDia:o.demurrageDia,demurrageMoeda:o.demurrageMoeda});
   log(p,'Criado a partir de '+o.numero+' (sem itens)');db.processos.unshift(p);save();ui.sub='geral';abrir(p.id);};
 window.cancelar=id=>{const p=processo(id);p.cancelado=!p.cancelado;log(p,p.cancelado?'Embarque cancelado (itens voltam ao saldo do pedido)':'Embarque reativado');save();render();};
-window.excluir=id=>{const p=processo(id);if(!confirm(`Excluir definitivamente o embarque ${p.numero}? Os itens voltam ao saldo dos pedidos.`))return;db.processos=db.processos.filter(x=>x.id!==id);
+window.excluir=async id=>{const p=processo(id);if(!await ask(`Excluir definitivamente o embarque ${p.numero}? Os itens voltam ao saldo dos pedidos.`))return;db.processos=db.processos.filter(x=>x.id!==id);
   db.pedidos.forEach(pe=>pe.parcelas.forEach(pa=>{if(pa.processoId===id)pa.processoId='';}));save();go('processos');};
 window.novoPed=()=>{db.seq.ped++;const pe={id:uid(),numero:`PED-${hoje().slice(0,4)}-${String(db.seq.ped).padStart(3,'0')}`,data:hoje(),moeda:'USD',itens:[],parcelas:[],custom:{},log:[]};
   log(pe,'Pedido criado');db.pedidos.unshift(pe);save();ui.psub='geral';abrirPed(pe.id);};
 window.addPedItem=P=>{getPath(P+'.itens').push({id:uid(),qtd:1,un:'UN',attrs:{}});save();render();};
 window.pedFlag=(id,k)=>{const pe=pedido(id);pe[k]=!pe[k];log(pe,`Pedido ${pe[k]?k:(k==='cancelado'?'reativado':'reaberto')}`);save();render();};
-window.excluirPed=id=>{const pe=pedido(id);const pr=pedProcs(pe);if(pr.length){alert('Este pedido tem embarques vinculados ('+pr.map(p=>p.numero).join(', ')+'). Remova os itens dos embarques antes ou cancele o pedido.');return;}
-  if(!confirm(`Excluir o pedido ${pe.numero}?`))return;db.pedidos=db.pedidos.filter(x=>x.id!==id);save();go('pedidos');};
+window.excluirPed=async id=>{const pe=pedido(id);const pr=pedProcs(pe);if(pr.length){notify('Este pedido tem embarques vinculados ('+pr.map(p=>p.numero).join(', ')+'). Remova os itens dos embarques antes ou cancele o pedido.');return;}
+  if(!await ask(`Excluir o pedido ${pe.numero}?`))return;db.pedidos=db.pedidos.filter(x=>x.id!==id);save();go('pedidos');};
 window.addParcela=P=>{getPath(P+'.parcelas').push({id:uid(),evento:'pedido',dias:0});save();render();};
-window.regerarParcelas=id=>{const pe=pedido(id);if(!pe.condicaoId){alert('Escolha a condição de pagamento do pedido.');return;}
-  if(pe.parcelas.some(x=>!x.pago)&&!confirm('Substituir as parcelas em aberto pelas da condição de pagamento?'))return;gerarParcelas(pe);log(pe,'Parcelas geradas pela condição de pagamento');save();render();};
+window.regerarParcelas=async id=>{const pe=pedido(id);if(!pe.condicaoId){notify('Escolha a condição de pagamento do pedido.');return;}
+  if(pe.parcelas.some(x=>!x.pago)&&!await ask('Substituir as parcelas em aberto pelas da condição de pagamento?'))return;gerarParcelas(pe);log(pe,'Parcelas geradas pela condição de pagamento');save();render();};
 window.vencAuto=Q=>{const pa=getPath(Q);pa.vencManual=false;pa.venc='';save();render();};
-window.dividirParcela=(id,i)=>{const pe=pedido(id),pa=pe.parcelas[i],v=valorParcela(pe,pa);const r=prompt(`Valor do primeiro documento (total ${mo(v,pe.moeda)}):`,NF2.format(v/2));if(r==null)return;
-  const a=Number(String(r).replace(/\./g,'').replace(',','.'));if(!(a>0&&a<v)){alert('Valor inválido.');return;}
+window.dividirParcela=async(id,i)=>{const pe=pedido(id),pa=pe.parcelas[i],v=valorParcela(pe,pa);const r=await askText(`Valor do primeiro documento (total ${mo(v,pe.moeda)}):`,NF2.format(v/2));if(r==null)return;
+  const a=Number(String(r).replace(/\./g,'').replace(',','.'));if(!(a>0&&a<v)){notify('Valor inválido.');return;}
   const b=Object.assign({},pa,{id:uid(),valor:Math.round((v-a)*100)/100,pct:null,desc:(pa.desc||EVENTOS[pa.evento])+' (2)',pago:'',contratoId:''});pa.valor=a;pa.pct=null;pa.desc=(pa.desc||EVENTOS[pa.evento])+' (1)';
   pe.parcelas.splice(i+1,0,b);log(pe,`Parcela dividida: ${mo(a,pe.moeda)} + ${mo(b.valor,pe.moeda)}`);save();render();};
-window.ratearEmbarques=(id,i)=>{const pe=pedido(id),pa=pe.parcelas[i];if(pa.pago){alert('Parcela já paga.');return;}const pr=pedProcs(pe);if(!pr.length){alert('Este pedido ainda não tem embarques.');return;}
+window.ratearEmbarques=(id,i)=>{const pe=pedido(id),pa=pe.parcelas[i];if(pa.pago){notify('Parcela já paga.');return;}const pr=pedProcs(pe);if(!pr.length){notify('Este pedido ainda não tem embarques.');return;}
   const tot=totPed(pe),v=valorParcela(pe,pa);const novas=[];let used=0;
   pr.forEach(p=>{const val=procItens(p).filter(x=>x.pe===pe).reduce((s,x)=>s+x.q*x.vuPI,0);if(!val)return;const part=Math.round(v*val/tot*100)/100;used+=part;novas.push(Object.assign({},pa,{id:uid(),valor:part,pct:null,processoId:p.id,desc:(pa.desc||EVENTOS[pa.evento])+' — '+p.numero,vencManual:false,venc:''}));});
   const rest=Math.round((v-used)*100)/100;if(rest>0.009)novas.push(Object.assign({},pa,{id:uid(),valor:rest,pct:null,processoId:'',desc:(pa.desc||EVENTOS[pa.evento])+' — saldo não embarcado'}));
   pe.parcelas.splice(i,1,...novas);log(pe,`Parcela "${pa.desc||EVENTOS[pa.evento]}" desmembrada em ${novas.length} documento(s) por embarque`);save();render();};
 window.addDesp=P=>{const id=document.getElementById('newDesp').value;const t=despTipo(id);getPath(P+'.despesas').push(t?{id:uid(),tipoId:t.id,via:t.via||'despachante',status:'aberta'}:{id:uid(),nome:'Nova despesa',via:'despachante',status:'aberta'});save();render();};
 window.addNumerario=(id,sug)=>{const p=processo(id),T=calc(p);const v=sug?Math.max(0,Math.round((T.numSug-sum(p.numerarios,'valor'))*100)/100):null;
-  if(sug&&!v){alert('O numerário já cobre o valor sugerido.');return;}p.numerarios.push({id:uid(),data:hoje(),valor:v,obs:sug?'calculado pelo sistema':''});if(sug)log(p,`Numerário solicitado: ${brl(v)}`);save();render();};
-window.delLinha=(path,i)=>{if(!confirm('Remover esta linha?'))return;getPath(path).splice(i,1);save();render();};
+  if(sug&&!v){notify('O numerário já cobre o valor sugerido.');return;}p.numerarios.push({id:uid(),data:hoje(),valor:v,obs:sug?'calculado pelo sistema':''});if(sug)log(p,`Numerário solicitado: ${brl(v)}`);save();render();};
+window.delLinha=async(path,i)=>{if(!await ask('Remover esta linha?'))return;getPath(path).splice(i,1);save();render();};
 window.addCad=key=>{const o={id:uid()};if(key==='filiais')Object.assign(o,{credIpi:true,credPisCofins:true,credIcms:true,regime:'Lucro real',icms:db.config.icms});
   if(key==='despTipos')Object.assign(o,{base:'fixo',grupo:'outra',rateio:'valor',via:'despachante'});if(key==='config.situacoes')o.cor='azul';if(key==='config.campos')Object.assign(o,{ent:'processo',tipo:'texto'});if(key==='config.kpis')o.metrica='qtd';
   getPath(key).push(o);save();render();};
-window.delCad=(key,i)=>{const L=getPath(key),r=L[i];
+window.delCad=async(key,i)=>{const L=getPath(key),r=L[i];
   const refs={fornecedores:()=>db.processos.filter(p=>p.fornecedorId===r.id).length+db.pedidos.filter(p=>p.fornecedorId===r.id).length,agentes:()=>db.processos.filter(p=>p.despachanteId===r.id||p.agenteId===r.id).length,
     produtos:()=>db.pedidos.reduce((s,pe)=>s+pe.itens.filter(it=>it.produtoId===r.id).length,0),filiais:()=>db.processos.filter(p=>p.filialId===r.id).length,recintos:()=>db.processos.filter(p=>p.recintoId===r.id).length,
     despTipos:()=>db.processos.reduce((s,p)=>s+p.despesas.filter(d=>d.tipoId===r.id).length,0),condicoes:()=>db.pedidos.filter(p=>p.condicaoId===r.id).length,contratos:()=>db.pedidos.reduce((s,pe)=>s+pe.parcelas.filter(pa=>pa.contratoId===r.id).length,0)}[key];
-  const uso=refs?refs():0;if(!confirm(uso?`Este cadastro é usado em ${uso} registro(s). Remover mesmo assim?`:'Remover este registro?'))return;L.splice(i,1);save();render();};
+  const uso=refs?refs():0;if(!await ask(uso?`Este cadastro é usado em ${uso} registro(s). Remover mesmo assim?`:'Remover este registro?'))return;L.splice(i,1);save();render();};
 window.addNote=(id,tipo)=>{const el=document.getElementById('newNote');const t=(el.value||'').trim();if(!t)return;log(tipo==='ped'?pedido(id):processo(id),t);save();render();};
 window.imprimir=()=>{const s=ui.sub;ui.sub='all';render();setTimeout(()=>{window.print();ui.sub=s;render();},50);};
-window.limpar=()=>{if(!confirm('Apagar TODOS os dados deste navegador? Recomendamos baixar um backup antes.'))return;if(prompt('Digite APAGAR para confirmar')!=='APAGAR')return;db=blank();save();go('painel');};
+window.limpar=async()=>{if(!await ask('Apagar TODOS os dados deste navegador? Recomendamos baixar um backup antes.'))return;if(await askText('Digite APAGAR para confirmar')!=='APAGAR')return;db=blank();save();go('painel');};
 function followGroup(k){const g=(db.config.followup||{})[k]||{};return db.pessoas.filter(x=>g[x.id]&&x.email);}
 function mailto(p,k,extra){const s=STAGES[stageIndex(k)]||{t:statusTxt(p)};const to=(k?followGroup(k):db.pessoas.filter(x=>Object.values(db.config.followup||{}).some(g=>g[x.id])&&x.email)).map(x=>x.email);
   const T=C(p);const body=[`Embarque ${p.numero} — ${fornNome(p.fornecedorId)}`,extra||`Status: ${statusTxt(p)}`,`Pedidos: ${[...new Set(procItens(p).map(x=>x.pe&&x.pe.numero).filter(Boolean))].join(', ')||'—'}`,
     `Modal: ${MODAIS[p.modal]||'—'} · Conhecimento: ${p.conhecimento||'—'} · Containers: ${p.containers||'—'}`,`ETD ${fd(p.etd)} · ETA ${fd(p.eta)} · Chegada ${fd(p.etapas.chegada)}`,
     `DUIMP/DI: ${p.duimp||'—'} · Canal: ${CANAIS[p.canal||'']}`,`Valor aduaneiro: ${brl(T.va)} · Custo estimado: ${brl(T.total)}`,'',...alertasProc(p).map(a=>`[${LVTXT[a.lvl]}] ${a.msg}`)].join('\n');
-  return {to,href:`mailto:${to.join(',')}?subject=${encodeURIComponent(`[Importação] ${p.numero} – ${s.t}`)}&body=${encodeURIComponent(body)}`};}
-window.followup=id=>{const p=processo(id);const k=STAGES[stageIdx(p)]?STAGES[stageIdx(p)].k:null;const m=mailto(p,k);if(!m.to.length&&!confirm('Nenhum grupo de follow-up configurado para esta etapa (Cadastros → Pessoas & follow-up). Abrir o e-mail mesmo assim?'))return;
-  log(p,'Follow-up enviado'+(m.to.length?' para '+m.to.join(', '):''));save();location.href=m.href;render();};
+  return {to,subj:`[Importação] ${p.numero} – ${s.t}`,body,href:`mailto:${to.join(',')}?subject=${encodeURIComponent(`[Importação] ${p.numero} – ${s.t}`)}&body=${encodeURIComponent(body)}`};}
+window.followup=async id=>{const p=processo(id);const k=STAGES[stageIdx(p)]?STAGES[stageIdx(p)].k:null;const m=mailto(p,k);if(!m.to.length&&!await ask('Nenhum grupo de follow-up configurado para esta etapa (Cadastros → Pessoas & follow-up). Abrir o e-mail mesmo assim?'))return;
+  log(p,'Follow-up preparado'+(m.to.length?' para '+m.to.join(', '):''));save();render();
+  copyBox(`<h3>Follow-up ${esc(p.numero)}</h3><p><b>Para:</b> ${esc(m.to.join(', ')||'—')}<br><b>Assunto:</b> ${esc(m.subj)}</p><p><a href="${m.href}">Abrir no programa de e-mail</a> (se não abrir, copie o texto abaixo).</p>`,m.body);};
 
 // efeitos colaterais de edições
 function hooks(path,v,old){
@@ -1011,7 +1031,7 @@ function hooks(path,v,old){
   if((m=path.match(/^processos\.(\d+)\.canal$/))&&v)log(db.processos[+m[1]],`Canal de parametrização: ${CANAIS[v]}`);
   if((m=path.match(/^processos\.(\d+)\.situacaoId$/)))log(db.processos[+m[1]],`Situação: ${(situacao(v)||{}).nome||'—'}`);
   if((m=path.match(/^processos\.(\d+)\.itens\.(\d+)\.qtd$/))){const p=db.processos[+m[1]],pi=p.itens[+m[2]],pe=pedido(pi.pedidoId),it=pe&&pe.itens.find(i=>i.id===pi.pedItemId);
-    if(it){const s=qtdInfo(it);if(s.saldo<0){pi.qtd=n(v)+s.saldo;alert(`Quantidade limitada ao saldo do pedido (${pi.qtd}).`);}}}
+    if(it){const s=qtdInfo(it);if(s.saldo<0){pi.qtd=n(v)+s.saldo;notify(`Quantidade limitada ao saldo do pedido (${pi.qtd}).`);}}}
   if((m=path.match(/^processos\.(\d+)\.docs\.(\w+)\.ok$/))&&v){const d=DOCS.find(x=>x.k===m[2]);log(db.processos[+m[1]],`Documento recebido: ${d.t}`);}
   if((m=path.match(/^processos\.(\d+)\.despesas\.(\d+)\.status$/))){const p=db.processos[+m[1]],d=p.despesas[+m[2]];log(p,`Despesa "${d.nome||(despTipo(d.tipoId)||{}).nome}": ${DSTAT[v]}`);if(v==='paga'&&!d.pago)d.pago=hoje();}
   if((m=path.match(/^processos\.(\d+)\.despesas\.(\d+)\.pago$/))&&v){const d=db.processos[+m[1]].despesas[+m[2]];d.status='paga';}
@@ -1036,11 +1056,11 @@ document.addEventListener('change',e=>{
     if(key){const nx=document.querySelector(`[data-b="${CSS.escape(key)}"]`);if(nx)nx.focus({preventScroll:true});}},0);});
 
 // ===================== Import / export =====================
-function download(name,content,type){const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function download(name,content,type){if(ART){copyBox(`<p>Nesta página publicada os downloads ficam bloqueados. Copie o conteúdo e salve como <b>${esc(name)}</b>, ou use o arquivo <b>importacao.html</b> baixado para exportar direto.</p>`,content);return;}const b=new Blob([content],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
 window.exportJSON=()=>download(`importacao_backup_${hoje()}.json`,JSON.stringify(db,null,1),'application/json');
-window.importJSON=el=>{const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.processos))throw new Error('arquivo não é um backup deste sistema');
-  if(!d.v){alert('Backup da versão 1: os processos serão importados sem vínculo com pedidos.');fromV1(d);}
-  if(!confirm(`Restaurar backup com ${d.processos.length} embarque(s) e ${(d.pedidos||[]).length} pedido(s)? Os dados atuais serão substituídos.`))return;db=migrate(d);save();go('painel');}catch(err){alert('Não foi possível ler o backup: '+err.message);}finally{el.value='';}};r.readAsText(f);};
+window.importJSON=el=>{const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(!d||!Array.isArray(d.processos))throw new Error('arquivo não é um backup deste sistema');
+  if(!d.v){notify('Backup da versão 1: os processos serão importados sem vínculo com pedidos.');fromV1(d);}
+  if(!await ask(`Restaurar backup com ${d.processos.length} embarque(s) e ${(d.pedidos||[]).length} pedido(s)? Os dados atuais serão substituídos.`))return;db=migrate(d);save();go('painel');}catch(err){notify('Não foi possível ler o backup: '+err.message);}finally{el.value='';}};r.readAsText(f);};
 const cnum=v=>v==null||v===''?'':String(Math.round(v*100)/100).replace('.',',');
 function csv(name,head,rows){const q=x=>{const s=String(x??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;};
   download(name,'﻿'+[head,...rows].map(r=>r.map(q).join(';')).join('\r\n'),'text/csv;charset=utf-8');}
@@ -1050,13 +1070,13 @@ const pdate=s=>{s=String(s||'').trim();let m;if((m=s.match(/^(\d{2})\/(\d{2})\/(
 window.importNCM=el=>{const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const R=parseCSV(r.result);let nv=0,up=0;
   R.forEach(c=>{if(!/\d{4}/.test(c[0]||''))return;let x=ncmRec(c[0]);if(!x){x={id:uid(),codigo:c[0].trim()};db.ncms.push(x);nv++;}else up++;
     if(c[1])x.descricao=c[1];['ii','ipi','pis','cofins'].forEach((k,i)=>{const v=pnum(c[i+2]);if(v!=null)x[k]=v;});x.atualizado=hoje();});
-  save();render();alert(`NCMs: ${nv} incluída(s), ${up} atualizada(s).`);el.value='';};r.readAsText(f);};
+  save();render();notify(`NCMs: ${nv} incluída(s), ${up} atualizada(s).`);el.value='';};r.readAsText(f);};
 window.importStatus=el=>{const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const R=parseCSV(r.result);let ok=0;const err=[];
   const evMap=e=>{e=(e||'').toLowerCase();if(e==='eta'||e==='etd')return e;const s=STAGES.find(s=>s.k===e||s.t.toLowerCase().includes(e)||e.includes(s.k));return s?s.k:null;};
   R.forEach((c,i)=>{const ref=(c[0]||'').toLowerCase();if(!ref||ref==='referencia')return;const p=db.processos.find(p=>[p.numero,p.conhecimento,p.invoice].some(x=>x&&x.toLowerCase()===ref)||(p.containers||'').toLowerCase().includes(ref));
     const k=evMap(c[1]),d=pdate(c[2]);if(!p||!k||!d){err.push(`linha ${i+1}`);return;}
     if(k==='eta'||k==='etd'){if(p[k]!==d){log(p,`${k.toUpperCase()} atualizado pelo agente: ${fd(d)}`);p[k]=d;}}else if(p.etapas[k]!==d){p.etapas[k]=d;log(p,`Etapa "${STAGES[stageIndex(k)].t}" registrada pelo agente: ${fd(d)}`);}ok++;});
-  save();render();alert(`${ok} atualização(ões) aplicadas.${err.length?' Não reconhecidas: '+err.slice(0,10).join(', '):''}\n\nFormato: referência (nº embarque, BL, invoice ou container);evento (eta, etd, embarque, chegada, registro, desembaraco, entrega);data`);el.value='';};r.readAsText(f);};
+  save();render();notify(`${ok} atualização(ões) aplicadas.${err.length?' Não reconhecidas: '+err.slice(0,10).join(', '):''}\n\nFormato: referência (nº embarque, BL, invoice ou container);evento (eta, etd, embarque, chegada, registro, desembaraco, entrega);data`);el.value='';};r.readAsText(f);};
 window.csvProcessos=()=>{const E=getFields().processos;csv(`embarques_${hoje()}.csv`,E.f.map(f=>f[1]),filtrados().map(p=>{const r={p,T:C(p)};return E.f.map(f=>f[3]==='n'?cnum(f[2](r)):f[2](r));}));};
 window.csvPagamentos=()=>{const E=getFields().parcelas;csv(`parcelas_${hoje()}.csv`,E.f.map(f=>f[1]),E.rows().map(r=>E.f.map(f=>f[3]==='n'?cnum(f[2](r)):f[2](r))));};
 window.csvFluxo=()=>csv(`fluxo_caixa_${hoje()}.csv`,['Data','Previsto','Tipo','Descrição','Valor original','R$'],fluxoEntries().sort((a,b)=>(a.d||'9').localeCompare(b.d||'9')).map(x=>[fd(x.d),x.est?'sim':'',x.tipo,x.desc,x.orig,cnum(x.brl)]));
@@ -1066,8 +1086,8 @@ window.csvNF=id=>{const p=processo(id),T=calc(p);csv(`nf_entrada_${p.numero}.csv
   T.itens.map(y=>[y.x.cod,y.x.desc,y.x.ncm,'3102',cnum(y.x.q),y.x.un,cnum(y.x.q?(y.vai+y.ii)/y.x.q:0),cnum(y.vai),cnum(y.ii),cnum(y.vai+y.ii),cnum(y.ipi),cnum(y.pis),cnum(y.cofins),cnum(y.ad),cnum(y.baseIcms),cnum(y.icms),(y.x.pi.series||'').split(/\n/).filter(Boolean).join(' '),p.duimp||'']));};
 
 // ===================== Dados de exemplo =====================
-window.seed=()=>{
-  if((db.processos.length||db.pedidos.length)&&!confirm('Adicionar dados de exemplo aos dados atuais?'))return;
+window.seed=async()=>{
+  if((db.processos.length||db.pedidos.length)&&!await ask('Adicionar dados de exemplo aos dados atuais?'))return;
   const d=k=>addDias(hoje(),k);
   const C1={id:uid(),nome:'10% antecipado / 90% produção pronta',parcelas:[{id:uid(),desc:'Antecipação 10%',pct:10,evento:'pedido',dias:0},{id:uid(),desc:'Saldo 90%',pct:90,evento:'pronto',dias:0}]};
   const C2={id:uid(),nome:'30% antecipado / 70% contra BL',parcelas:[{id:uid(),desc:'Antecipação 30%',pct:30,evento:'pedido',dias:0},{id:uid(),desc:'Saldo 70%',pct:70,evento:'embarque',dias:0}]};
