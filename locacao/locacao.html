@@ -85,7 +85,7 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
 <div id="toast"></div>
 
 <!-- ===================== LOGIN ===================== -->
-<div id="login" class="wrap">
+<div id="login" class="wrap" hidden>
   <div class="brandbar"></div>
   <div class="card">
     <h1>Locação SPS</h1>
@@ -108,7 +108,7 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
   <div class="brandbar"></div>
   <header>
     <div><h1>Locação SPS</h1><div class="sub" id="hdrInfo"></div></div>
-    <div class="row"><span id="hdrMode" class="modebadge" hidden>MODO DEMONSTRAÇÃO</span><button id="btnReload" title="Recarregar dados do B1">⟳ Atualizar</button><button id="btnLogout">Sair</button></div>
+    <div class="row"><span id="hdrMode" class="modebadge" hidden>DEMONSTRAÇÃO</span><button id="btnReload" title="Recarregar os dados">⟳ Atualizar</button><button id="btnLogout">Sair</button></div>
   </header>
   <nav id="tabs"></nav>
   <div id="globalMsg"></div>
@@ -124,6 +124,10 @@ canvas.sig{border:1px dashed #b9b7c8;border-radius:8px;width:100%;max-width:520p
    Página única para publicação no Áster. Dados gravados no B1 em UDTs/UDOs
    com prefixo SPS_L*. NF e boleto continuam sendo emitidos pelo B1.
    ========================================================================= */
+
+/* Integração com o SAP B1 desligada por enquanto: o app abre direto em modo demonstração,
+   com a Service Layer simulada no navegador. Para ligar, troque para true. */
+const INTEGRAR_B1=false;
 
 /* ---------- utilitários ---------- */
 const $=(s,r=document)=>r.querySelector(s);
@@ -906,7 +910,7 @@ function vFat(){
     .filter(x=>x.calc.linhas.length||x.fat).sort((a,b)=>a.c.DocNum-b.c.DocNum);
   const pend=ctrs.filter(x=>!x.fat||x.fat.U_Status==='CAN');
   return `<div class="card"><div class="toolbar"><div><label>Competência</label><input type="month" id="fatComp" value="${compInput(comp)}"></div>
-    <div class="sub" style="flex:1">Documento gerado no B1: <b>${esc(DOCTYPES[S.cfg.TIPO_DOC]||S.cfg.TIPO_DOC)}</b>. A NF e o boleto são emitidos no B1 a partir dele. Altere em Configuração.</div>
+    <div class="sub" style="flex:1">Documento gerado${INTEGRAR_B1?' no B1':' (simulado)'}: <b>${esc(DOCTYPES[S.cfg.TIPO_DOC]||S.cfg.TIPO_DOC)}</b>. A NF e o boleto são emitidos no B1 a partir dele. Altere em Configuração.</div>
     <button class="primary" data-act="faturarSel" ${pend.length?'':'disabled'}>Gerar documentos selecionados</button></div>
   <div class="tbl"><table><thead><tr><th><input type="checkbox" id="fatAll" style="width:auto" checked></th><th>Contrato</th><th>Cliente</th><th>Cobrança</th><th class="num">Linhas</th><th class="num">Total</th><th>Situação</th><th></th></tr></thead><tbody>
   ${ctrs.map(({c,calc,fat})=>{const open=S.fatOpen.has(c.DocEntry),pode=!fat||fat.U_Status==='CAN';
@@ -987,12 +991,13 @@ function vConfig(){
     <div class="span2"><label>Checklist — máquinas e equipamentos (um item por linha)</label><textarea data-cfg="CHK_EQP" rows="7">${esc(c.CHK_EQP)}</textarea></div>
     <div class="span2"><label>Checklist — veículos (um item por linha)</label><textarea data-cfg="CHK_VEI" rows="7">${esc(c.CHK_VEI)}</textarea></div>
   </div><div class="row" style="margin-top:10px"><span class="spacer"></span><button class="primary" data-act="salvarCfg">Salvar parâmetros</button></div></div>
-  <div class="card"><h2>Estruturas no SAP Business One</h2>
+  ${!INTEGRAR_B1?`<div class="card"><h2>Dados de demonstração</h2><p class="sub">Os dados ficam salvos neste navegador. Restaurar apaga o que foi cadastrado e volta ao exemplo original.</p>
+    <button class="danger" data-act="resetMock">Restaurar dados de exemplo</button></div>`:`<div class="card"><h2>Estruturas no SAP Business One</h2>
     <p class="sub">Cria (ou completa) as tabelas de usuário <b>@SPS_L*</b>, os campos e os objetos SPSLATV, SPSLCTR e SPSLMOV, além dos campos U_SPS_CtrEntry e U_SPS_Comp nos documentos de marketing.
     Rode com um usuário superusuário, de preferência sem outros usuários conectados. Itens que já existem são ignorados.
     Depois de instalar, saia e entre de novo para a Service Layer carregar os novos objetos.</p>
     <div class="row"><button class="teal" data-act="instalar">Instalar / verificar estruturas</button>${S.mock?'<button class="danger" data-act="resetMock">Restaurar dados de demonstração</button>':''}</div>
-    <div id="instLog"></div></div>`;
+    <div id="instLog"></div></div>`}`;
 }
 async function salvarCfg(){
   await acao(async()=>{
@@ -1143,9 +1148,16 @@ $('#lgBtn').onclick=async()=>{
     renderTabs();render();
   }catch(e){console.error(e);msg('#lgMsg','err','Falha ao conectar: '+(e.message||e)+(e instanceof TypeError?' — verifique a URL e o CORS/proxy da Service Layer.':''));}
 };
-function sair(){S.sl=null;S.ctrEdit=null;S.mov=null;$('#app').hidden=true;$('#login').hidden=false;}
+function sair(){if(!INTEGRAR_B1)return;S.sl=null;S.ctrEdit=null;S.mov=null;$('#app').hidden=true;$('#login').hidden=false;}
 $('#btnLogout').onclick=async()=>{if(S.sl)await S.sl.logout();sair();};
 $('#btnReload').onclick=()=>refresh().catch(e=>alert(e.message));
+async function iniciarDemo(){
+  S.sl=new MockServiceLayer();S.mock=true;S.user='demo';S.db='Demonstração';
+  await busy(loadAll);
+  $('#login').hidden=true;$('#app').hidden=false;$('#hdrInfo').textContent='Dados de exemplo salvos neste navegador';$('#hdrMode').hidden=false;
+  $('#btnLogout').hidden=true;renderTabs();render();
+}
+if(INTEGRAR_B1)$('#login').hidden=false;else iniciarDemo();
 let _expirou=false;
 function sessaoExpirada(){if(_expirou)return;_expirou=true;setTimeout(()=>{_expirou=false;},2000);alert('Sessão do B1 expirada. Entre novamente.');sair();}
 </script>
