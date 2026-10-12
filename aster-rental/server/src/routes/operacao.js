@@ -97,5 +97,9 @@ export default async function operacaoRoutes(app, { deps }) {
   app.post('/fines/:code/status', { preHandler: can('multas.editar') }, async (req) => operations.setFineStatus(req, req.params.code, req.body?.status));
 
   /* ---- painel ---- */
-  app.get('/dashboard', { preHandler: can('painel.ver') }, async (req) => operations.dashboard({ branches: req.user.branches }));
+  app.get('/dashboard', { preHandler: can('painel.ver') }, async (req) => {
+    const d = await operations.dashboard({ branches: req.user.branches });
+    if (!req.user.perms.includes('faturamento.ver')) delete d.faturamento; // valores só para quem vê faturamento
+    return d;
+  });
 }

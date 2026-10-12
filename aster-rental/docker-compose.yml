@@ -1,0 +1,14 @@
+# Sobe o Áster Rental. Copie .env.example para .env e preencha antes.
+# Em produção, coloque um proxy com HTTPS (nginx, Traefik, IIS) na frente da porta 3000.
+services:
+  aster-rental:
+    build: .
+    image: aster-rental:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - aster-rental-data:/app/data
+volumes:
+  aster-rental-data:

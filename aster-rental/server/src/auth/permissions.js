@@ -31,7 +31,7 @@ export const PROFILES = {
   gestor: { name: 'Gestor', perms: ALL.filter((p) => !p.startsWith('admin.')) },
   comercial: { name: 'Comercial', perms: [...VER, 'contratos.editar', 'contratos.ativar'] },
   faturamento: { name: 'Faturamento', perms: [...VER, 'faturamento.gerar', 'multas.editar'] },
-  patio: { name: 'Pátio / logística', perms: [...VER, 'mov.registrar', 'leituras.registrar'] },
+  patio: { name: 'Pátio / logística', perms: ['painel.ver', 'ativos.ver', 'contratos.ver', 'leituras.ver', 'multas.ver', 'mov.registrar', 'leituras.registrar'] },
   operacao: { name: 'Operação de campo', perms: ['painel.ver', 'ativos.ver', 'contratos.ver', 'leituras.ver', 'mov.registrar', 'leituras.registrar'] },
 };
 

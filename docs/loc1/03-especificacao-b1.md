@@ -1,5 +1,8 @@
 # Áster Rental — especificação técnica (SAP Business One + Áster)
 
+> **Atualização:** o programa completo está em `aster-rental/` (backend Node.js + tela + Docker). Veja `aster-rental/README.md`. O arquivo `locacao/locacao.html` é o protótipo de demonstração e foi substituído.
+
+
 Este documento descreve o app `locacao/locacao.html`.
 
 ## 1. Decisões
