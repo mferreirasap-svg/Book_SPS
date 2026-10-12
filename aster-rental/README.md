@@ -58,6 +58,17 @@ Os dados de exemplo ficam salvos em `data/`; para começar do zero, apague essa 
 
 Para desenvolver com recarga automática: `npm install` e `npm run dev`.
 
+## Demonstração online (sem instalar nada)
+
+Link: https://claude.ai/artifact/CFpHB5EPyuaWBds43PEYcy (usuário `admin`, senha `Demo2026senha`).
+
+A mesma tela roda sem servidor: quando `/api/health` não responde, `web/js/api.js` carrega
+`web/js/demo/backend.js`, que executa no navegador as mesmas rotas e serviços do servidor
+(`server/src/routes`, `server/src/services`) sobre a Service Layer simulada. Os dados ficam só no
+navegador de quem abriu (localStorage). A impressão vira pré-visualização.
+
+Para gerar os arquivos publicados: `npm run build-demo` (saída em `dist-demo/`, fora do Git).
+
 ## Testes
 
 ```bash

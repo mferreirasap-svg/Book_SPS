@@ -1,6 +1,5 @@
 // Service Layer simulada em memória: mesmos recursos, filtros OData, paginação e $batch transacional.
 // Usada em desenvolvimento, demonstração e testes automatizados. Nunca em produção.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { B1Error } from './errors.js';
 
 const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'Drafts', 'Orders', 'Invoices', 'Quotations']);
@@ -136,15 +135,25 @@ function parseFilter(src) {
 
 /* ---------------- Service Layer simulada ---------------- */
 export class MockServiceLayer {
-  constructor({ seed, file } = {}) {
-    this.file = file;
-    if (file && existsSync(file)) this.db = JSON.parse(readFileSync(file, 'utf8'));
-    else this.db = seed ? seed() : { sets: {}, seq: {} };
+  /** storage: { load(): db | null, save(db) } — arquivo no servidor, localStorage no navegador. */
+  constructor({ seed, storage } = {}) {
+    this.storage = storage;
     this.seedFn = seed;
+    let saved = null;
+    try {
+      saved = storage?.load() || null;
+    } catch {
+      saved = null;
+    }
+    this.db = saved || (seed ? seed() : { sets: {}, seq: {} });
   }
 
   persist() {
-    if (this.file) writeFileSync(this.file, JSON.stringify(this.db));
+    try {
+      this.storage?.save(this.db);
+    } catch {
+      /* armazenamento cheio ou bloqueado: segue em memória */
+    }
   }
 
   reset() {

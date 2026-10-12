@@ -1,17 +1,28 @@
 // Impressão do contrato e do termo de entrega/devolução (o navegador oferece "Salvar como PDF").
-import { esc, brl, num, fmtD, UN, DOM } from './util.js';
+import { esc, brl, num, fmtD, UN, DOM, modal, closeModal } from './util.js';
+import { isDemo } from './api.js';
 
 function imprimir(titulo, corpo) {
   const css = `body{font-family:Arial,sans-serif;font-size:12px;color:#111;margin:24px}h1{font-size:17px;margin:0 0 4px}
     h2{font-size:13px;margin:16px 0 6px;border-bottom:1px solid #999}table{width:100%;border-collapse:collapse}
     th,td{border:1px solid #bbb;padding:4px 6px;text-align:left}th{background:#eee}.r{text-align:right}
     .ass{margin-top:48px;display:flex;gap:40px}.ass div{flex:1;border-top:1px solid #000;padding-top:4px;text-align:center}`;
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>${css}</style></head><body>${corpo}</body></html>`;
+  if (isDemo()) {
+    // No link online o navegador não abre a impressão: mostra o documento na tela.
+    const m = modal(`<h2>${esc(titulo)}</h2><p class="sub">Pré-visualização. Na versão instalada este botão imprime ou salva em PDF.</p>
+      <iframe title="${esc(titulo)}" style="width:100%;height:65vh;border:1px solid var(--line);background:#fff"></iframe>
+      <div class="dlg-actions"><button type="button" class="primary" data-close>Fechar</button></div>`);
+    m.querySelector('iframe').srcdoc = html;
+    m.onclick = (e) => e.target.closest('[data-close]') && closeModal();
+    return;
+  }
   const f = document.createElement('iframe');
   f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
   document.body.appendChild(f);
   const d = f.contentWindow.document;
   d.open();
-  d.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(titulo)}</title><style>${css}</style></head><body>${corpo}</body></html>`);
+  d.write(html);
   d.close();
   setTimeout(() => {
     f.contentWindow.focus();

@@ -1,6 +1,6 @@
 // Início da aplicação: sessão, menu conforme o perfil e navegação entre telas (#/tela?param=valor).
 import { $, esc, ico, toast, msg, acao, modal, closeModal } from './util.js';
-import { get, post, put, setUnauthorized } from './api.js';
+import { get, post, put, setUnauthorized, isDemo } from './api.js';
 import { S } from './state.js';
 import * as painel from './views/painel.js';
 import * as ativos from './views/ativos.js';
@@ -31,13 +31,20 @@ const VIEWS = [
 
 export const can = (p) => (Array.isArray(p) ? p : [p]).some((x) => S.user?.perms.includes(x));
 
+// Rota atual. No servidor, fica no endereço (#/tela?param=valor) e permite voltar e favoritar.
+// No link online (modo demonstração) a navegação é interna, porque o quadro não repassa o endereço.
+let rota = { key: '', params: {} };
+
 function parseHash() {
   const [path, q = ''] = location.hash.replace(/^#\/?/, '').split('?');
   return { key: path || '', params: Object.fromEntries(new URLSearchParams(q)) };
 }
 
 export function go(key, params = {}) {
-  const q = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v != null)).toString();
+  const limpos = Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null).map(([k, v]) => [k, String(v)]));
+  rota = { key, params: limpos };
+  if (isDemo()) return render();
+  const q = new URLSearchParams(limpos).toString();
   const h = `#/${key}${q ? `?${q}` : ''}`;
   if (location.hash === h) render();
   else location.hash = h;
@@ -68,7 +75,7 @@ export function setTitle(t) {
 
 async function render() {
   if (!S.user) return;
-  const { key, params } = parseHash();
+  const { key, params } = rota;
   const allowed = VIEWS.filter((v) => v.key && can(v.perm));
   const view = allowed.find((v) => v.key === key) || allowed[0];
   if (!view) {
@@ -91,6 +98,7 @@ async function render() {
 
 function showLogin() {
   S.user = null;
+  if (isDemo()) msg('#lgMsg', 'info', 'Demonstração online: entre com usuário admin e senha Demo2026senha. Os dados ficam só neste navegador.');
   $('#app').hidden = true;
   $('#login').hidden = false;
   closeModal();
@@ -98,6 +106,7 @@ function showLogin() {
 }
 
 async function startApp(me) {
+  if (!isDemo()) rota = parseHash();
   S.user = me.user;
   S.b1Mode = me.b1Mode;
   S.cfg = await get('/settings/public').catch(() => ({}));
@@ -160,7 +169,19 @@ $('#btnPass').onclick = () => {
   };
 };
 
-window.addEventListener('hashchange', render);
+window.addEventListener('hashchange', () => {
+  if (isDemo()) return;
+  rota = parseHash();
+  render();
+});
+// Links do menu e de navegação interna (#/tela) passam pelo roteador.
+document.addEventListener('click', (ev) => {
+  const a = ev.target.closest('a[href^="#/"]');
+  if (!a) return;
+  ev.preventDefault();
+  const [k, q = ''] = a.getAttribute('href').slice(2).split('?');
+  go(k, Object.fromEntries(new URLSearchParams(q)));
+});
 window.addEventListener('unhandledrejection', (e) => {
   if (e.reason?.status !== 401) toast(e.reason?.message || 'Erro inesperado.', 'err');
 });

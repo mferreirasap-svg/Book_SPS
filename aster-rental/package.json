@@ -11,7 +11,8 @@
     "start": "node server/src/start.js",
     "dev": "node --watch server/src/start.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"server/test/**/*.test.js\"",
-    "install-b1": "node --disable-warning=ExperimentalWarning server/src/cli/install-b1.js"
+    "install-b1": "node --disable-warning=ExperimentalWarning server/src/cli/install-b1.js",
+    "build-demo": "node scripts/build-demo.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",

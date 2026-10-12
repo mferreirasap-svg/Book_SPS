@@ -2,7 +2,7 @@
 import { notFound, forbidden, badRequest } from '../lib/util.js';
 
 export default async function operacaoRoutes(app, { deps }) {
-  const { repos, contracts, movements, operations, db } = deps;
+  const { repos, contracts, movements, operations, idem: idemStore } = deps;
   const can = app.can;
   const inBranch = (req, c) => !req.user.branches.length || req.user.branches.includes(Number(c.U_Filial));
 
@@ -58,11 +58,11 @@ export default async function operacaoRoutes(app, { deps }) {
   app.post('/movements', { preHandler: can('mov.registrar') }, async (req, reply) => {
     const idem = String(req.headers['idempotency-key'] || '').slice(0, 100);
     if (idem) {
-      const prev = db.prepare('SELECT status, response FROM idempotency WHERE key = ? AND user_login = ?').get(idem, req.user.login);
+      const prev = idemStore.get(idem, req.user.login);
       if (prev) return reply.status(prev.status).send(JSON.parse(prev.response));
     }
     const result = await movements.register(req, req.body || {});
-    if (idem) db.prepare('INSERT OR IGNORE INTO idempotency (key, user_login, status, response) VALUES (?, ?, ?, ?)').run(idem, req.user.login, 200, JSON.stringify(result));
+    if (idem) idemStore.save(idem, req.user.login, 200, JSON.stringify(result));
     return result;
   });
 

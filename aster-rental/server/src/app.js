@@ -14,11 +14,7 @@ import { createAudit } from './lib/audit.js';
 import { createJobs } from './lib/jobs.js';
 import { HttpError, forbidden } from './lib/util.js';
 import { createB1Client } from './b1/index.js';
-import { createRepos } from './repos.js';
-import { createContractService } from './services/contracts.js';
-import { createMovementService } from './services/movements.js';
-import { createBillingService } from './services/billing.js';
-import { createOperationsService } from './services/operations.js';
+import { createServices } from './services/index.js';
 import authRoutes from './routes/auth.js';
 import cadastroRoutes from './routes/cadastros.js';
 import operacaoRoutes from './routes/operacao.js';
@@ -43,12 +39,13 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   const audit = createAudit(db);
   const jobs = createJobs(db, app.log);
   const sl = b1Client || createB1Client(cfg.b1, app.log);
-  const repos = createRepos(sl);
-  const contracts = createContractService({ repos, audit });
-  const movements = createMovementService({ repos, audit, contracts });
-  const billing = createBillingService({ repos, audit, jobs });
-  const operations = createOperationsService({ repos, audit, billing });
-  const deps = { cfg, db, auth, audit, jobs, sl, repos, contracts, movements, billing, operations };
+  const services = createServices({ sl, audit, jobs });
+  const idem = {
+    get: (key, user) => db.prepare('SELECT status, response FROM idempotency WHERE key = ? AND user_login = ?').get(key, user),
+    save: (key, user, status, response) =>
+      db.prepare('INSERT OR IGNORE INTO idempotency (key, user_login, status, response) VALUES (?, ?, ?, ?)').run(key, user, status, response),
+  };
+  const deps = { cfg, db, auth, audit, jobs, sl, idem, ...services };
   app.decorate('deps', deps);
 
   await app.register(cookie);

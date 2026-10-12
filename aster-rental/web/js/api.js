@@ -1,26 +1,56 @@
-// Cliente da API do Áster Rental. A tela nunca fala com o SAP B1; só com este backend.
+// Cliente da API do Áster Rental. A tela nunca fala com o SAP B1; só com o backend.
+// Sem servidor disponível (ex.: link online), usa o backend de demonstração que roda no navegador.
 let onUnauthorized = () => {};
 export const setUnauthorized = (fn) => {
   onUnauthorized = fn;
 };
 
-export async function api(method, path, body, headers = {}) {
-  const r = await fetch(`/api${path}`, {
-    method,
-    credentials: 'same-origin',
-    headers: { 'X-Requested-With': 'aster-rental', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  let j = null;
+let modo = null; // 'servidor' | 'demo'
+let demo = null;
+
+async function detectar() {
+  if (modo) return modo;
   try {
-    j = await r.json();
+    const r = await fetch('/api/health', { headers: { Accept: 'application/json' } });
+    const j = await r.json();
+    if (r.ok && j?.ok) modo = 'servidor';
   } catch {
-    j = null;
+    /* sem servidor */
   }
-  if (r.status === 401 && path !== '/auth/login') onUnauthorized();
-  if (!r.ok) {
-    const e = new Error(j?.error || `Erro ${r.status}`);
-    e.status = r.status;
+  if (!modo) {
+    const { createDemoBackend } = await import('./demo/backend.js');
+    demo = await createDemoBackend();
+    modo = 'demo';
+  }
+  return modo;
+}
+
+export const isDemo = () => modo === 'demo';
+
+export async function api(method, path, body, headers = {}) {
+  await detectar();
+  let status;
+  let j = null;
+  if (modo === 'demo') {
+    ({ status, body: j } = await demo(method, path, body, headers));
+  } else {
+    const r = await fetch(`/api${path}`, {
+      method,
+      credentials: 'same-origin',
+      headers: { 'X-Requested-With': 'aster-rental', ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}), ...headers },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    status = r.status;
+    try {
+      j = await r.json();
+    } catch {
+      j = null;
+    }
+  }
+  if (status === 401 && path !== '/auth/login') onUnauthorized();
+  if (status >= 400) {
+    const e = new Error(j?.error || `Erro ${status}`);
+    e.status = status;
     e.requestId = j?.requestId;
     throw e;
   }
