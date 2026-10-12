@@ -1,0 +1,25 @@
+{
+  "name": "aster-rental",
+  "version": "0.1.0",
+  "description": "Áster Rental — gestão de locadoras de máquinas, equipamentos e veículos integrada ao SAP Business One",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/src/server.js",
+    "dev": "node --disable-warning=ExperimentalWarning --watch server/src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"server/test/**/*.test.js\"",
+    "install-b1": "node --disable-warning=ExperimentalWarning server/src/cli/install-b1.js"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.3",
+    "@fastify/helmet": "^13.1.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@fastify/static": "^10.1.6",
+    "bcryptjs": "^3.0.3",
+    "fastify": "^5.12.5",
+    "undici": "^7.30.0"
+  }
+}
