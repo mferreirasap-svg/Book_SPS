@@ -34,12 +34,12 @@ export class AuthService {
     let generated = false;
     if (!password) {
       if (this.cfg.production) throw new Error('Defina ADMIN_PASSWORD para criar o administrador inicial.');
-      password = `Ar${randomBytes(9).toString('base64url')}9`;
+      password = this.cfg.b1?.mode === 'mock' && this.cfg.demoPassword ? this.cfg.demoPassword : `Ar${randomBytes(9).toString('base64url')}9`;
       generated = true;
     }
     validatePassword(password);
     this.createUser({ login: this.cfg.admin.login, name: 'Administrador', password, profile: 'administrador' });
-    if (generated) log?.warn?.(`Administrador inicial criado: login "${this.cfg.admin.login}", senha "${password}". Troque no primeiro acesso.`);
+    if (generated) console.log(`\n  Administrador criado — usuário: ${this.cfg.admin.login}   senha: ${password}\n  (troque a senha no primeiro acesso)\n`);
     return { login: this.cfg.admin.login, password: generated ? password : undefined };
   }
 

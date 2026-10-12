@@ -8,8 +8,8 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server/src/server.js",
-    "dev": "node --disable-warning=ExperimentalWarning --watch server/src/server.js",
+    "start": "node server/src/start.js",
+    "dev": "node --watch server/src/start.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"server/test/**/*.test.js\"",
     "install-b1": "node --disable-warning=ExperimentalWarning server/src/cli/install-b1.js"
   },

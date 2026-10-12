@@ -31,18 +31,32 @@ Navegador (tela em web/)  ──HTTPS──►  Backend Node.js (server/)  ─�
 | `server/test/` | Testes do motor, da camada B1 e da API de ponta a ponta |
 | `web/` | Tela (HTML, CSS e JavaScript em módulos, sem etapa de build) |
 
-## Rodar em desenvolvimento (sem SAP B1)
+## Como abrir o sistema (modo demonstração, sem SAP B1)
 
-Requer Node.js 22.13 ou superior.
+O sistema precisa rodar num computador com **Node.js 22.13 ou mais novo** (baixe a versão LTS em https://nodejs.org).
+O endereço `http://localhost:3000` só funciona **no próprio computador onde o programa está rodando**.
 
-```bash
-npm install
-ADMIN_PASSWORD=Demo2026senha npm run dev
-# abra http://localhost:3000 e entre com admin / Demo2026senha
-```
+**Windows:** baixe a pasta `aster-rental` e dê dois cliques em `iniciar-demo.cmd`. Na primeira vez ele instala
+as dependências (alguns minutos) e depois abre o navegador sozinho.
 
-Sem `B1_MODE`, o sistema usa o **B1 simulado** com dados de demonstração. Para guardar os dados
-entre reinícios, defina `B1_MOCK_FILE=data/mock.json`.
+**Linux / Mac:** `sh iniciar-demo.sh` dentro da pasta `aster-rental` e abra http://localhost:3000.
+
+Entre com usuário **admin** e senha **Demo2026senha** (aparece também na janela preta ao iniciar).
+Os dados de exemplo ficam salvos em `data/`; para começar do zero, apague essa pasta ou use
+**Administração › SAP B1 › Restaurar dados de demonstração**.
+
+### Problemas comuns
+
+| O que acontece | Causa e solução |
+| --- | --- |
+| "O Áster Rental precisa do Node.js 22.13…" | Node.js antigo. Instale a versão LTS atual e rode de novo. |
+| `'node' não é reconhecido` | Node.js não instalado (ou o computador não foi reiniciado depois da instalação). |
+| A página `localhost:3000` não abre | O programa não está rodando nesse computador. Deixe a janela preta aberta enquanto usa. |
+| Abri o `index.html` com dois cliques e a tela ficou em branco | A tela precisa do servidor. Use `iniciar-demo.cmd` e abra pelo endereço `http://localhost:3000`. |
+| "Login ou senha inválidos" | Use admin / Demo2026senha. Se trocou a senha e esqueceu, apague a pasta `data/`. |
+| Porta 3000 ocupada | Crie um arquivo `.env` com `PORT=3001` e abra `http://localhost:3001`. |
+
+Para desenvolver com recarga automática: `npm install` e `npm run dev`.
 
 ## Testes
 

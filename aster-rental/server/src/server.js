@@ -11,7 +11,7 @@ if (errors.length) {
 const app = await buildApp(config);
 try {
   await app.listen({ host: config.host, port: config.port });
-  console.log(`Áster Rental em http://localhost:${config.port} (SAP B1: ${config.b1.mode === 'mock' ? 'demonstração' : config.b1.url})`);
+  console.log(`\n  Áster Rental rodando. Abra no navegador: http://localhost:${config.port}\n  SAP B1: ${config.b1.mode === 'mock' ? 'modo demonstração (dados de exemplo)' : config.b1.url}\n  Para parar: Ctrl+C\n`);
 } catch (e) {
   app.log.error(e);
   process.exit(1);

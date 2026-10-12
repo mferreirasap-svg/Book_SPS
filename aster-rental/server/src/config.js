@@ -1,4 +1,7 @@
-// Configuração lida das variáveis de ambiente (veja .env.example).
+// Configuração lida das variáveis de ambiente ou do arquivo .env (veja .env.example).
+import { existsSync } from 'node:fs';
+
+if (existsSync('.env')) process.loadEnvFile('.env');
 const env = process.env;
 const bool = (v, d = false) => (v == null || v === '' ? d : ['1', 'true', 'sim', 'yes'].includes(String(v).toLowerCase()));
 const int = (v, d) => (v == null || v === '' ? d : Number.parseInt(v, 10));
@@ -30,6 +33,8 @@ export const config = {
   frameAncestors: (env.FRAME_ANCESTORS || "'self'").split(',').map((s) => s.trim()).filter(Boolean),
 
   admin: { login: env.ADMIN_LOGIN || 'admin', password: env.ADMIN_PASSWORD || '' },
+  // Senha padrão só para o modo demonstração fora de produção; nunca vale com o SAP B1 real.
+  demoPassword: 'Demo2026senha',
 
   b1: {
     mode: env.B1_MODE || 'mock', // mock | servicelayer
@@ -41,7 +46,8 @@ export const config = {
     rejectUnauthorized: bool(env.B1_TLS_VERIFY, true),
     poolSize: int(env.B1_POOL_SIZE, 4),
     timeoutMs: int(env.B1_TIMEOUT_MS, 60000),
-    mockFile: env.B1_MOCK_FILE || '',
+    // Em demonstração, os dados de exemplo ficam salvos em data/ para não sumirem ao reiniciar.
+    mockFile: env.B1_MOCK_FILE || (production ? '' : 'data/demo-b1.json'),
   },
 };
 
