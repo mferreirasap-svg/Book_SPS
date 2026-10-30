@@ -41,7 +41,7 @@ button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));b
 /* painel */
 #panel{background:var(--panel);padding:8px 10px 12px}
 #tabs{display:flex;gap:6px;margin-bottom:8px}
-#tabs button{flex:1;background:transparent;border-color:transparent;color:var(--muted);font-weight:600}
+#tabs button{flex:1;background:transparent;border-color:transparent;color:var(--muted);font-weight:600;white-space:nowrap;padding:8px 4px}
 #tabs button.on{color:var(--ink);background:var(--panel2);border-color:var(--line)}
 .hidden{display:none!important}
 .scroller{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
@@ -68,6 +68,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 #crop .h[data-h=sw]{left:-4px;bottom:-4px;border-width:0 0 4px 4px;cursor:nesw-resize}
 #crop .h[data-h=se]{right:-4px;bottom:-4px;border-width:0 4px 4px 0;cursor:nwse-resize}
 #crop .size{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-size:11px;background:rgba(0,0,0,.6);padding:1px 7px;border-radius:9px;white-space:nowrap;pointer-events:none}
+.note{font-size:12px;color:var(--muted)}
 .chip{flex:0 0 auto;padding:6px 12px;border-radius:16px;font-size:12px}
 .chip.on{border-color:var(--accent);background:#3a2330}
 .sep{width:1px;background:var(--line);margin:0 2px;align-self:stretch}
@@ -78,8 +79,18 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 #top.busy::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:load 1s linear infinite}
 @keyframes load{from{background-position:-50% 0}to{background-position:150% 0}}
 @media (max-width:640px){
+  #top{gap:5px;padding:6px 8px}
+  #top button{padding:6px 9px}
+  .note{display:none}
+  .filter canvas{width:58px;height:58px}
+  #tabs{gap:2px}
+  #tabs button{font-size:12.5px}
   .opts{grid-template-columns:1fr}
   #top .lbl{display:none}
+}
+@media (max-width:360px){
+  #top .brand{display:none}
+  #top{justify-content:space-between}
 }
 </style>
 </head>
@@ -140,7 +151,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
       </div>
       <div class="opts">
         <div class="row"><label>Intensidade</label><input id="fxK" type="range" min="10" max="100" value="90"><output id="fxKV">90</output></div>
-        <div class="row" style="font-size:12px;color:var(--muted)">Efeitos de flash: a IA separa a pessoa do fundo, ilumina você e escurece o cenário.</div>
+        <div class="row note">Efeitos de flash: a IA separa a pessoa do fundo, ilumina você e escurece o cenário.</div>
       </div>
     </div>
     <div id="tab-auto" class="hidden">
@@ -157,7 +168,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
       </div>
       <div class="opts">
         <div class="row"><label>Intensidade</label><input id="autoK" type="range" min="10" max="100" value="60"><output id="autoKV">60</output></div>
-        <div class="row" style="font-size:12px;color:var(--muted)">Detecta o rosto e o fundo automaticamente. Na 1ª vez baixa os modelos de IA (~4 MB).</div>
+        <div class="row note">Detecta o rosto e o fundo automaticamente. Na 1ª vez baixa os modelos de IA (~4 MB).</div>
       </div>
     </div>
     <div id="tab-crop" class="hidden">
@@ -188,6 +199,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 // ---------- definições ----------
 const MAX_SIDE = 2000;      // resolução máxima de trabalho
 const MAX_HISTORY = 15;
+const MAX_HISTORY_BYTES = 120e6;   // ~9 passos numa foto de 2000 px
 
 const TOOLS = [
   {id:'smooth',  ic:'✨', n:'Suavizar',   kind:'mask', hint:'Pinte sobre a pele para suavizar. Os contornos (olhos, boca, cabelo) são preservados.'},
@@ -398,6 +410,9 @@ function snapshot(){ return {work:new Uint8ClampedArray(S.work.data), orig:S.ori
 function pushHistory(){
   const snap = snapshot();
   history.push(snap); if(history.length > MAX_HISTORY) history.shift();
+  // limita a memória usada pelo histórico (fotos grandes no celular)
+  let bytes = history.reduce((t, h) => t + h.work.length, 0);
+  while(history.length > 3 && bytes > MAX_HISTORY_BYTES) bytes -= history.shift().work.length;
   future = []; updateUndo();
   return snap;
 }
@@ -533,7 +548,7 @@ function scaleAt(cx, cy, R, k){
   warp(cx, cy, R, (x, y, dx, dy, f, o) => { o[0] = cx + dx*(1 - k*f); o[1] = cy + dy*(1 - k*f); });
 }
 function push(cx, cy, mx, my){ const k = S.strength*1.1; pushAt(cx, cy, brushR(), mx*k, my*k); }
-function pinchBloat(cx, cy, dir){ scaleAt(cx, cy, brushR(), 0.05*S.strength*dir); }
+function pinchBloat(cx, cy, dir){ scaleAt(cx, cy, brushR(), 0.012*S.strength*dir); }
 
 // ferramentas de toque
 function tap(cx, cy){ stroke.tool.id === 'heal' ? heal(cx, cy) : redEye(cx, cy); }
@@ -579,9 +594,12 @@ function redEye(cx, cy){
   for(let y=y0; y<=y1; y++) for(let x=x0; x<=x1; x++){
     const q = Math.hypot(x-cx, y-cy)/R; if(q >= 1) continue;
     const i = (y*w + x)*4, r = d[i], g = d[i+1], b = d[i+2];
-    if(r > 60 && r > 1.4*Math.max(g, b)){
-      const a = q < 0.8 ? 1 : (1-q)/0.2, nr = (g+b)/2*0.9;
-      d[i] = r + (nr-r)*a; d[i+1] = g*(1 - 0.1*a); d[i+2] = b*(1 - 0.1*a);
+    // vermelho de flash é bem mais saturado que pele (inclusive peles mais escuras/avermelhadas)
+    const mx = Math.max(g, b);
+    if(r > 80 && r > 1.9*mx && r - mx > 60){
+      const a = (q < 0.8 ? 1 : (1-q)/0.2)*clamp((r/Math.max(mx, 1) - 1.9)/0.6, 0, 1);
+      const v = (g + b)/2*0.8;   // pupila escura e neutra (sem puxar para o verde)
+      d[i] = r + (v-r)*a; d[i+1] = g + (v-g)*a; d[i+2] = b + (v-b)*a;
     }
   }
   markDirty(x0, y0, x1+1, y1+1);
@@ -754,6 +772,13 @@ $('tabs').addEventListener('click', e => {
   for(const n of ['retouch','auto','adjust','filters','crop']) $('tab-'+n).classList.toggle('hidden', n !== b.dataset.tab);
   if(b.dataset.tab === 'filters' && thumbsDirty) buildFilters();
   setCropMode(b.dataset.tab === 'crop');
+  const tips = {
+    auto:'Auto: toque em um efeito — a IA encontra o rosto e o fundo sozinha.',
+    adjust:'Ajustes: arraste os controles. Toque duas vezes num controle para zerar.',
+    filters:'Filtros: toque para aplicar. Os efeitos de flash usam IA para separar você do fundo.',
+  };
+  if(S.work && tips[b.dataset.tab]) $('hint').textContent = tips[b.dataset.tab];
+  else if(S.work && b.dataset.tab === 'retouch') setTool(S.tool);
   if(S.work) requestAnimationFrame(fitView);
 });
 document.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => doTransform(b.dataset.tf));
@@ -933,31 +958,49 @@ function poly(x, f, idx, color, lw){
   if(lw){ x.lineWidth = lw; x.stroke(); }
 }
 // desenha formas por rosto e devolve uma máscara 0..1 (suavizada)
+// trabalha só no retângulo que envolve os rostos (bem mais rápido em fotos grandes)
 function faceMask(faces, draw, blurR){
-  const c = document.createElement('canvas'); c.width = S.w; c.height = S.h;
-  const x = c.getContext('2d'); x.lineJoin = 'round';
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for(const f of faces) for(const p of f){ x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); }
+  const pad = Math.max(x1 - x0, y1 - y0)*0.08 + blurR*3 + 4;
+  x0 = Math.max(0, Math.floor(x0 - pad)); y0 = Math.max(0, Math.floor(y0 - pad));
+  x1 = Math.min(S.w, Math.ceil(x1 + pad)); y1 = Math.min(S.h, Math.ceil(y1 + pad));
+  const rw = x1 - x0, rh = y1 - y0;
+  const c = document.createElement('canvas'); c.width = rw; c.height = rh;
+  const x = c.getContext('2d'); x.lineJoin = 'round'; x.translate(-x0, -y0);
   for(const f of faces) draw(x, f);
-  let d = x.getImageData(0, 0, S.w, S.h).data;
-  if(blurR) d = blur(d, S.w, S.h, blurR);
-  const m = new Float32Array(S.w*S.h);
+  let d = x.getImageData(0, 0, rw, rh).data;
+  if(blurR) d = blur(d, rw, rh, blurR);
+  const m = new Float32Array(rw*rh);
   for(let j=0; j<m.length; j++) m[j] = d[j*4]/255;
-  return m;
+  return {m, x0, y0, rw, rh};
+}
+// índice do pixel na foto para cada posição da máscara de região
+function eachMask(M, fn){
+  for(let ry=0; ry<M.rh; ry++){
+    const row = ((M.y0 + ry)*S.w + M.x0)*4;
+    for(let rx=0; rx<M.rw; rx++){ const j = ry*M.rw + rx; if(M.m[j] >= 0.004) fn(M.m[j], row + rx*4, j*4); }
+  }
+}
+function regionOf(M){
+  const out = new Uint8ClampedArray(M.rw*M.rh*4), d = S.work.data;
+  for(let ry=0; ry<M.rh; ry++) out.set(d.subarray(((M.y0 + ry)*S.w + M.x0)*4, ((M.y0 + ry)*S.w + M.x0 + M.rw)*4), ry*M.rw*4);
+  return out;
 }
 // clareia e tira o amarelado só onde a máscara e o "porta" (dente/esclera vs. lábio/pele) permitem
-function whitenMasked(m, k, lift, gateFn){
+function whitenMasked(M, k, lift, gateFn){
   const d = S.work.data; let n = 0;
-  for(let j=0; j<m.length; j++){
-    if(m[j] < 0.01) continue;
-    const i = j*4, r = d[i], g = d[i+1], b = d[i+2];
+  eachMask(M, (mv, i) => {
+    const r = d[i], g = d[i+1], b = d[i+2];
     const Y = 0.299*r + 0.587*g + 0.114*b;
-    const a = m[j]*k*gateFn(r, g, b, Y);
-    if(a <= 0) continue;
+    const a = mv*k*gateFn(r, g, b, Y);
+    if(a <= 0) return;
     n++;
     const cb = (-0.1687*r - 0.3313*g + 0.5*b)*0.25, cr = (0.5*r - 0.4187*g - 0.0813*b)*0.4, Y2 = Y + (255-Y)*lift;
     d[i] = r + (Y2 + 1.402*cr - r)*a;
     d[i+1] = g + (Y2 - 0.344136*cb - 0.714136*cr - g)*a;
     d[i+2] = b + (Y2 + 1.772*cb - b)*a;
-  }
+  });
   return n;
 }
 const gateLight = (r, g, Y, ratio, ymin) => clamp((g/Math.max(r, 1) - ratio)/0.18, 0, 1)*clamp((Y - ymin)/40, 0, 1);
@@ -965,14 +1008,15 @@ const gateLight = (r, g, Y, ratio, ymin) => clamp((g/Math.max(r, 1) - ratio)/0.1
 async function personMask(){
   const res = (await getSeg()).segment(workCanvas());
   const mk = res.confidenceMasks[0], src = mk.getAsFloat32Array(), mw = mk.width, mh = mk.height;
-  const m = new Float32Array(S.w*S.h); let peak = 0;
+  const m = new Float32Array(S.w*S.h); let area = 0;
   for(let y=0; y<S.h; y++) for(let x=0; x<S.w; x++){
     const v = (mw === S.w && mh === S.h) ? src[y*S.w + x] : src[Math.min(mh-1, (y*mh/S.h)|0)*mw + Math.min(mw-1, (x*mw/S.w)|0)];
     let t = clamp((v - 0.25)/0.5, 0, 1); t = t*t*(3 - 2*t);
-    m[y*S.w + x] = t; if(t > peak) peak = t;
+    m[y*S.w + x] = t; if(t > 0.5) area++;
   }
   if(res.close) res.close();
-  if(peak < 0.5) throw userErr('Nenhuma pessoa encontrada para separar do fundo.');
+  // exige uma área mínima: evita "achar pessoa" em poucos pixels (animais, objetos)
+  if(area < m.length*0.02) throw userErr('Nenhuma pessoa encontrada para separar do fundo.');
   return m;
 }
 
@@ -1027,14 +1071,13 @@ const AUTO = {
       for(const idx of [BROW_L, BROW_R]) poly(x, f, idx, '#000', w*0.04);
       poly(x, f, LIPS, '#000', w*0.03);
     }, Math.max(2, Math.round(fw/45)));
-    const d = S.work.data, aux = blur(d, S.w, S.h, Math.max(2, Math.round(fw/50)));
-    for(let j=0; j<m.length; j++){
-      if(m[j] < 0.004) continue;
-      const i = j*4, e = 1 - Math.abs(d[i] + d[i+1] + d[i+2] - aux[i] - aux[i+1] - aux[i+2])/(3*55);
-      if(e <= 0) continue;
-      const a = m[j]*k*e;
-      d[i] += (aux[i] - d[i])*a; d[i+1] += (aux[i+1] - d[i+1])*a; d[i+2] += (aux[i+2] - d[i+2])*a;
-    }
+    const d = S.work.data, aux = blur(regionOf(m), m.rw, m.rh, Math.max(2, Math.round(fw/50)));
+    eachMask(m, (mv, i, q) => {
+      const e = 1 - Math.abs(d[i] + d[i+1] + d[i+2] - aux[q] - aux[q+1] - aux[q+2])/(3*55);
+      if(e <= 0) return;
+      const a = mv*k*e;
+      d[i] += (aux[q] - d[i])*a; d[i+1] += (aux[q+1] - d[i+1])*a; d[i+2] += (aux[q+2] - d[i+2])*a;
+    });
   },
   async slim(k){
     const faces = await needFaces(), steps = 5;
