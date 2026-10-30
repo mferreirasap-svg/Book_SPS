@@ -73,6 +73,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 .sep{width:1px;background:var(--line);margin:0 2px;align-self:stretch}
 .auto{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:92px;padding:8px 6px;font-size:12px}
 .auto .ic{font-size:20px;line-height:1}
+.auto small{font-size:10px;color:var(--muted)}
 .auto input[type=color]{width:30px;height:18px;border:none;padding:0;background:none}
 #top.busy::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:load 1s linear infinite}
 @keyframes load{from{background-position:-50% 0}to{background-position:150% 0}}
@@ -130,7 +131,18 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
       <div id="sliders"></div>
       <div class="btnrow" style="margin-top:8px"><button id="bResetAdj">Zerar ajustes</button></div>
     </div>
-    <div id="tab-filters" class="hidden"><div id="filters" class="scroller"></div></div>
+    <div id="tab-filters" class="hidden">
+      <div id="filters" class="scroller"></div>
+      <div class="scroller" id="fx" style="margin-top:4px">
+        <button class="auto" data-auto="flash" data-k="fxK"><span class="ic">📸</span>Flash noturno<small>estilo G7X</small></button>
+        <button class="auto" data-auto="flashday" data-k="fxK"><span class="ic">⚡</span>Flash de dia<small>digicam</small></button>
+        <button class="auto" id="bDate"><span class="ic">📅</span>Data na foto<small>laranja retrô</small></button>
+      </div>
+      <div class="opts">
+        <div class="row"><label>Intensidade</label><input id="fxK" type="range" min="10" max="100" value="90"><output id="fxKV">90</output></div>
+        <div class="row" style="font-size:12px;color:var(--muted)">Efeitos de flash: a IA separa a pessoa do fundo, ilumina você e escurece o cenário.</div>
+      </div>
+    </div>
     <div id="tab-auto" class="hidden">
       <div class="scroller" id="autos">
         <button class="auto" data-auto="skin"><span class="ic">✨</span>Pele perfeita</button>
@@ -213,6 +225,7 @@ const FILTERS = [
   {n:'Drama',    a:{contrast:35, saturation:-15, shadows:-15, highlights:-20, vignette:40}},
   {n:'P&B',      a:{saturation:-100, contrast:15}},
   {n:'Noir',     a:{saturation:-100, contrast:45, vignette:45, grain:15}},
+  {n:'Digicam',  a:{contrast:25, highlights:15, shadows:-28, saturation:8, temperature:8, vignette:55, grain:18, brightness:-4}},
 ];
 
 // ---------- estado ----------
@@ -963,7 +976,48 @@ async function personMask(){
   return m;
 }
 
+// visual de câmera compacta com flash: pessoa iluminada e "estourada", fundo escuro e frio
+async function flashLook(k, bgLevel, desat){
+  let m = await personMask();
+  const w = S.w, h = S.h, d = S.work.data;
+  { // suaviza a borda da máscara para não ficar recortado
+    const tmp = new Uint8ClampedArray(w*h*4);
+    for(let j=0; j<m.length; j++) tmp[j*4] = m[j]*255;
+    const bl = blur(tmp, w, h, Math.max(1, Math.round(Math.min(w, h)/400)));
+    // contrai um pouco a borda para o flash não "vazar" no fundo (evita halo)
+    m = new Float32Array(w*h);
+    for(let j=0; j<m.length; j++){ const t = clamp((bl[j*4]/255 - 0.45)/0.5, 0, 1); m[j] = t*t*(3 - 2*t); }
+  }
+  const cx = w/2, cy = h*0.45, inv = 1/Math.hypot(w/2, h/2);
+  const curve = new Float32Array(256);
+  for(let v=0; v<256; v++){
+    let y = 1 - Math.pow(1 - v/255, 1.35);   // ilumina (flash)
+    y = y*0.45 + y*y*(3 - 2*y)*0.55;          // contraste em S
+    curve[v] = y*255;
+  }
+  for(let y=0; y<h; y++) for(let x=0; x<w; x++){
+    const j = y*w + x, i = j*4, r = d[i], g = d[i+1], b = d[i+2];
+    const L = 0.299*r + 0.587*g + 0.114*b;
+    // fundo: noite (escuro, dessaturado, azulado, mais escuro nas bordas)
+    const q = Math.hypot(x - cx, y - cy)*inv, dk = bgLevel*(1 - 0.45*q*q);
+    const br = (L + (r - L)*desat)*dk*0.94, bgc = (L + (g - L)*desat)*dk*0.98, bb = (L + (b - L)*desat)*dk*1.1;
+    // pessoa: flash direto (mais clara, contraste, levemente quente e saturada)
+    let fr = curve[r]*1.03, fg = curve[g], fb = curve[b]*0.95;
+    const fl = 0.299*fr + 0.587*fg + 0.114*fb;
+    fr = fl + (fr - fl)*1.12; fg = fl + (fg - fl)*1.12; fb = fl + (fb - fl)*1.12;
+    const a = m[j];
+    let nr = br + (fr - br)*a, ng = bgc + (fg - bgc)*a, nb = bb + (fb - bb)*a;
+    // granulado fino de sensor pequeno
+    let hh = (Math.imul(x, 374761393) + Math.imul(y, 668265263))|0; hh = Math.imul(hh ^ (hh>>>13), 1274126177);
+    const n = ((hh>>>0)/4294967296 - 0.5)*7;
+    nr += n; ng += n; nb += n;
+    d[i] = r + (nr - r)*k; d[i+1] = g + (ng - g)*k; d[i+2] = b + (nb - b)*k;
+  }
+}
+
 const AUTO = {
+  async flash(k){ await flashLook(k, 0.2, 0.55); return 'Flash noturno aplicado! Combine com "Data na foto" para o visual de câmera digital.'; },
+  async flashday(k){ await flashLook(k, 0.72, 0.85); },
   async skin(k){
     const faces = await needFaces(), fw = Math.max(...faces.map(faceW));
     const m = faceMask(faces, (x, f) => {
@@ -1048,7 +1102,8 @@ async function runAuto(id){
   const snap = pushHistory();
   try{
     await new Promise(r => setTimeout(r, 30));
-    const msg = await AUTO[id](+$('autoK').value/100);
+    const kEl = document.querySelector(`[data-auto="${id}"]`).dataset.k || 'autoK';
+    const msg = await AUTO[id](+$(kEl).value/100);
     renderAll(); thumbsDirty = true;
     hint.textContent = msg || 'Pronto! Toque em ↶ para desfazer ou segure "Antes" para comparar.';
   } catch(err){
@@ -1065,6 +1120,22 @@ $('autos').addEventListener('click', e => {
 });
 $('bgColor').addEventListener('change', () => runAuto('bgcolor'));
 $('autoK').addEventListener('input', () => $('autoKV').textContent = $('autoK').value);
+$('fx').addEventListener('click', e => { const b = e.target.closest('[data-auto]'); if(b) runAuto(b.dataset.auto); });
+$('fxK').addEventListener('input', () => $('fxKV').textContent = $('fxK').value);
+$('bDate').onclick = () => {
+  if(!S.work || aiBusy || stroke) return;
+  pushHistory();
+  const c = workCanvas(), x = c.getContext('2d'), fs = Math.round(Math.min(S.w, S.h)*0.05), t = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const txt = `'${String(t.getFullYear()).slice(2)} ${pad(t.getMonth() + 1)} ${pad(t.getDate())}`;
+  x.font = `bold ${fs}px "Courier New", Courier, monospace`; x.textAlign = 'right'; x.textBaseline = 'bottom';
+  x.shadowColor = 'rgba(255,110,20,.9)'; x.shadowBlur = fs*0.4; x.fillStyle = '#ff9c3a';
+  x.fillText(txt, S.w - fs*0.9, S.h - fs*0.7);
+  x.shadowBlur = 0; x.fillStyle = 'rgba(255,215,160,.8)';
+  x.fillText(txt, S.w - fs*0.9, S.h - fs*0.7);
+  S.work.data.set(x.getImageData(0, 0, S.w, S.h).data);
+  renderAll(); thumbsDirty = true;
+};
 
 // ---------- aplicativo instalável (PWA) ----------
 let installEvt = null;
