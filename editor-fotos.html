@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Retoque — Editor de Fotos</title>
+<style>
+:root{
+  --bg:#111216; --panel:#1b1c22; --panel2:#24252d; --line:#30313b;
+  --ink:#f1f1f4; --muted:#9a9aa8; --accent:#ff5c8a; --accent2:#ffb36b;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;font-size:14px;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100%}
+button{font-family:inherit;font-size:13px;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
+button:hover{border-color:#4a4b58}
+button:disabled{opacity:.35;cursor:default}
+button.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-weight:600}
+/* topo */
+#top{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+#top .brand{font-weight:700;font-size:16px;margin-right:auto;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#top button{padding:7px 10px}
+/* palco */
+#stage{position:relative;flex:1;overflow:hidden;touch-action:none;background:
+  repeating-conic-gradient(#16171c 0% 25%, #131418 0% 50%) 0 0/24px 24px}
+#canvas{position:absolute;left:0;top:0;transform-origin:0 0;box-shadow:0 6px 30px rgba(0,0,0,.5);display:none}
+#cursor{position:absolute;pointer-events:none;border:1.5px solid rgba(255,255,255,.9);border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,.6);display:none;transform:translate(-50%,-50%)}
+#empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;color:var(--muted)}
+#empty h2{color:var(--ink);margin:0;font-size:22px}
+#empty .primary{font-size:16px;padding:12px 26px}
+#stage.drag #empty{outline:2px dashed var(--accent);outline-offset:-14px}
+#badge{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);padding:4px 12px;border-radius:20px;font-size:12px;display:none}
+#hint{padding:6px 12px;font-size:12px;color:var(--muted);background:var(--panel);border-top:1px solid var(--line);min-height:28px}
+/* painel */
+#panel{background:var(--panel);padding:8px 10px 12px}
+#tabs{display:flex;gap:6px;margin-bottom:8px}
+#tabs button{flex:1;background:transparent;border-color:transparent;color:var(--muted);font-weight:600}
+#tabs button.on{color:var(--ink);background:var(--panel2);border-color:var(--line)}
+.hidden{display:none!important}
+.scroller{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.tool{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:74px;padding:8px 6px;font-size:12px}
+.tool .ic{font-size:20px;line-height:1}
+.tool.on{border-color:var(--accent);background:#3a2330}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;margin-top:6px}
+.row{display:flex;align-items:center;gap:10px}
+.row label{width:84px;font-size:12px;color:var(--muted);flex:0 0 auto}
+.row output{width:34px;text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
+#sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 18px;max-height:30vh;overflow-y:auto}
+.filter{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:4px;padding:5px;font-size:12px}
+.filter canvas{width:72px;height:72px;object-fit:cover;border-radius:7px;background:#000;display:block}
+.filter.on{border-color:var(--accent)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:640px){
+  .opts{grid-template-columns:1fr}
+  #top .lbl{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="top">
+    <span class="brand">Retoque</span>
+    <button id="bOpen" title="Abrir foto">📂 <span class="lbl">Abrir</span></button>
+    <button id="bUndo" title="Desfazer (Ctrl+Z)" disabled>↶</button>
+    <button id="bRedo" title="Refazer (Ctrl+Y)" disabled>↷</button>
+    <button id="bFit" title="Ajustar à tela" disabled>⤢</button>
+    <button id="bCompare" title="Segure para ver o original" disabled>◐ <span class="lbl">Antes</span></button>
+    <button id="bSave" class="primary" disabled>Salvar</button>
+    <input id="file" type="file" accept="image/*" hidden>
+  </div>
+
+  <div id="stage">
+    <canvas id="canvas"></canvas>
+    <div id="cursor"></div>
+    <div id="badge">Original</div>
+    <div id="empty">
+      <h2>Edite suas fotos</h2>
+      <div>Suavize a pele, clareie os dentes, remodele, remova manchas e aplique filtros.</div>
+      <button class="primary" id="bOpen2">Abrir foto</button>
+      <div style="font-size:12px">ou arraste/cole uma imagem aqui · tudo roda no seu navegador, nada é enviado</div>
+    </div>
+  </div>
+
+  <div id="hint">Abra uma foto para começar.</div>
+
+  <div id="panel">
+    <div id="tabs">
+      <button data-tab="retouch" class="on">Retoque</button>
+      <button data-tab="adjust">Ajustes</button>
+      <button data-tab="filters">Filtros</button>
+      <button data-tab="transform">Girar</button>
+    </div>
+    <div id="tab-retouch">
+      <div id="tools" class="scroller"></div>
+      <div class="opts">
+        <div class="row"><label>Tamanho</label><input id="size" type="range" min="10" max="260" value="70"><output id="sizeV">70</output></div>
+        <div class="row"><label>Intensidade</label><input id="strength" type="range" min="5" max="100" value="60"><output id="strengthV">60</output></div>
+      </div>
+    </div>
+    <div id="tab-adjust" class="hidden">
+      <div id="sliders"></div>
+      <div class="btnrow" style="margin-top:8px"><button id="bResetAdj">Zerar ajustes</button></div>
+    </div>
+    <div id="tab-filters" class="hidden"><div id="filters" class="scroller"></div></div>
+    <div id="tab-transform" class="hidden">
+      <div class="btnrow">
+        <button data-tf="left">⟲ Girar à esquerda</button>
+        <button data-tf="right">⟳ Girar à direita</button>
+        <button data-tf="flipH">⇋ Espelhar horizontal</button>
+        <button data-tf="flipV">⇵ Espelhar vertical</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ---------- definições ----------
+const MAX_SIDE = 2000;      // resolução máxima de trabalho
+const MAX_HISTORY = 15;
+
+const TOOLS = [
+  {id:'smooth',  ic:'✨', n:'Suavizar',   kind:'mask', hint:'Pinte sobre a pele para suavizar. Os contornos (olhos, boca, cabelo) são preservados.'},
+  {id:'heal',    ic:'🩹', n:'Corretivo',  kind:'tap',  hint:'Toque sobre espinhas e manchas. Ajuste o tamanho para cobrir só a imperfeição.'},
+  {id:'whiten',  ic:'🦷', n:'Branquear',  kind:'mask', hint:'Pinte sobre dentes ou o branco dos olhos para clarear e remover o amarelado.'},
+  {id:'push',    ic:'👉', n:'Remodelar',  kind:'warp', hint:'Arraste para empurrar a imagem (afinar rosto, ajustar sorriso). Use intensidade baixa.'},
+  {id:'bloat',   ic:'🔍', n:'Aumentar',   kind:'hold', hint:'Mantenha pressionado para aumentar a região (ex.: olhos, lábios).'},
+  {id:'pinch',   ic:'🤏', n:'Diminuir',   kind:'hold', hint:'Mantenha pressionado para diminuir a região (ex.: nariz).'},
+  {id:'detail',  ic:'💎', n:'Detalhes',   kind:'mask', hint:'Pinte para realçar nitidez em olhos, cabelo e acessórios.'},
+  {id:'lighten', ic:'☀️', n:'Iluminar',   kind:'mask', hint:'Pinte para clarear áreas (olheiras, sombras do rosto).'},
+  {id:'darken',  ic:'🌙', n:'Escurecer',  kind:'mask', hint:'Pinte para escurecer e dar contorno.'},
+  {id:'redeye',  ic:'👁️', n:'Olho verm.', kind:'tap',  hint:'Toque sobre a pupila vermelha.'},
+  {id:'restore', ic:'↩️', n:'Restaurar',  kind:'mask', hint:'Pinte para voltar ao original naquela área.'},
+  {id:'move',    ic:'✋', n:'Mover',      kind:'pan',  hint:'Arraste para mover. Use a roda do mouse ou dois dedos para zoom.'},
+];
+
+const ADJ = [
+  ['brightness','Brilho',-100,100], ['contrast','Contraste',-100,100],
+  ['saturation','Saturação',-100,100], ['vibrance','Vibração',-100,100],
+  ['temperature','Temperatura',-100,100], ['tint','Tonalidade',-100,100],
+  ['highlights','Realces',-100,100], ['shadows','Sombras',-100,100],
+  ['fade','Desbotar',0,100], ['vignette','Vinheta',-100,100], ['grain','Granulado',0,100],
+];
+const ADJ0 = Object.fromEntries(ADJ.map(a => [a[0], 0]));
+
+const FILTERS = [
+  {n:'Original', a:{}},
+  {n:'Natural',  a:{contrast:8, vibrance:18, highlights:-12, shadows:12}},
+  {n:'Dourado',  a:{temperature:28, saturation:8, contrast:10, fade:10}},
+  {n:'Pêssego',  a:{temperature:12, tint:12, brightness:8, fade:15, highlights:-10}},
+  {n:'Brisa',    a:{temperature:-22, tint:-5, brightness:6, saturation:-6}},
+  {n:'Vívido',   a:{saturation:22, vibrance:25, contrast:15}},
+  {n:'Retrô',    a:{fade:45, saturation:-22, temperature:16, contrast:-10, grain:25, vignette:25}},
+  {n:'Drama',    a:{contrast:35, saturation:-15, shadows:-15, highlights:-20, vignette:40}},
+  {n:'P&B',      a:{saturation:-100, contrast:15}},
+  {n:'Noir',     a:{saturation:-100, contrast:45, vignette:45, grain:15}},
+];
+
+// ---------- estado ----------
+const S = {
+  w:0, h:0, orig:null, work:null, view:null,
+  adj:{...ADJ0}, tool:'smooth', size:70, strength:0.6,
+  s:1, tx:0, ty:0, comparing:false, filter:'Original',
+};
+let history = [], future = [];
+
+const $ = id => document.getElementById(id);
+const stage = $('stage'), canvas = $('canvas'), ctx = canvas.getContext('2d');
+const cursorEl = $('cursor');
+
+// ---------- carregar imagem ----------
+function openFile(file){
+  if(!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const k = Math.min(1, MAX_SIDE / Math.max(w, h));
+    w = Math.round(w*k); h = Math.round(h*k);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const cx = c.getContext('2d'); cx.drawImage(img, 0, 0, w, h);
+    URL.revokeObjectURL(url);
+    const data = cx.getImageData(0, 0, w, h);
+    history = []; future = [];
+    S.adj = {...ADJ0}; S.filter = 'Original';
+    setImage(data, new ImageData(new Uint8ClampedArray(data.data), w, h));
+    $('empty').classList.add('hidden');
+    canvas.style.display = 'block';
+    ['bFit','bCompare','bSave'].forEach(id => $(id).disabled = false);
+    fitView(); syncSliders(); updateUndo(); setTool(S.tool); thumbsDirty = true; refreshFiltersIfOpen();
+  };
+  img.src = url;
+}
+function setImage(orig, work){
+  S.orig = orig; S.work = work; S.w = work.width; S.h = work.height;
+  if(canvas.width !== S.w || canvas.height !== S.h){ canvas.width = S.w; canvas.height = S.h; }
+  S.view = new ImageData(S.w, S.h);
+  renderAll();
+}
+
+// ---------- renderização (ajustes globais não destrutivos) ----------
+function buildLuts(a){
+  const lr = new Uint8ClampedArray(256), lg = new Uint8ClampedArray(256), lb = new Uint8ClampedArray(256);
+  const c = 1 + a.contrast/100, br = a.brightness*0.8, fd = a.fade/100;
+  for(let v=0; v<256; v++){
+    let x = v + br;
+    x = (x-128)*c + 128;
+    x = x<0 ? 0 : x>255 ? 255 : x;
+    x += fd*60*(1 - x/255) - fd*22*(x/255);
+    lr[v] = x + a.temperature*0.45 + a.tint*0.15;
+    lg[v] = x - a.tint*0.35;
+    lb[v] = x - a.temperature*0.45 + a.tint*0.15;
+  }
+  return [lr, lg, lb];
+}
+function applyAdjust(src, dst, w, h, a, x0, y0, x1, y1){
+  const [lr, lg, lb] = buildLuts(a);
+  const sat = a.saturation/100, vib = a.vibrance/100, sh = a.shadows*0.5, hi = a.highlights*0.5;
+  const vig = a.vignette/100, gr = a.grain*0.7;
+  const doTone = sh || hi, doSat = sat || vib;
+  const cx = w/2, cy = h/2, inv = 1/Math.sqrt(cx*cx + cy*cy);
+  for(let y=y0; y<y1; y++){
+    for(let x=x0; x<x1; x++){
+      const i = (y*w + x)*4;
+      let r = src[i], g = src[i+1], b = src[i+2];
+      if(doTone){
+        const l = (r*0.299 + g*0.587 + b*0.114)/255;
+        const d = sh*(1-l)*(1-l) + hi*l*l;
+        r += d; g += d; b += d;
+      }
+      r = lr[r<0?0:r>255?255:r|0]; g = lg[g<0?0:g>255?255:g|0]; b = lb[b<0?0:b>255?255:b|0];
+      if(doSat){
+        const l = r*0.299 + g*0.587 + b*0.114;
+        const mx = r>g?(r>b?r:b):(g>b?g:b), mn = r<g?(r<b?r:b):(g<b?g:b);
+        const f = 1 + sat + vib*(1 - (mx-mn)/255);
+        r = l + (r-l)*f; g = l + (g-l)*f; b = l + (b-l)*f;
+      }
+      if(vig){
+        const dx = x-cx, dy = y-cy;
+        let s = (Math.sqrt(dx*dx + dy*dy)*inv - 0.35)/0.65;
+        if(s > 0){
+          s = s*s*(3 - 2*s);
+          if(vig > 0){ const m = 1 - vig*s*0.85; r *= m; g *= m; b *= m; }
+          else { const m = -vig*s*0.85; r += (255-r)*m; g += (255-g)*m; b += (255-b)*m; }
+        }
+      }
+      if(gr){
+        let hh = (Math.imul(x, 374761393) + Math.imul(y, 668265263))|0;
+        hh = Math.imul(hh ^ (hh>>>13), 1274126177);
+        const n = ((hh>>>0)/4294967296 - 0.5)*gr;
+        r += n; g += n; b += n;
+      }
+      dst[i] = r; dst[i+1] = g; dst[i+2] = b; dst[i+3] = 255;
+    }
+  }
+}
+function renderRect(x0, y0, x1, y1){
+  if(!S.work) return;
+  x0 = Math.max(0, x0|0); y0 = Math.max(0, y0|0); x1 = Math.min(S.w, Math.ceil(x1)); y1 = Math.min(S.h, Math.ceil(y1));
+  if(x1 <= x0 || y1 <= y0) return;
+  if(S.comparing){ ctx.putImageData(S.orig, 0, 0); return; }
+  applyAdjust(S.work.data, S.view.data, S.w, S.h, S.adj, x0, y0, x1, y1);
+  ctx.putImageData(S.view, 0, 0, x0, y0, x1-x0, y1-y0);
+}
+function renderAll(){ renderRect(0, 0, S.w, S.h); }
+let dirty = null, raf = 0;
+function markDirty(x0, y0, x1, y1){
+  if(!dirty) dirty = [x0, y0, x1, y1];
+  else { dirty[0] = Math.min(dirty[0], x0); dirty[1] = Math.min(dirty[1], y0); dirty[2] = Math.max(dirty[2], x1); dirty[3] = Math.max(dirty[3], y1); }
+  if(!raf) raf = requestAnimationFrame(() => { raf = 0; const d = dirty; dirty = null; if(d) renderRect(...d); });
+}
+
+// ---------- utilidades de imagem ----------
+function boxH(s, d, w, h, r){
+  const k = 1/(2*r + 1);
+  for(let y=0; y<h; y++){
+    const row = y*w*4;
+    for(let c=0; c<3; c++){
+      let acc = 0;
+      for(let t=-r; t<=r; t++){ const xx = t<0 ? 0 : t>w-1 ? w-1 : t; acc += s[row + xx*4 + c]; }
+      for(let x=0; x<w; x++){
+        d[row + x*4 + c] = acc*k;
+        const add = Math.min(w-1, x+r+1), rem = Math.max(0, x-r);
+        acc += s[row + add*4 + c] - s[row + rem*4 + c];
+      }
+    }
+  }
+}
+function boxV(s, d, w, h, r){
+  const k = 1/(2*r + 1), st = w*4;
+  for(let x=0; x<w; x++){
+    const col = x*4;
+    for(let c=0; c<3; c++){
+      let acc = 0;
+      for(let t=-r; t<=r; t++){ const yy = t<0 ? 0 : t>h-1 ? h-1 : t; acc += s[yy*st + col + c]; }
+      for(let y=0; y<h; y++){
+        d[y*st + col + c] = acc*k;
+        const add = Math.min(h-1, y+r+1), rem = Math.max(0, y-r);
+        acc += s[add*st + col + c] - s[rem*st + col + c];
+      }
+    }
+  }
+}
+// desfoque aproximadamente gaussiano (2 passadas de box blur separável)
+function blur(data, w, h, r){
+  const a = new Uint8ClampedArray(data), b = new Uint8ClampedArray(data.length);
+  boxH(a, b, w, h, r); boxV(b, a, w, h, r);
+  boxH(a, b, w, h, r); boxV(b, a, w, h, r);
+  return a;
+}
+function bilinear(src, sw, sh, x, y, out){
+  x = x<0 ? 0 : x>sw-1 ? sw-1 : x; y = y<0 ? 0 : y>sh-1 ? sh-1 : y;
+  const x0 = x|0, y0 = y|0, x1 = Math.min(sw-1, x0+1), y1 = Math.min(sh-1, y0+1);
+  const fx = x-x0, fy = y-y0;
+  const i00 = (y0*sw + x0)*4, i10 = (y0*sw + x1)*4, i01 = (y1*sw + x0)*4, i11 = (y1*sw + x1)*4;
+  for(let c=0; c<3; c++){
+    const top = src[i00+c] + (src[i10+c] - src[i00+c])*fx;
+    const bot = src[i01+c] + (src[i11+c] - src[i01+c])*fx;
+    out[c] = top + (bot - top)*fy;
+  }
+}
+
+// ---------- histórico ----------
+function snapshot(){ return {work:new Uint8ClampedArray(S.work.data), orig:S.orig, w:S.w, h:S.h, adj:{...S.adj}, filter:S.filter}; }
+function pushHistory(){
+  const snap = snapshot();
+  history.push(snap); if(history.length > MAX_HISTORY) history.shift();
+  future = []; updateUndo();
+  return snap;
+}
+function restore(snap){
+  S.adj = {...snap.adj}; S.filter = snap.filter;
+  setImage(snap.orig, new ImageData(new Uint8ClampedArray(snap.work), snap.w, snap.h));
+  syncSliders(); thumbsDirty = true; refreshFiltersIfOpen();
+}
+function undo(){ if(!history.length || stroke) return; future.push(snapshot()); restore(history.pop()); updateUndo(); }
+function redo(){ if(!future.length || stroke) return; history.push(snapshot()); restore(future.pop()); updateUndo(); }
+function updateUndo(){ $('bUndo').disabled = !history.length; $('bRedo').disabled = !future.length; }
+
+// ---------- pincéis ----------
+const brushR = () => Math.max(1, S.size/2/S.s);
+let stroke = null;
+
+function beginStroke(p){
+  const tool = TOOLS.find(t => t.id === S.tool);
+  const snap = pushHistory();
+  stroke = {tool, base:snap.work, last:p, cur:p, mask:null, aux:null, loop:0};
+  const minSide = Math.min(S.w, S.h);
+  if(tool.kind === 'mask'){
+    stroke.mask = new Float32Array(S.w*S.h);
+    if(tool.id === 'smooth') stroke.aux = blur(stroke.base, S.w, S.h, Math.max(2, Math.round(minSide/110)));
+    if(tool.id === 'detail') stroke.aux = blur(stroke.base, S.w, S.h, Math.max(1, Math.round(minSide/450)));
+    dab(p.x, p.y);
+  } else if(tool.kind === 'tap'){
+    tap(p.x, p.y);
+  } else if(tool.kind === 'hold'){
+    const tick = () => { if(!stroke) return; pinchBloat(stroke.cur.x, stroke.cur.y, tool.id === 'bloat' ? 1 : -1); stroke.loop = requestAnimationFrame(tick); };
+    tick();
+  }
+}
+function moveStroke(p){
+  const st = stroke; st.cur = p;
+  const kind = st.tool.kind;
+  if(kind === 'hold') return;
+  const R = brushR();
+  const dx = p.x - st.last.x, dy = p.y - st.last.y, dist = Math.hypot(dx, dy);
+  const spacing = kind === 'tap' ? R*0.8 : kind === 'warp' ? Math.max(1, R*0.12) : Math.max(1, R*0.22);
+  if(dist < spacing) return;
+  const n = Math.floor(dist/spacing);
+  for(let k=1; k<=n; k++){
+    const x = st.last.x + dx*k/n, y = st.last.y + dy*k/n;
+    if(kind === 'mask') dab(x, y);
+    else if(kind === 'tap') tap(x, y);
+    else if(kind === 'warp') push(x - dx/n, y - dy/n, dx/n, dy/n);
+  }
+  st.last = p;
+}
+function endStroke(){
+  if(!stroke) return;
+  cancelAnimationFrame(stroke.loop);
+  stroke = null; thumbsDirty = true;
+}
+function cancelStroke(){
+  if(!stroke) return;
+  cancelAnimationFrame(stroke.loop);
+  S.work.data.set(stroke.base); history.pop(); updateUndo();
+  stroke = null; renderAll();
+}
+
+// pincéis de máscara: cada traço mistura a imagem-base com um "alvo" calculado por ferramenta
+function dab(cx, cy){
+  const R = brushR(), R2 = R*R, w = S.w, h = S.h;
+  const {base, aux, mask} = stroke, out = S.work.data, org = S.orig.data, tool = stroke.tool.id;
+  const x0 = Math.max(0, Math.floor(cx-R)), x1 = Math.min(w-1, Math.ceil(cx+R));
+  const y0 = Math.max(0, Math.floor(cy-R)), y1 = Math.min(h-1, Math.ceil(cy+R));
+  const flow = 0.18, k = S.strength;
+  for(let y=y0; y<=y1; y++){
+    for(let x=x0; x<=x1; x++){
+      const dx = x-cx, dy = y-cy, d2 = dx*dx + dy*dy;
+      if(d2 >= R2) continue;
+      const t = 1 - d2/R2, j = y*w + x, i = j*4;
+      let m = mask[j] + t*t*flow; if(m > 1) m = 1; mask[j] = m;
+      const br = base[i], bg = base[i+1], bb = base[i+2];
+      let tr, tg, tb, a = m*k;
+      switch(tool){
+        case 'smooth': {
+          tr = aux[i]; tg = aux[i+1]; tb = aux[i+2];
+          // preserva bordas: onde o desfoque difere muito do original, aplica menos
+          const e = 1 - Math.abs(br+bg+bb - tr-tg-tb)/(3*60);
+          a *= e > 0 ? e : 0;
+          break;
+        }
+        case 'detail':
+          tr = br + (br-aux[i])*1.6; tg = bg + (bg-aux[i+1])*1.6; tb = bb + (bb-aux[i+2])*1.6; break;
+        case 'whiten': {
+          const Y = 0.299*br + 0.587*bg + 0.114*bb;
+          const cb = (-0.1687*br - 0.3313*bg + 0.5*bb)*0.25, cr = (0.5*br - 0.4187*bg - 0.0813*bb)*0.45;
+          const Y2 = Y + (255-Y)*0.22;
+          tr = Y2 + 1.402*cr; tg = Y2 - 0.344136*cb - 0.714136*cr; tb = Y2 + 1.772*cb; break;
+        }
+        case 'lighten': tr = br + (255-br)*0.4; tg = bg + (255-bg)*0.4; tb = bb + (255-bb)*0.4; break;
+        case 'darken':  tr = br*0.6; tg = bg*0.6; tb = bb*0.6; break;
+        case 'restore': tr = org[i]; tg = org[i+1]; tb = org[i+2]; a = m; break;
+      }
+      out[i] = br + (tr-br)*a; out[i+1] = bg + (tg-bg)*a; out[i+2] = bb + (tb-bb)*a;
+    }
+  }
+  markDirty(x0, y0, x1+1, y1+1);
+}
+
+// remodelar: desloca os pixels na direção do arraste (liquify)
+function region(cx, cy, R){
+  const x0 = Math.max(0, Math.floor(cx-R)), x1 = Math.min(S.w, Math.ceil(cx+R)+1);
+  const y0 = Math.max(0, Math.floor(cy-R)), y1 = Math.min(S.h, Math.ceil(cy+R)+1);
+  const rw = x1-x0, rh = y1-y0, tmp = new Uint8ClampedArray(rw*rh*4), d = S.work.data;
+  for(let y=0; y<rh; y++) tmp.set(d.subarray(((y+y0)*S.w + x0)*4, ((y+y0)*S.w + x1)*4), y*rw*4);
+  return {x0, y0, x1, y1, rw, rh, tmp};
+}
+function warp(cx, cy, R, map){
+  const g = region(cx, cy, R), d = S.work.data, R2 = R*R, px = [0,0,0], src = [0,0];
+  for(let y=g.y0; y<g.y1; y++){
+    for(let x=g.x0; x<g.x1; x++){
+      const dx = x-cx, dy = y-cy, d2 = dx*dx + dy*dy;
+      if(d2 >= R2) continue;
+      const t = 1 - d2/R2;
+      map(x, y, dx, dy, t*t, src);
+      bilinear(g.tmp, g.rw, g.rh, src[0]-g.x0, src[1]-g.y0, px);
+      const i = (y*S.w + x)*4;
+      d[i] = px[0]; d[i+1] = px[1]; d[i+2] = px[2];
+    }
+  }
+  markDirty(g.x0, g.y0, g.x1, g.y1);
+}
+function push(cx, cy, mx, my){
+  const k = S.strength*1.1;
+  warp(cx, cy, brushR(), (x, y, dx, dy, f, o) => { o[0] = x - mx*f*k; o[1] = y - my*f*k; });
+}
+function pinchBloat(cx, cy, dir){
+  const k = 0.05*S.strength*dir;
+  warp(cx, cy, brushR(), (x, y, dx, dy, f, o) => { o[0] = cx + dx*(1 - k*f); o[1] = cy + dy*(1 - k*f); });
+}
+
+// ferramentas de toque
+function tap(cx, cy){ stroke.tool.id === 'heal' ? heal(cx, cy) : redEye(cx, cy); }
+function heal(cx, cy){
+  // preenche o círculo interpolando as cores do anel ao redor (remove manchas e espinhas)
+  const R = brushR(), w = S.w, h = S.h, d = S.work.data, N = 36, rr = R*1.25;
+  const sx = new Float32Array(N), sy = new Float32Array(N), sc = new Float32Array(N*3);
+  for(let k=0; k<N; k++){
+    const an = k/N*Math.PI*2, px = cx + Math.cos(an)*rr, py = cy + Math.sin(an)*rr;
+    sx[k] = px; sy[k] = py;
+    let r = 0, g = 0, b = 0, n = 0;
+    for(let oy=-1; oy<=1; oy++) for(let ox=-1; ox<=1; ox++){
+      const xx = Math.min(w-1, Math.max(0, Math.round(px)+ox)), yy = Math.min(h-1, Math.max(0, Math.round(py)+oy));
+      const i = (yy*w + xx)*4; r += d[i]; g += d[i+1]; b += d[i+2]; n++;
+    }
+    sc[k*3] = r/n; sc[k*3+1] = g/n; sc[k*3+2] = b/n;
+  }
+  const x0 = Math.max(0, Math.floor(cx-R)), x1 = Math.min(w-1, Math.ceil(cx+R));
+  const y0 = Math.max(0, Math.floor(cy-R)), y1 = Math.min(h-1, Math.ceil(cy+R));
+  for(let y=y0; y<=y1; y++){
+    for(let x=x0; x<=x1; x++){
+      const q = Math.hypot(x-cx, y-cy)/R;
+      if(q >= 1) continue;
+      let r = 0, g = 0, b = 0, ws = 0;
+      for(let k=0; k<N; k++){
+        const ddx = x-sx[k], ddy = y-sy[k];
+        let wt = 1/(ddx*ddx + ddy*ddy + 1); wt *= wt;
+        r += sc[k*3]*wt; g += sc[k*3+1]*wt; b += sc[k*3+2]*wt; ws += wt;
+      }
+      // leve textura para não ficar "chapado"
+      let hh = (Math.imul(x, 73856093) ^ Math.imul(y, 19349663))|0; hh = Math.imul(hh ^ (hh>>>15), 2246822519);
+      const n = ((hh>>>0)/4294967296 - 0.5)*5;
+      const a = q < 0.7 ? 1 : 1 - (q-0.7)/0.3, i = (y*w + x)*4;
+      d[i] += (r/ws + n - d[i])*a; d[i+1] += (g/ws + n - d[i+1])*a; d[i+2] += (b/ws + n - d[i+2])*a;
+    }
+  }
+  markDirty(x0, y0, x1+1, y1+1);
+}
+function redEye(cx, cy){
+  const R = brushR(), w = S.w, d = S.work.data;
+  const x0 = Math.max(0, Math.floor(cx-R)), x1 = Math.min(w-1, Math.ceil(cx+R));
+  const y0 = Math.max(0, Math.floor(cy-R)), y1 = Math.min(S.h-1, Math.ceil(cy+R));
+  for(let y=y0; y<=y1; y++) for(let x=x0; x<=x1; x++){
+    const q = Math.hypot(x-cx, y-cy)/R; if(q >= 1) continue;
+    const i = (y*w + x)*4, r = d[i], g = d[i+1], b = d[i+2];
+    if(r > 60 && r > 1.4*Math.max(g, b)){
+      const a = q < 0.8 ? 1 : (1-q)/0.2, nr = (g+b)/2*0.9;
+      d[i] = r + (nr-r)*a; d[i+1] = g*(1 - 0.1*a); d[i+2] = b*(1 - 0.1*a);
+    }
+  }
+  markDirty(x0, y0, x1+1, y1+1);
+}
+
+// ---------- girar / espelhar ----------
+function transformData(src, mode){
+  const w = src.width, h = src.height, s = src.data;
+  const nw = (mode === 'left' || mode === 'right') ? h : w, nh = (mode === 'left' || mode === 'right') ? w : h;
+  const out = new ImageData(nw, nh), o = out.data;
+  for(let y=0; y<h; y++) for(let x=0; x<w; x++){
+    let nx, ny;
+    if(mode === 'right'){ nx = h-1-y; ny = x; }
+    else if(mode === 'left'){ nx = y; ny = w-1-x; }
+    else if(mode === 'flipH'){ nx = w-1-x; ny = y; }
+    else { nx = x; ny = h-1-y; }
+    const i = (y*w + x)*4, j = (ny*nw + nx)*4;
+    o[j] = s[i]; o[j+1] = s[i+1]; o[j+2] = s[i+2]; o[j+3] = 255;
+  }
+  return out;
+}
+function doTransform(mode){
+  if(!S.work) return;
+  pushHistory();
+  setImage(transformData(S.orig, mode), transformData(S.work, mode));
+  fitView(); thumbsDirty = true;
+}
+
+// ---------- visualização (zoom / mover) ----------
+function applyView(){ canvas.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.s})`; }
+function fitView(){
+  const r = stage.getBoundingClientRect();
+  S.s = Math.min(r.width/S.w, r.height/S.h)*0.94;
+  S.tx = (r.width - S.w*S.s)/2; S.ty = (r.height - S.h*S.s)/2;
+  applyView();
+}
+function zoomAt(mx, my, ns){
+  ns = Math.min(30, Math.max(0.05, ns));
+  S.tx = mx - (mx - S.tx)*ns/S.s; S.ty = my - (my - S.ty)*ns/S.s; S.s = ns; applyView();
+}
+function local(e){ const r = stage.getBoundingClientRect(); return {x:e.clientX - r.left, y:e.clientY - r.top}; }
+function toImg(e){ const l = local(e); return {x:(l.x - S.tx)/S.s, y:(l.y - S.ty)/S.s}; }
+
+const pointers = new Map(); let gesture = null;
+function pinchState(){
+  const [a, b] = [...pointers.values()];
+  return {mx:(a.x+b.x)/2, my:(a.y+b.y)/2, d:Math.hypot(a.x-b.x, a.y-b.y) || 1};
+}
+stage.addEventListener('pointerdown', e => {
+  if(!S.work || e.button > 0) return;
+  stage.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, local(e));
+  if(pointers.size === 2){
+    cancelStroke();
+    const p = pinchState();
+    gesture = {type:'pinch', ...p, s0:S.s, ix:(p.mx - S.tx)/S.s, iy:(p.my - S.ty)/S.s};
+    cursorEl.style.display = 'none';
+    return;
+  }
+  if(pointers.size > 2) return;
+  if(S.tool === 'move'){ gesture = {type:'pan', ...local(e)}; return; }
+  beginStroke(toImg(e));
+});
+stage.addEventListener('pointermove', e => {
+  if(!S.work) return;
+  const l = local(e);
+  if(S.tool !== 'move' && (!gesture || gesture.type !== 'pinch')){
+    cursorEl.style.display = 'block';
+    cursorEl.style.left = l.x + 'px'; cursorEl.style.top = l.y + 'px';
+    cursorEl.style.width = cursorEl.style.height = S.size + 'px';
+  }
+  if(!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, l);
+  if(gesture && gesture.type === 'pinch' && pointers.size === 2){
+    const p = pinchState(), ns = Math.min(30, Math.max(0.05, gesture.s0*p.d/gesture.d));
+    S.s = ns; S.tx = p.mx - gesture.ix*ns; S.ty = p.my - gesture.iy*ns; applyView();
+  } else if(gesture && gesture.type === 'pan'){
+    S.tx += l.x - gesture.x; S.ty += l.y - gesture.y; gesture.x = l.x; gesture.y = l.y; applyView();
+  } else if(stroke){
+    moveStroke(toImg(e));
+  }
+});
+function pointerEnd(e){
+  if(!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if(gesture){ if(pointers.size === 0) gesture = null; return; }
+  endStroke();
+}
+stage.addEventListener('pointerup', pointerEnd);
+stage.addEventListener('pointercancel', pointerEnd);
+stage.addEventListener('pointerleave', () => { if(!stroke) cursorEl.style.display = 'none'; });
+stage.addEventListener('wheel', e => {
+  if(!S.work) return; e.preventDefault();
+  const l = local(e); zoomAt(l.x, l.y, S.s*Math.exp(-e.deltaY*0.0015));
+}, {passive:false});
+window.addEventListener('resize', () => { if(S.work) fitView(); });
+
+// ---------- interface ----------
+function setTool(id){
+  S.tool = id;
+  document.querySelectorAll('.tool').forEach(b => b.classList.toggle('on', b.dataset.tool === id));
+  const t = TOOLS.find(t => t.id === id);
+  $('hint').textContent = S.work ? t.n + ': ' + t.hint : 'Abra uma foto para começar.';
+  stage.style.cursor = id === 'move' ? 'grab' : 'none';
+  if(id === 'move') cursorEl.style.display = 'none';
+}
+$('tools').innerHTML = TOOLS.map(t => `<button class="tool" data-tool="${t.id}"><span class="ic">${t.ic}</span>${t.n}</button>`).join('');
+$('tools').addEventListener('click', e => { const b = e.target.closest('.tool'); if(b) setTool(b.dataset.tool); });
+
+for(const [id, key, f] of [['size','size',v => v], ['strength','strength',v => v/100]]){
+  $(id).addEventListener('input', () => { S[key] = f(+$(id).value); $(id+'V').textContent = $(id).value; });
+}
+
+// ajustes
+$('sliders').innerHTML = ADJ.map(([k, n, mn, mx]) =>
+  `<div class="row"><label>${n}</label><input type="range" data-adj="${k}" min="${mn}" max="${mx}" value="0"><output data-out="${k}">0</output></div>`).join('');
+let adjPending = false;
+$('sliders').addEventListener('input', e => {
+  const k = e.target.dataset.adj; if(!k || !S.work) return;
+  if(!adjPending){ pushHistory(); adjPending = true; }
+  S.adj[k] = +e.target.value; S.filter = null;
+  document.querySelector(`[data-out="${k}"]`).textContent = e.target.value;
+  markDirty(0, 0, S.w, S.h);
+});
+$('sliders').addEventListener('change', () => { adjPending = false; markFilter(); });
+$('sliders').addEventListener('dblclick', e => {
+  const k = e.target.dataset.adj; if(!k || !S.work || !S.adj[k]) return;
+  pushHistory(); S.adj[k] = 0; S.filter = null; syncSliders(); renderAll();
+});
+function syncSliders(){
+  for(const [k] of ADJ){
+    document.querySelector(`[data-adj="${k}"]`).value = S.adj[k];
+    document.querySelector(`[data-out="${k}"]`).textContent = S.adj[k];
+  }
+  markFilter();
+}
+$('bResetAdj').onclick = () => { if(!S.work) return; pushHistory(); S.adj = {...ADJ0}; S.filter = 'Original'; syncSliders(); renderAll(); };
+
+// filtros (miniaturas geradas da foto atual)
+let thumbsDirty = true;
+function buildFilters(){
+  if(!S.work) { $('filters').innerHTML = '<div style="color:var(--muted)">Abra uma foto para ver os filtros.</div>'; return; }
+  const t = 144, k = t/Math.min(S.w, S.h);
+  const src = document.createElement('canvas'); src.width = S.w; src.height = S.h;
+  src.getContext('2d').putImageData(S.work, 0, 0);
+  const small = document.createElement('canvas'); small.width = small.height = t;
+  const sc = small.getContext('2d');
+  sc.drawImage(src, (t - S.w*k)/2, (t - S.h*k)/2, S.w*k, S.h*k);
+  const base = sc.getImageData(0, 0, t, t);
+  $('filters').innerHTML = '';
+  for(const f of FILTERS){
+    const b = document.createElement('button'); b.className = 'filter'; b.dataset.name = f.n;
+    const c = document.createElement('canvas'); c.width = c.height = t;
+    const out = new ImageData(t, t);
+    applyAdjust(base.data, out.data, t, t, {...ADJ0, ...f.a}, 0, 0, t, t);
+    c.getContext('2d').putImageData(out, 0, 0);
+    b.append(c, f.n);
+    b.onclick = () => { pushHistory(); S.adj = {...ADJ0, ...f.a}; S.filter = f.n; syncSliders(); renderAll(); };
+    $('filters').append(b);
+  }
+  thumbsDirty = false; markFilter();
+}
+function markFilter(){ document.querySelectorAll('.filter').forEach(b => b.classList.toggle('on', b.dataset.name === S.filter)); }
+function refreshFiltersIfOpen(){ if(!$('tab-filters').classList.contains('hidden') && thumbsDirty) buildFilters(); }
+
+$('tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
+  for(const n of ['retouch','adjust','filters','transform']) $('tab-'+n).classList.toggle('hidden', n !== b.dataset.tab);
+  if(b.dataset.tab === 'filters' && thumbsDirty) buildFilters();
+  if(S.work) requestAnimationFrame(fitView);
+});
+document.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => doTransform(b.dataset.tf));
+
+// topo
+$('bOpen').onclick = $('bOpen2').onclick = () => $('file').click();
+$('file').onchange = e => { openFile(e.target.files[0]); e.target.value = ''; };
+$('bUndo').onclick = undo; $('bRedo').onclick = redo;
+$('bFit').onclick = fitView;
+const cmp = $('bCompare');
+const cmpOn = e => { if(!S.work) return; e.preventDefault(); S.comparing = true; $('badge').style.display = 'block'; renderAll(); };
+const cmpOff = () => { if(!S.comparing) return; S.comparing = false; $('badge').style.display = 'none'; renderAll(); };
+cmp.addEventListener('pointerdown', cmpOn);
+['pointerup','pointerleave','pointercancel'].forEach(ev => cmp.addEventListener(ev, cmpOff));
+$('bSave').onclick = () => {
+  if(!S.work) return;
+  canvas.toBlob(blob => {
+    const name = 'retoque-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.jpg';
+    const file = new File([blob], name, {type:'image/jpeg'});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && matchMedia('(pointer:coarse)').matches){
+      navigator.share({files:[file]}).catch(() => {});
+      return;
+    }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }, 'image/jpeg', 0.93);
+};
+
+// arrastar, colar e atalhos
+stage.addEventListener('dragover', e => { e.preventDefault(); stage.classList.add('drag'); });
+stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
+stage.addEventListener('drop', e => { e.preventDefault(); stage.classList.remove('drag'); openFile(e.dataTransfer.files[0]); });
+window.addEventListener('paste', e => { const f = [...e.clipboardData.files].find(f => f.type.startsWith('image/')); if(f) openFile(f); });
+window.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+  const mod = e.ctrlKey || e.metaKey;
+  if(mod && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if(mod && e.key.toLowerCase() === 'y'){ e.preventDefault(); redo(); }
+  else if(e.key === '[' || e.key === ']'){
+    S.size = Math.min(260, Math.max(10, S.size + (e.key === ']' ? 10 : -10)));
+    $('size').value = S.size; $('sizeV').textContent = S.size;
+    cursorEl.style.width = cursorEl.style.height = S.size + 'px';
+  }
+});
+
+setTool('smooth');
+</script>
+</body>
+</html>
