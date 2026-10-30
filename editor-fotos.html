@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Retoque — Editor de Fotos</title>
+<meta name="theme-color" content="#1b1c22">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="editor-fotos.webmanifest">
+<link rel="apple-touch-icon" href="icons/retoque-192.png">
+<link rel="icon" href="icons/retoque-192.png">
 <style>
 :root{
   --bg:#111216; --panel:#1b1c22; --panel2:#24252d; --line:#30313b;
@@ -51,6 +58,24 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
 .filter canvas{width:72px;height:72px;object-fit:cover;border-radius:7px;background:#000;display:block}
 .filter.on{border-color:var(--accent)}
 .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+/* corte */
+#crop{position:absolute;border:1.5px solid #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.6);touch-action:none;cursor:move;
+  background-image:linear-gradient(90deg,transparent calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% + .5px),transparent calc(66.66% + .5px)),
+  linear-gradient(0deg,transparent calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% - .5px),rgba(255,255,255,.45) calc(33.33% + .5px),transparent calc(33.33% + .5px),transparent calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% - .5px),rgba(255,255,255,.45) calc(66.66% + .5px),transparent calc(66.66% + .5px))}
+#crop .h{position:absolute;width:24px;height:24px;border:0 solid #fff}
+#crop .h[data-h=nw]{left:-4px;top:-4px;border-width:4px 0 0 4px;cursor:nwse-resize}
+#crop .h[data-h=ne]{right:-4px;top:-4px;border-width:4px 4px 0 0;cursor:nesw-resize}
+#crop .h[data-h=sw]{left:-4px;bottom:-4px;border-width:0 0 4px 4px;cursor:nesw-resize}
+#crop .h[data-h=se]{right:-4px;bottom:-4px;border-width:0 4px 4px 0;cursor:nwse-resize}
+#crop .size{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-size:11px;background:rgba(0,0,0,.6);padding:1px 7px;border-radius:9px;white-space:nowrap;pointer-events:none}
+.chip{flex:0 0 auto;padding:6px 12px;border-radius:16px;font-size:12px}
+.chip.on{border-color:var(--accent);background:#3a2330}
+.sep{width:1px;background:var(--line);margin:0 2px;align-self:stretch}
+.auto{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:92px;padding:8px 6px;font-size:12px}
+.auto .ic{font-size:20px;line-height:1}
+.auto input[type=color]{width:30px;height:18px;border:none;padding:0;background:none}
+#top.busy::after{content:"";position:fixed;left:0;right:0;top:0;height:3px;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:50% 100%;background-repeat:no-repeat;animation:load 1s linear infinite}
+@keyframes load{from{background-position:-50% 0}to{background-position:150% 0}}
 @media (max-width:640px){
   .opts{grid-template-columns:1fr}
   #top .lbl{display:none}
@@ -66,6 +91,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
     <button id="bRedo" title="Refazer (Ctrl+Y)" disabled>↷</button>
     <button id="bFit" title="Ajustar à tela" disabled>⤢</button>
     <button id="bCompare" title="Segure para ver o original" disabled>◐ <span class="lbl">Antes</span></button>
+    <button id="bInstall" class="hidden" title="Instalar como aplicativo">⬇ <span class="lbl">Instalar</span></button>
     <button id="bSave" class="primary" disabled>Salvar</button>
     <input id="file" type="file" accept="image/*" hidden>
   </div>
@@ -73,6 +99,7 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
   <div id="stage">
     <canvas id="canvas"></canvas>
     <div id="cursor"></div>
+    <div id="crop" class="hidden"><div class="h" data-h="nw"></div><div class="h" data-h="ne"></div><div class="h" data-h="sw"></div><div class="h" data-h="se"></div><div class="size"></div></div>
     <div id="badge">Original</div>
     <div id="empty">
       <h2>Edite suas fotos</h2>
@@ -87,9 +114,10 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
   <div id="panel">
     <div id="tabs">
       <button data-tab="retouch" class="on">Retoque</button>
+      <button data-tab="auto">Auto ✨</button>
       <button data-tab="adjust">Ajustes</button>
       <button data-tab="filters">Filtros</button>
-      <button data-tab="transform">Girar</button>
+      <button data-tab="crop">Cortar</button>
     </div>
     <div id="tab-retouch">
       <div id="tools" class="scroller"></div>
@@ -103,12 +131,41 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
       <div class="btnrow" style="margin-top:8px"><button id="bResetAdj">Zerar ajustes</button></div>
     </div>
     <div id="tab-filters" class="hidden"><div id="filters" class="scroller"></div></div>
-    <div id="tab-transform" class="hidden">
-      <div class="btnrow">
-        <button data-tf="left">⟲ Girar à esquerda</button>
-        <button data-tf="right">⟳ Girar à direita</button>
-        <button data-tf="flipH">⇋ Espelhar horizontal</button>
-        <button data-tf="flipV">⇵ Espelhar vertical</button>
+    <div id="tab-auto" class="hidden">
+      <div class="scroller" id="autos">
+        <button class="auto" data-auto="skin"><span class="ic">✨</span>Pele perfeita</button>
+        <button class="auto" data-auto="slim"><span class="ic">💆</span>Afinar rosto</button>
+        <button class="auto" data-auto="eyes"><span class="ic">👀</span>Aumentar olhos</button>
+        <button class="auto" data-auto="bright"><span class="ic">🌟</span>Clarear olhos</button>
+        <button class="auto" data-auto="teeth"><span class="ic">😁</span>Branquear dentes</button>
+        <span class="sep"></span>
+        <button class="auto" data-auto="bgblur"><span class="ic">🌫️</span>Desfocar fundo</button>
+        <button class="auto" data-auto="bgcut"><span class="ic">✂️</span>Remover fundo</button>
+        <button class="auto" data-auto="bgcolor"><span class="ic">🎨</span>Cor de fundo<input type="color" id="bgColor" value="#ffffff"></button>
+      </div>
+      <div class="opts">
+        <div class="row"><label>Intensidade</label><input id="autoK" type="range" min="10" max="100" value="60"><output id="autoKV">60</output></div>
+        <div class="row" style="font-size:12px;color:var(--muted)">Detecta o rosto e o fundo automaticamente. Na 1ª vez baixa os modelos de IA (~4 MB).</div>
+      </div>
+    </div>
+    <div id="tab-crop" class="hidden">
+      <div class="scroller" id="ratios">
+        <button class="chip on" data-r="free">Livre</button>
+        <button class="chip" data-r="orig">Original</button>
+        <button class="chip" data-r="1">1:1</button>
+        <button class="chip" data-r="0.8">4:5</button>
+        <button class="chip" data-r="0.75">3:4</button>
+        <button class="chip" data-r="0.5625">9:16</button>
+        <button class="chip" data-r="1.7778">16:9</button>
+      </div>
+      <div class="btnrow" style="margin-top:4px">
+        <button data-tf="left" title="Girar à esquerda">⟲</button>
+        <button data-tf="right" title="Girar à direita">⟳</button>
+        <button data-tf="flipH" title="Espelhar horizontal">⇋</button>
+        <button data-tf="flipV" title="Espelhar vertical">⇵</button>
+        <span style="flex:1"></span>
+        <button id="bCropReset">Redefinir</button>
+        <button id="bCropApply" class="primary">Aplicar corte</button>
       </div>
     </div>
   </div>
@@ -131,7 +188,8 @@ const TOOLS = [
   {id:'lighten', ic:'☀️', n:'Iluminar',   kind:'mask', hint:'Pinte para clarear áreas (olheiras, sombras do rosto).'},
   {id:'darken',  ic:'🌙', n:'Escurecer',  kind:'mask', hint:'Pinte para escurecer e dar contorno.'},
   {id:'redeye',  ic:'👁️', n:'Olho verm.', kind:'tap',  hint:'Toque sobre a pupila vermelha.'},
-  {id:'restore', ic:'↩️', n:'Restaurar',  kind:'mask', hint:'Pinte para voltar ao original naquela área.'},
+  {id:'restore', ic:'↩️', n:'Restaurar',  kind:'mask', hint:'Pinte para voltar ao original naquela área (inclusive o fundo removido).'},
+  {id:'erase',   ic:'🧽', n:'Apagar',     kind:'mask', hint:'Pinte para deixar a área transparente (refina o "Remover fundo").'},
   {id:'move',    ic:'✋', n:'Mover',      kind:'pan',  hint:'Arraste para mover. Use a roda do mouse ou dois dedos para zoom.'},
 ];
 
@@ -189,6 +247,7 @@ function openFile(file){
     canvas.style.display = 'block';
     ['bFit','bCompare','bSave'].forEach(id => $(id).disabled = false);
     fitView(); syncSliders(); updateUndo(); setTool(S.tool); thumbsDirty = true; refreshFiltersIfOpen();
+    setCropMode(!$('tab-crop').classList.contains('hidden'));
   };
   img.src = url;
 }
@@ -251,7 +310,7 @@ function applyAdjust(src, dst, w, h, a, x0, y0, x1, y1){
         const n = ((hh>>>0)/4294967296 - 0.5)*gr;
         r += n; g += n; b += n;
       }
-      dst[i] = r; dst[i+1] = g; dst[i+2] = b; dst[i+3] = 255;
+      dst[i] = r; dst[i+1] = g; dst[i+2] = b; dst[i+3] = src[i+3];
     }
   }
 }
@@ -314,7 +373,7 @@ function bilinear(src, sw, sh, x, y, out){
   const x0 = x|0, y0 = y|0, x1 = Math.min(sw-1, x0+1), y1 = Math.min(sh-1, y0+1);
   const fx = x-x0, fy = y-y0;
   const i00 = (y0*sw + x0)*4, i10 = (y0*sw + x1)*4, i01 = (y1*sw + x0)*4, i11 = (y1*sw + x1)*4;
-  for(let c=0; c<3; c++){
+  for(let c=0; c<4; c++){
     const top = src[i00+c] + (src[i10+c] - src[i00+c])*fx;
     const bot = src[i01+c] + (src[i11+c] - src[i01+c])*fx;
     out[c] = top + (bot - top)*fy;
@@ -333,6 +392,7 @@ function restore(snap){
   S.adj = {...snap.adj}; S.filter = snap.filter;
   setImage(snap.orig, new ImageData(new Uint8ClampedArray(snap.work), snap.w, snap.h));
   syncSliders(); thumbsDirty = true; refreshFiltersIfOpen();
+  if(cropOn) resetCrop();
 }
 function undo(){ if(!history.length || stroke) return; future.push(snapshot()); restore(history.pop()); updateUndo(); }
 function redo(){ if(!future.length || stroke) return; history.push(snapshot()); restore(future.pop()); updateUndo(); }
@@ -421,7 +481,8 @@ function dab(cx, cy){
         }
         case 'lighten': tr = br + (255-br)*0.4; tg = bg + (255-bg)*0.4; tb = bb + (255-bb)*0.4; break;
         case 'darken':  tr = br*0.6; tg = bg*0.6; tb = bb*0.6; break;
-        case 'restore': tr = org[i]; tg = org[i+1]; tb = org[i+2]; a = m; break;
+        case 'restore': tr = org[i]; tg = org[i+1]; tb = org[i+2]; a = m; out[i+3] = base[i+3] + (org[i+3]-base[i+3])*a; break;
+        case 'erase':   tr = br; tg = bg; tb = bb; out[i+3] = base[i+3]*(1 - m); break;
       }
       out[i] = br + (tr-br)*a; out[i+1] = bg + (tg-bg)*a; out[i+2] = bb + (tb-bb)*a;
     }
@@ -438,7 +499,7 @@ function region(cx, cy, R){
   return {x0, y0, x1, y1, rw, rh, tmp};
 }
 function warp(cx, cy, R, map){
-  const g = region(cx, cy, R), d = S.work.data, R2 = R*R, px = [0,0,0], src = [0,0];
+  const g = region(cx, cy, R), d = S.work.data, R2 = R*R, px = [0,0,0,0], src = [0,0];
   for(let y=g.y0; y<g.y1; y++){
     for(let x=g.x0; x<g.x1; x++){
       const dx = x-cx, dy = y-cy, d2 = dx*dx + dy*dy;
@@ -447,19 +508,19 @@ function warp(cx, cy, R, map){
       map(x, y, dx, dy, t*t, src);
       bilinear(g.tmp, g.rw, g.rh, src[0]-g.x0, src[1]-g.y0, px);
       const i = (y*S.w + x)*4;
-      d[i] = px[0]; d[i+1] = px[1]; d[i+2] = px[2];
+      d[i] = px[0]; d[i+1] = px[1]; d[i+2] = px[2]; d[i+3] = px[3];
     }
   }
   markDirty(g.x0, g.y0, g.x1, g.y1);
 }
-function push(cx, cy, mx, my){
-  const k = S.strength*1.1;
-  warp(cx, cy, brushR(), (x, y, dx, dy, f, o) => { o[0] = x - mx*f*k; o[1] = y - my*f*k; });
+function pushAt(cx, cy, R, mx, my){
+  warp(cx, cy, R, (x, y, dx, dy, f, o) => { o[0] = x - mx*f; o[1] = y - my*f; });
 }
-function pinchBloat(cx, cy, dir){
-  const k = 0.05*S.strength*dir;
-  warp(cx, cy, brushR(), (x, y, dx, dy, f, o) => { o[0] = cx + dx*(1 - k*f); o[1] = cy + dy*(1 - k*f); });
+function scaleAt(cx, cy, R, k){
+  warp(cx, cy, R, (x, y, dx, dy, f, o) => { o[0] = cx + dx*(1 - k*f); o[1] = cy + dy*(1 - k*f); });
 }
+function push(cx, cy, mx, my){ const k = S.strength*1.1; pushAt(cx, cy, brushR(), mx*k, my*k); }
+function pinchBloat(cx, cy, dir){ scaleAt(cx, cy, brushR(), 0.05*S.strength*dir); }
 
 // ferramentas de toque
 function tap(cx, cy){ stroke.tool.id === 'heal' ? heal(cx, cy) : redEye(cx, cy); }
@@ -525,7 +586,7 @@ function transformData(src, mode){
     else if(mode === 'flipH'){ nx = w-1-x; ny = y; }
     else { nx = x; ny = h-1-y; }
     const i = (y*w + x)*4, j = (ny*nw + nx)*4;
-    o[j] = s[i]; o[j+1] = s[i+1]; o[j+2] = s[i+2]; o[j+3] = 255;
+    o[j] = s[i]; o[j+1] = s[i+1]; o[j+2] = s[i+2]; o[j+3] = s[i+3];
   }
   return out;
 }
@@ -534,10 +595,11 @@ function doTransform(mode){
   pushHistory();
   setImage(transformData(S.orig, mode), transformData(S.work, mode));
   fitView(); thumbsDirty = true;
+  if(cropOn) resetCrop();
 }
 
 // ---------- visualização (zoom / mover) ----------
-function applyView(){ canvas.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.s})`; }
+function applyView(){ canvas.style.transform = `translate(${S.tx}px,${S.ty}px) scale(${S.s})`; if(cropOn) drawCrop(); }
 function fitView(){
   const r = stage.getBoundingClientRect();
   S.s = Math.min(r.width/S.w, r.height/S.h)*0.94;
@@ -568,13 +630,13 @@ stage.addEventListener('pointerdown', e => {
     return;
   }
   if(pointers.size > 2) return;
-  if(S.tool === 'move'){ gesture = {type:'pan', ...local(e)}; return; }
+  if(S.tool === 'move' || cropOn || aiBusy){ gesture = {type:'pan', ...local(e)}; return; }
   beginStroke(toImg(e));
 });
 stage.addEventListener('pointermove', e => {
   if(!S.work) return;
   const l = local(e);
-  if(S.tool !== 'move' && (!gesture || gesture.type !== 'pinch')){
+  if(S.tool !== 'move' && !cropOn && (!gesture || gesture.type !== 'pinch')){
     cursorEl.style.display = 'block';
     cursorEl.style.left = l.x + 'px'; cursorEl.style.top = l.y + 'px';
     cursorEl.style.width = cursorEl.style.height = S.size + 'px';
@@ -676,8 +738,9 @@ function refreshFiltersIfOpen(){ if(!$('tab-filters').classList.contains('hidden
 $('tabs').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
   document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x === b));
-  for(const n of ['retouch','adjust','filters','transform']) $('tab-'+n).classList.toggle('hidden', n !== b.dataset.tab);
+  for(const n of ['retouch','auto','adjust','filters','crop']) $('tab-'+n).classList.toggle('hidden', n !== b.dataset.tab);
   if(b.dataset.tab === 'filters' && thumbsDirty) buildFilters();
+  setCropMode(b.dataset.tab === 'crop');
   if(S.work) requestAnimationFrame(fitView);
 });
 document.querySelectorAll('[data-tf]').forEach(b => b.onclick = () => doTransform(b.dataset.tf));
@@ -694,16 +757,19 @@ cmp.addEventListener('pointerdown', cmpOn);
 ['pointerup','pointerleave','pointercancel'].forEach(ev => cmp.addEventListener(ev, cmpOff));
 $('bSave').onclick = () => {
   if(!S.work) return;
+  const d = S.work.data; let alpha = false;
+  for(let i=3; i<d.length; i+=4) if(d[i] < 255){ alpha = true; break; }
+  const type = alpha ? 'image/png' : 'image/jpeg';
   canvas.toBlob(blob => {
-    const name = 'retoque-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.jpg';
-    const file = new File([blob], name, {type:'image/jpeg'});
+    const name = 'retoque-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + (alpha ? '.png' : '.jpg');
+    const file = new File([blob], name, {type});
     if(navigator.canShare && navigator.canShare({files:[file]}) && matchMedia('(pointer:coarse)').matches){
       navigator.share({files:[file]}).catch(() => {});
       return;
     }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  }, 'image/jpeg', 0.93);
+  }, type, 0.93);
 };
 
 // arrastar, colar e atalhos
@@ -722,6 +788,295 @@ window.addEventListener('keydown', e => {
     cursorEl.style.width = cursorEl.style.height = S.size + 'px';
   }
 });
+
+// ---------- cortar ----------
+let cropOn = false, cropRatio = null, cropDrag = null;
+const CR = {x:0, y:0, w:0, h:0}, cropEl = $('crop');
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+function setCropMode(on){
+  cropOn = on && !!S.work;
+  cropEl.classList.toggle('hidden', !cropOn);
+  if(cropOn){
+    cursorEl.style.display = 'none'; resetCrop();
+    $('hint').textContent = 'Cortar: arraste os cantos ou o quadro. Escolha uma proporção e toque em "Aplicar corte".';
+  } else if(S.work) setTool(S.tool);
+}
+function resetCrop(){
+  let w = S.w, h = S.h;
+  if(cropRatio){ if(w/h > cropRatio) w = h*cropRatio; else h = w/cropRatio; }
+  CR.w = w; CR.h = h; CR.x = (S.w - w)/2; CR.y = (S.h - h)/2;
+  drawCrop();
+}
+function drawCrop(){
+  cropEl.style.left = S.tx + CR.x*S.s + 'px'; cropEl.style.top = S.ty + CR.y*S.s + 'px';
+  cropEl.style.width = CR.w*S.s + 'px'; cropEl.style.height = CR.h*S.s + 'px';
+  cropEl.querySelector('.size').textContent = Math.round(CR.w) + ' × ' + Math.round(CR.h);
+}
+cropEl.addEventListener('pointerdown', e => {
+  e.stopPropagation(); cropEl.setPointerCapture(e.pointerId);
+  cropDrag = {h:e.target.dataset.h || 'move', p:toImg(e), r:{...CR}};
+});
+cropEl.addEventListener('pointermove', e => {
+  if(!cropDrag) return;
+  const p = toImg(e), r = cropDrag.r, h = cropDrag.h;
+  if(h === 'move'){
+    CR.x = clamp(r.x + p.x - cropDrag.p.x, 0, S.w - r.w);
+    CR.y = clamp(r.y + p.y - cropDrag.p.y, 0, S.h - r.h);
+  } else {
+    // o canto oposto fica fixo
+    const sx = h[1] === 'w' ? -1 : 1, sy = h[0] === 'n' ? -1 : 1;
+    const ax = sx < 0 ? r.x + r.w : r.x, ay = sy < 0 ? r.y + r.h : r.y;
+    let w = Math.max(20, sx*(clamp(p.x, 0, S.w) - ax)), hh = Math.max(20, sy*(clamp(p.y, 0, S.h) - ay));
+    w = Math.min(w, sx < 0 ? ax : S.w - ax); hh = Math.min(hh, sy < 0 ? ay : S.h - ay);
+    if(cropRatio){ if(w/hh > cropRatio) w = hh*cropRatio; else hh = w/cropRatio; }
+    CR.w = w; CR.h = hh; CR.x = sx < 0 ? ax - w : ax; CR.y = sy < 0 ? ay - hh : ay;
+  }
+  drawCrop();
+});
+['pointerup','pointercancel'].forEach(ev => cropEl.addEventListener(ev, () => cropDrag = null));
+$('ratios').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if(!b || !S.work) return;
+  document.querySelectorAll('#ratios .chip').forEach(x => x.classList.toggle('on', x === b));
+  const r = b.dataset.r;
+  cropRatio = r === 'free' ? null : r === 'orig' ? S.w/S.h : +r;
+  resetCrop();
+});
+function cropData(src, x, y, w, h){
+  const out = new ImageData(w, h);
+  for(let r=0; r<h; r++) out.data.set(src.data.subarray(((y+r)*src.width + x)*4, ((y+r)*src.width + x + w)*4), r*w*4);
+  return out;
+}
+$('bCropReset').onclick = () => { if(S.work) resetCrop(); };
+$('bCropApply').onclick = () => {
+  if(!S.work) return;
+  const x = Math.round(CR.x), y = Math.round(CR.y);
+  const w = Math.min(S.w - x, Math.round(CR.w)), h = Math.min(S.h - y, Math.round(CR.h));
+  if(w === S.w && h === S.h) return;
+  pushHistory();
+  setImage(cropData(S.orig, x, y, w, h), cropData(S.work, x, y, w, h));
+  thumbsDirty = true; fitView(); resetCrop();
+};
+
+// ---------- automático com IA (MediaPipe, roda no navegador) ----------
+const MP = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+const MODELS = 'https://storage.googleapis.com/mediapipe-models/';
+let mpLib = null, faceLm = null, segm = null, aiBusy = false;
+async function vision(){
+  if(!mpLib){
+    const m = await import(MP + '/vision_bundle.mjs');
+    mpLib = {m, fs:await m.FilesetResolver.forVisionTasks(MP + '/wasm')};
+  }
+  return mpLib;
+}
+async function getFace(){
+  if(!faceLm){
+    const {m, fs} = await vision();
+    faceLm = await m.FaceLandmarker.createFromOptions(fs, {
+      baseOptions:{modelAssetPath:MODELS + 'face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate:'CPU'},
+      runningMode:'IMAGE', numFaces:5});
+  }
+  return faceLm;
+}
+async function getSeg(){
+  if(!segm){
+    const {m, fs} = await vision();
+    segm = await m.ImageSegmenter.createFromOptions(fs, {
+      baseOptions:{modelAssetPath:MODELS + 'image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite', delegate:'CPU'},
+      runningMode:'IMAGE', outputConfidenceMasks:true, outputCategoryMask:false});
+  }
+  return segm;
+}
+function workCanvas(){
+  const c = document.createElement('canvas'); c.width = S.w; c.height = S.h;
+  c.getContext('2d').putImageData(S.work, 0, 0);
+  return c;
+}
+function userErr(msg){ const e = new Error(msg); e.user = true; return e; }
+
+// índices da malha facial (478 pontos)
+const FACE_OVAL = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+const EYE_L = [33,7,163,144,145,153,154,155,133,173,157,158,159,160,161,246];
+const EYE_R = [263,249,390,373,374,380,381,382,362,398,384,385,386,387,388,466];
+const BROW_L = [70,63,105,66,107,55,65,52,53,46], BROW_R = [300,293,334,296,336,285,295,282,283,276];
+const LIPS = [61,146,91,181,84,17,314,405,321,375,291,409,270,269,267,0,37,39,40,185];
+const MOUTH = [78,95,88,178,87,14,317,402,318,324,308,415,310,311,312,13,82,81,80,191];
+const JAW_L = [234,93,132,58,172,136,150,149,176,148], JAW_R = [454,323,361,288,397,365,379,378,400,377];
+const IRIS = [[468,469], [473,474]];
+
+const dist = (a, b) => Math.hypot(a[0]-b[0], a[1]-b[1]);
+const faceW = f => dist(f[234], f[454]);
+const centroid = (f, idx) => [idx.reduce((s, i) => s + f[i][0], 0)/idx.length, idx.reduce((s, i) => s + f[i][1], 0)/idx.length];
+
+async function needFaces(){
+  const r = (await getFace()).detect(workCanvas());
+  const faces = r.faceLandmarks.map(lm => lm.map(p => [p.x*S.w, p.y*S.h]));
+  if(!faces.length) throw userErr('Nenhum rosto encontrado nesta foto.');
+  return faces;
+}
+function poly(x, f, idx, color, lw){
+  x.beginPath();
+  idx.forEach((i, k) => k ? x.lineTo(f[i][0], f[i][1]) : x.moveTo(f[i][0], f[i][1]));
+  x.closePath(); x.fillStyle = x.strokeStyle = color; x.fill();
+  if(lw){ x.lineWidth = lw; x.stroke(); }
+}
+// desenha formas por rosto e devolve uma máscara 0..1 (suavizada)
+function faceMask(faces, draw, blurR){
+  const c = document.createElement('canvas'); c.width = S.w; c.height = S.h;
+  const x = c.getContext('2d'); x.lineJoin = 'round';
+  for(const f of faces) draw(x, f);
+  let d = x.getImageData(0, 0, S.w, S.h).data;
+  if(blurR) d = blur(d, S.w, S.h, blurR);
+  const m = new Float32Array(S.w*S.h);
+  for(let j=0; j<m.length; j++) m[j] = d[j*4]/255;
+  return m;
+}
+// clareia e tira o amarelado só onde a máscara e o "porta" (dente/esclera vs. lábio/pele) permitem
+function whitenMasked(m, k, lift, gateFn){
+  const d = S.work.data; let n = 0;
+  for(let j=0; j<m.length; j++){
+    if(m[j] < 0.01) continue;
+    const i = j*4, r = d[i], g = d[i+1], b = d[i+2];
+    const Y = 0.299*r + 0.587*g + 0.114*b;
+    const a = m[j]*k*gateFn(r, g, b, Y);
+    if(a <= 0) continue;
+    n++;
+    const cb = (-0.1687*r - 0.3313*g + 0.5*b)*0.25, cr = (0.5*r - 0.4187*g - 0.0813*b)*0.4, Y2 = Y + (255-Y)*lift;
+    d[i] = r + (Y2 + 1.402*cr - r)*a;
+    d[i+1] = g + (Y2 - 0.344136*cb - 0.714136*cr - g)*a;
+    d[i+2] = b + (Y2 + 1.772*cb - b)*a;
+  }
+  return n;
+}
+const gateLight = (r, g, Y, ratio, ymin) => clamp((g/Math.max(r, 1) - ratio)/0.18, 0, 1)*clamp((Y - ymin)/40, 0, 1);
+
+async function personMask(){
+  const res = (await getSeg()).segment(workCanvas());
+  const mk = res.confidenceMasks[0], src = mk.getAsFloat32Array(), mw = mk.width, mh = mk.height;
+  const m = new Float32Array(S.w*S.h); let peak = 0;
+  for(let y=0; y<S.h; y++) for(let x=0; x<S.w; x++){
+    const v = (mw === S.w && mh === S.h) ? src[y*S.w + x] : src[Math.min(mh-1, (y*mh/S.h)|0)*mw + Math.min(mw-1, (x*mw/S.w)|0)];
+    let t = clamp((v - 0.25)/0.5, 0, 1); t = t*t*(3 - 2*t);
+    m[y*S.w + x] = t; if(t > peak) peak = t;
+  }
+  if(res.close) res.close();
+  if(peak < 0.5) throw userErr('Nenhuma pessoa encontrada para separar do fundo.');
+  return m;
+}
+
+const AUTO = {
+  async skin(k){
+    const faces = await needFaces(), fw = Math.max(...faces.map(faceW));
+    const m = faceMask(faces, (x, f) => {
+      const w = faceW(f);
+      poly(x, f, FACE_OVAL, '#fff');
+      for(const idx of [EYE_L, EYE_R]) poly(x, f, idx, '#000', w*0.07);
+      for(const idx of [BROW_L, BROW_R]) poly(x, f, idx, '#000', w*0.04);
+      poly(x, f, LIPS, '#000', w*0.03);
+    }, Math.max(2, Math.round(fw/45)));
+    const d = S.work.data, aux = blur(d, S.w, S.h, Math.max(2, Math.round(fw/50)));
+    for(let j=0; j<m.length; j++){
+      if(m[j] < 0.004) continue;
+      const i = j*4, e = 1 - Math.abs(d[i] + d[i+1] + d[i+2] - aux[i] - aux[i+1] - aux[i+2])/(3*55);
+      if(e <= 0) continue;
+      const a = m[j]*k*e;
+      d[i] += (aux[i] - d[i])*a; d[i+1] += (aux[i+1] - d[i+1])*a; d[i+2] += (aux[i+2] - d[i+2])*a;
+    }
+  },
+  async slim(k){
+    const faces = await needFaces(), steps = 5;
+    for(const f of faces){
+      // puxa o contorno da mandíbula em direção ao eixo testa–queixo (funciona com cabeça inclinada)
+      const t = f[10], c = f[152], ax = c[0]-t[0], ay = c[1]-t[1], al = ax*ax + ay*ay, R = faceW(f)*0.17;
+      const pts = [];
+      for(const side of [JAW_L, JAW_R]) side.forEach((idx, n) => {
+        const p = f[idx], u = ((p[0]-t[0])*ax + (p[1]-t[1])*ay)/al;
+        const wt = Math.sin(Math.PI*(n + 1)/(side.length + 1))*0.09*k;
+        pts.push({x:p[0], y:p[1], dx:(t[0] + ax*u - p[0])*wt/steps, dy:(t[1] + ay*u - p[1])*wt/steps});
+      });
+      for(let s=0; s<steps; s++) for(const p of pts){ pushAt(p.x, p.y, R, p.dx, p.dy); p.x += p.dx; p.y += p.dy; }
+    }
+  },
+  async eyes(k){
+    const faces = await needFaces();
+    for(const f of faces) for(const [idx, a, b] of [[EYE_L, 33, 133], [EYE_R, 362, 263]]){
+      const c = centroid(f, idx);
+      scaleAt(c[0], c[1], dist(f[a], f[b])*0.95, 0.22*k);
+    }
+  },
+  async bright(k){
+    const faces = await needFaces(), fw = Math.max(...faces.map(faceW));
+    const m = faceMask(faces, (x, f) => {
+      poly(x, f, EYE_L, '#fff'); poly(x, f, EYE_R, '#fff');
+      x.fillStyle = '#000';
+      for(const [c, e] of IRIS){ x.beginPath(); x.arc(f[c][0], f[c][1], dist(f[c], f[e])*1.1, 0, Math.PI*2); x.fill(); }
+    }, Math.max(1, Math.round(fw/180)));
+    if(!whitenMasked(m, k, 0.22, (r, g, b, Y) => gateLight(r, g, Y, 0.68, 60))) throw userErr('Não encontrei olhos abertos nesta foto.');
+  },
+  async teeth(k){
+    const faces = await needFaces(), fw = Math.max(...faces.map(faceW));
+    const m = faceMask(faces, (x, f) => poly(x, f, MOUTH, '#fff'), Math.max(1, Math.round(fw/220)));
+    if(whitenMasked(m, k, 0.3, (r, g, b, Y) => gateLight(r, g, Y, 0.62, 50)) < 30) throw userErr('Não encontrei dentes visíveis (a boca precisa estar sorrindo/aberta).');
+  },
+  async bgblur(k){
+    const m = await personMask(), d = S.work.data;
+    const aux = blur(d, S.w, S.h, Math.max(3, Math.round(Math.min(S.w, S.h)/90*(0.5 + k*1.5))));
+    for(let j=0; j<m.length; j++){
+      const i = j*4, a = m[j];
+      d[i] = aux[i] + (d[i] - aux[i])*a; d[i+1] = aux[i+1] + (d[i+1] - aux[i+1])*a; d[i+2] = aux[i+2] + (d[i+2] - aux[i+2])*a;
+    }
+  },
+  async bgcut(){
+    const m = await personMask(), d = S.work.data;
+    for(let j=0; j<m.length; j++) d[j*4+3] *= m[j];
+    return 'Fundo removido! Use "Apagar"/"Restaurar" no Retoque para refinar. Salva como PNG transparente.';
+  },
+  async bgcolor(){
+    const m = await personMask(), d = S.work.data, hex = $('bgColor').value;
+    const cr = parseInt(hex.slice(1, 3), 16), cg = parseInt(hex.slice(3, 5), 16), cb = parseInt(hex.slice(5, 7), 16);
+    for(let j=0; j<m.length; j++){
+      const i = j*4, a = m[j]*d[i+3]/255;
+      d[i] = cr + (d[i] - cr)*a; d[i+1] = cg + (d[i+1] - cg)*a; d[i+2] = cb + (d[i+2] - cb)*a; d[i+3] = 255;
+    }
+  },
+};
+async function runAuto(id){
+  if(!S.work || aiBusy || stroke) return;
+  aiBusy = true;
+  const btns = document.querySelectorAll('[data-auto]'), hint = $('hint');
+  $('top').classList.add('busy'); btns.forEach(b => b.disabled = true);
+  hint.textContent = mpLib ? 'Processando…' : 'Carregando IA… (só na primeira vez)';
+  const snap = pushHistory();
+  try{
+    await new Promise(r => setTimeout(r, 30));
+    const msg = await AUTO[id](+$('autoK').value/100);
+    renderAll(); thumbsDirty = true;
+    hint.textContent = msg || 'Pronto! Toque em ↶ para desfazer ou segure "Antes" para comparar.';
+  } catch(err){
+    console.error(err);
+    S.work.data.set(snap.work); history.pop(); updateUndo(); renderAll();
+    hint.textContent = err.user ? err.message : 'Não foi possível carregar a IA (' + (err.message || err) + '). Verifique a conexão com a internet.';
+  } finally {
+    aiBusy = false; $('top').classList.remove('busy'); btns.forEach(b => b.disabled = false);
+  }
+}
+$('autos').addEventListener('click', e => {
+  const b = e.target.closest('[data-auto]');
+  if(b && e.target.type !== 'color') runAuto(b.dataset.auto);
+});
+$('bgColor').addEventListener('change', () => runAuto('bgcolor'));
+$('autoK').addEventListener('input', () => $('autoKV').textContent = $('autoK').value);
+
+// ---------- aplicativo instalável (PWA) ----------
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; $('bInstall').classList.remove('hidden'); });
+$('bInstall').onclick = async () => {
+  if(!installEvt) return;
+  installEvt.prompt(); await installEvt.userChoice;
+  installEvt = null; $('bInstall').classList.add('hidden');
+};
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  navigator.serviceWorker.register('sw-editor.js', {scope:'./editor-fotos'}).catch(() => {});
+}
 
 setTool('smooth');
 </script>
