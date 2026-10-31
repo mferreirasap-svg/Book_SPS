@@ -976,8 +976,35 @@ const faceW = f => dist(f[234], f[454]);
 const centroid = (f, idx) => [idx.reduce((s, i) => s + f[i][0], 0)/idx.length, idx.reduce((s, i) => s + f[i][1], 0)/idx.length];
 
 async function needFaces(){
-  const r = (await getFace()).detect(workCanvas());
-  const faces = r.faceLandmarks.map(lm => lm.map(p => [p.x*S.w, p.y*S.h]));
+  const fl = await getFace(), full = workCanvas();
+  const faces = fl.detect(full).faceLandmarks.map(lm => lm.map(p => [p.x*S.w, p.y*S.h]));
+  // o detector reduz a foto inteira para ~128 px: rostos pequenos somem. Se não há um rosto em close,
+  // procura também em pedaços sobrepostos (grades 2x2 e 3x3).
+  if(!faces.some(f => faceW(f) > Math.min(S.w, S.h)*0.2)){
+    const extra = [];
+    for(const n of [2, 3]){
+      const tw = Math.min(S.w, Math.round(S.w/n*1.5)), th = Math.min(S.h, Math.round(S.h/n*1.5));
+      const c = document.createElement('canvas'); c.width = tw; c.height = th;
+      const x = c.getContext('2d');
+      for(let i=0; i<n; i++) for(let j=0; j<n; j++){
+        const ox = Math.round((S.w - tw)*i/(n - 1)), oy = Math.round((S.h - th)*j/(n - 1));
+        x.clearRect(0, 0, tw, th); x.drawImage(full, -ox, -oy);
+        for(const lm of fl.detect(c).faceLandmarks){
+          const f = lm.map(p => [ox + p.x*tw, oy + p.y*th]);
+          // o mesmo rosto aparece em pedaços vizinhos: fica com o primeiro
+          if(![...faces, ...extra].some(g => dist(g[1], f[1]) < Math.max(faceW(g), faceW(f))*0.5)) extra.push(f);
+        }
+      }
+    }
+    if(extra.length){
+      // confirma com a máscara de pessoa (descarta caras de animais e objetos)
+      let m = null; try{ m = await personMask(); } catch(e){}
+      if(m) for(const f of extra){
+        const nx = Math.round(clamp(f[1][0], 0, S.w-1)), ny = Math.round(clamp(f[1][1], 0, S.h-1));
+        if(m[ny*S.w + nx] > 0.5) faces.push(f);
+      }
+    }
+  }
   if(!faces.length) throw userErr('Nenhum rosto encontrado nesta foto.');
   return faces;
 }
