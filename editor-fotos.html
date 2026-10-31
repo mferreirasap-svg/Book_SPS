@@ -188,6 +188,12 @@ input[type=range]{flex:1;accent-color:var(--accent);min-width:0}
         <span style="flex:1"></span>
         <button id="bStretchApply" class="primary">Aplicar</button>
       </div>
+      <div class="scroller" id="bodyAuto" style="margin-top:8px">
+        <button class="auto" data-auto="waist" data-k="bodyK"><span class="ic">⏳</span>Afinar cintura</button>
+        <button class="auto" data-auto="arms" data-k="bodyK"><span class="ic">💪</span>Afinar braços</button>
+        <button class="auto" data-auto="legs" data-k="bodyK"><span class="ic">🦵</span>Afinar pernas</button>
+      </div>
+      <div class="row"><label>Intensidade</label><input id="bodyK" type="range" min="10" max="100" value="60"><output id="bodyKV">60</output></div>
       <div class="row note" style="margin-top:6px">Arraste as duas linhas para marcar a faixa que será alongada (ex.: das coxas aos tornozelos). Rosto e tronco ficam intactos.</div>
     </div>
     <div id="tab-crop" class="hidden">
@@ -1162,6 +1168,7 @@ const AUTO = {
 };
 async function runAuto(id){
   if(!S.work || aiBusy || stroke) return;
+  commitStretch();
   aiBusy = true;
   const btns = document.querySelectorAll('[data-auto]'), hint = $('hint');
   $('top').classList.add('busy'); btns.forEach(b => b.disabled = true);
@@ -1316,6 +1323,74 @@ $('bLegs').onclick = async () => {
     aiBusy = false; $('top').classList.remove('busy'); $('bLegs').disabled = false;
   }
 };
+
+// afinar: a pose diz onde estão cintura/membros; a máscara de pessoa diz onde o corpo termina
+async function detectPose(){
+  const L = (await getPose()).detect(workCanvas()).landmarks[0];
+  if(!L) throw userErr('Não encontrei uma pessoa de corpo visível nesta foto.');
+  return L.map(p => ({x:p.x*S.w, y:p.y*S.h,
+    ok:(p.visibility === undefined || p.visibility > 0.6) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1}));
+}
+function edgeDist(m, x, y, dx, dy, maxD){
+  for(let d=1; d<maxD; d++){
+    const px = Math.round(x + dx*d), py = Math.round(y + dy*d);
+    if(px < 0 || py < 0 || px >= S.w || py >= S.h || m[py*S.w + px] < 0.5) return d;
+  }
+  return maxD;
+}
+// vários empurrões pequenos ao longo da borda; a soma deles dá o deslocamento desejado
+function pushEdges(pts, steps = 4){
+  for(let s=0; s<steps; s++) for(const p of pts){
+    const dx = p.dx/steps, dy = p.dy/steps;
+    pushAt(p.x, p.y, p.R, dx, dy); p.x += dx; p.y += dy;
+  }
+}
+const overlap = (sp, R) => Math.min(1, sp/(R*1.07));   // compensa a sobreposição dos empurrões vizinhos
+AUTO.waist = async k => {
+  const P = await detectPose();
+  if(![11, 12, 23, 24].every(i => P[i].ok)) throw userErr('Não encontrei o tronco inteiro (ombros e quadril) na foto.');
+  const m = await personMask();
+  const sh = {x:(P[11].x + P[12].x)/2, y:(P[11].y + P[12].y)/2}, hp = {x:(P[23].x + P[24].x)/2, y:(P[23].y + P[24].y)/2};
+  const al = Math.hypot(hp.x - sh.x, hp.y - sh.y), ax = (hp.x - sh.x)/al, ay = (hp.y - sh.y)/al, nx = -ay, ny = ax;
+  const hipW = Math.hypot(P[23].x - P[24].x, P[23].y - P[24].y), maxD = hipW*1.6;
+  const cx = sh.x + (hp.x - sh.x)*0.72, cy = sh.y + (hp.y - sh.y)*0.72;   // cintura: ~72% do ombro ao quadril
+  const pts = [];
+  for(const s of [-1, 1]){
+    const e = edgeDist(m, cx, cy, nx*s, ny*s, maxD);
+    if(e >= maxD || e < hipW*0.25) continue;
+    const R = e*0.7, sp = al*0.04;
+    for(let t=-4; t<=4; t++){
+      const amt = e*0.11*k*(1 - Math.abs(t)/5)*overlap(sp, R);
+      pts.push({x:cx + nx*s*e + ax*t*sp, y:cy + ny*s*e + ay*t*sp, R, dx:-nx*s*amt, dy:-ny*s*amt});
+    }
+  }
+  if(!pts.length) throw userErr('Não consegui ver o contorno da cintura nesta foto.');
+  pushEdges(pts);
+};
+async function slimLimbs(k, segs, label, sep){
+  const P = await detectPose(), m = await personMask(), pts = [];
+  for(const [a, b] of segs){
+    if(!P[a].ok || !P[b].ok) continue;
+    const vx = P[b].x - P[a].x, vy = P[b].y - P[a].y, len = Math.hypot(vx, vy);
+    if(len < 20) continue;
+    const nx = -vy/len, ny = vx/len, maxD = len*0.35, sp = len*0.05;
+    for(let t=0.15; t<=0.851; t+=0.05){      // evita as articulações e mãos/pés
+      const x = P[a].x + vx*t, y = P[a].y + vy*t;
+      if(m[Math.round(y)*S.w + Math.round(x)] < 0.5) continue;
+      const l = edgeDist(m, x, y, -nx, -ny, maxD), r = edgeDist(m, x, y, nx, ny, maxD);
+      if(l >= maxD || r >= maxD) continue;   // membro encostado no corpo: não dá para saber a borda
+      const hw = (l + r)/2, ccx = x + nx*(r - l)/2, ccy = y + ny*(r - l)/2, R = hw*1.1;
+      const amt = hw*0.16*k*overlap(sp, R);
+      pts.push({x:ccx - nx*hw, y:ccy - ny*hw, R, dx:nx*amt, dy:ny*amt}, {x:ccx + nx*hw, y:ccy + ny*hw, R, dx:-nx*amt, dy:-ny*amt});
+    }
+  }
+  if(!pts.length) throw userErr(`Não encontrei ${label} visíveis e ${sep} do corpo nesta foto.`);
+  pushEdges(pts);
+}
+AUTO.arms = k => slimLimbs(k, [[11, 13], [13, 15], [12, 14], [14, 16]], 'braços', 'separados');
+AUTO.legs = k => slimLimbs(k, [[23, 25], [25, 27], [24, 26], [26, 28]], 'pernas', 'separadas');
+$('bodyAuto').addEventListener('click', e => { const b = e.target.closest('[data-auto]'); if(b) runAuto(b.dataset.auto); });
+$('bodyK').addEventListener('input', () => $('bodyKV').textContent = $('bodyK').value);
 
 // ---------- aplicativo instalável (PWA) ----------
 let installEvt = null;
