@@ -32,6 +32,22 @@ export const DOM = {
   statusFat: { PRO: 'Em processamento', OK: 'Gerada', CAN: 'Cancelada', ERR: 'Com erro' },
   situacao: { gerada: 'Gerada', em_dia: 'Em dia', vence: 'Vence em breve', atrasada: 'Atrasada' },
   statusMulta: { PEN: 'Pendente', IND: 'Condutor indicado', REP: 'A repassar', FAT: 'Faturada', PAG: 'Paga pela locadora' },
+  tipoCha: { PAR: 'Equipamento parado', MAN: 'Manutenção solicitada', DUV: 'Dúvida / solicitação', REC: 'Reclamação', TRO: 'Troca de equipamento', RET: 'Retirada antecipada' },
+  origemCha: { TEL: 'Telefone', EMA: 'E-mail', WPP: 'WhatsApp', POR: 'Portal / QR Code', INT: 'Interno' },
+  prioridade: { URG: 'Urgente', ALT: 'Alta', MED: 'Média', BAI: 'Baixa' },
+  statusCha: { ABE: 'Aberto', AND: 'Em atendimento', AGC: 'Aguardando cliente', RES: 'Resolvido', FEC: 'Fechado', CAN: 'Cancelado' },
+  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' },
+  statusOS: { ABE: 'Sem agenda', AGE: 'Agendada', EXE: 'Em execução', AOR: 'Aguardando aprovação', CON: 'Concluída', CAN: 'Cancelada' },
+  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento' },
+  orcamento: { '': 'Sem orçamento', PEN: 'Aguardando cliente', APR: 'Aprovado', REC: 'Recusado' },
+  sla: { cumprido: 'No prazo', no_prazo: 'No prazo', vencendo: 'Vencendo', violado: 'Estourado' },
+  prev: { vencida: 'Vencida', proxima: 'Próxima', ok: 'Em dia' },
+};
+/** Data e hora "AAAA-MM-DDTHH:MM" em dd/mm hh:mm. */
+export const fmtDT = (v) => (v ? `${fmtD(v)} ${String(v).slice(11, 16)}` : '');
+export const agoraLocal = () => {
+  const t = new Date();
+  return `${hoje()}T${pad(t.getHours())}:${pad(t.getMinutes())}`;
 };
 
 export const badge = (code, map, cls = 'b-') => `<span class="badge ${cls}${esc(code)}">${esc(map[code] || code || '—')}</span>`;
@@ -118,6 +134,12 @@ export const ICON = {
   multas: 'M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z',
   cadastros: 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z',
   admin: 'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
+  chamados: 'M21 12.22C21 6.73 16.74 3 12 3c-4.69 0-9 3.65-9 9.28-.6.34-1 .98-1 1.72v2c0 1.1.9 2 2 2h1v-6.1c0-3.87 3.13-7 7-7s7 3.13 7 7V19h-8v2h8c1.1 0 2-.9 2-2v-1.22c.59-.31 1-.92 1-1.64v-2.3c0-.7-.41-1.31-1-1.62z',
+  os: 'M22.7 19l-9.1-9.1c.9-2.3.4-5-1.5-6.9-2-2-5-2.4-7.4-1.3L9 6 6 9 1.6 4.7C.4 7.1.9 10.1 2.9 12.1c1.9 1.9 4.6 2.4 6.9 1.5l9.1 9.1c.4.4 1 .4 1.4 0l2.3-2.3c.5-.4.5-1.1.1-1.4z',
+  agenda: 'M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z',
+  preventivas: 'M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8A5.87 5.87 0 0 1 6 12c0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z',
+  satisfacao: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
+  tecnicos: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
 };
 export const ico = (k) => `<svg class="ico" viewBox="0 0 24 24"><path d="${ICON[k]}"/></svg>`;
 export const SETA = '<svg class="go" viewBox="0 0 24 24"><path d="M3 9.5h9V5l9 7-9 7v-4.5H3z"/></svg>';

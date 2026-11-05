@@ -142,6 +142,6 @@ export default async function cadastroRoutes(app, { deps }) {
   app.get('/lookup/items', async (req) => repos.items.search(str(req.query.q, 60)));
   app.get('/settings/public', async () => {
     const c = await repos.settings.all();
-    return { EMPRESA: c.EMPRESA || '', CHK_EQP: c.CHK_EQP || '', CHK_VEI: c.CHK_VEI || '', DIAS_ALERTA_FAT: c.DIAS_ALERTA_FAT || '7' };
+    return { EMPRESA: c.EMPRESA || '', CHK_EQP: c.CHK_EQP || '', CHK_VEI: c.CHK_VEI || '', DIAS_ALERTA_FAT: c.DIAS_ALERTA_FAT || '7', ITEM_SERVICO: c.ITEM_SERVICO || 'SLOC800' };
   });
 }

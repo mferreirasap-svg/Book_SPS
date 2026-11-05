@@ -1,6 +1,6 @@
 // Base de demonstração para o modo simulado (B1_MODE=mock). Datas relativas a hoje.
-import { SCHEMA, CFG_DEFAULTS, LN, GR, SCHEMA_VERSION, fieldMD } from './schema.js';
-import { hoje, addDias, compDe } from '../lib/util.js';
+import { SCHEMA, CFG_DEFAULTS, LN, GR, CH1, OS1, SCHEMA_VERSION, fieldMD } from './schema.js';
+import { hoje, addDias, compDe, agora, addHoras } from '../lib/util.js';
 
 export function demoSeed() {
   const h = hoje();
@@ -27,6 +27,11 @@ export function demoSeed() {
     ['SLOC002', 'Locação de veículos'],
     ['SLOC003', 'Locação de geradores e energia'],
     ['SLOC900', 'Repasse de multa de trânsito'],
+    ['SLOC800', 'Serviço de manutenção e reparo'],
+    ['PEC-0101', 'Filtro de óleo do motor'],
+    ['PEC-0102', 'Óleo lubrificante 15W40 (litro)'],
+    ['PEC-0210', 'Mangueira hidráulica 1/2"'],
+    ['PEC-0305', 'Bateria 150 Ah'],
   ].map(([ItemCode, ItemName]) => ({ ItemCode, ItemName, SalesItem: 'tYES', Valid: 'tYES' }));
 
   sets.U_SPS_LFAM = [
@@ -101,7 +106,6 @@ export function demoSeed() {
     med('seed-1', 1, 1, 'EQP-0001', 4280, 4520), med('seed-2', 1, 2, 'EQP-0004', 640, 860),
     med('seed-3', 2, 1, 'VEI-0001', 44710, 48210), med('seed-4', 2, 2, 'VEI-0002', 27000, 31200),
   ];
-  sets.U_SPS_LFORA = [];
   sets.U_SPS_LFAT = [];
   sets.U_SPS_LMUL = [{
     Code: 'M-seed-1', Name: 'AIT A12345678', U_Ativo: 'VEI-0001', U_Placa: 'ABC1D23', U_DtInfr: addDias(mPrev, 20), U_HrInfr: '14:32', U_AIT: 'A12345678',
@@ -110,9 +114,92 @@ export function demoSeed() {
   }];
   sets.U_SPS_LCFG = Object.entries({ ...CFG_DEFAULTS, EMPRESA: 'Locadora Demonstração Ltda', ITEM_MULTA: 'SLOC900', SCHEMA_VERSION: String(SCHEMA_VERSION) })
     .map(([Code, v]) => ({ Code, Name: Code, U_Valor: v }));
+
+  /* ---- pós-venda ---- */
+  const t0 = agora();
+  const dt = (dias, hora) => `${addDias(h, dias)}T${hora}`;
+  sets.U_SPS_LTEC = [
+    ['T01', 'Rafael Moreira', 'tecnico', '(31) 98811-2030', 'Linha amarela e hidráulica'],
+    ['T02', 'Juliana Costa', '', '(31) 99702-4411', 'Veículos e elétrica'],
+    ['T03', 'Marcos Tavares', '', '(31) 98455-7781', 'Geradores e plataformas'],
+  ].map(([Code, Name, U_Login, U_Fone, U_Especial]) => ({ Code, Name, U_Login, U_Fone, U_Email: '', U_Especial, U_Filial: 1, U_Ativo: 'S' }));
+
+  const P = (Code, Name, U_Familia, U_IntMed, U_IntDias, chk) => ({ Code, Name, U_Familia, U_IntMed, U_IntDias, U_Aviso: 10, U_Checklist: chk.join('\n'), U_Ativo: 'S' });
+  const chkDiesel = ['Troca de óleo do motor', 'Troca do filtro de óleo', 'Filtro de ar', 'Filtro de combustível', 'Nível do óleo hidráulico', 'Graxa nos pinos e articulações', 'Teste de funcionamento'];
+  const chkVei = ['Troca de óleo e filtro', 'Freios', 'Pneus e alinhamento', 'Suspensão', 'Luzes e parte elétrica', 'Teste de rodagem'];
+  sets.U_SPS_LPLN = [
+    P('PRE-RETRO-250', 'Retroescavadeira — 250 h', 'RETRO', 250, 180, chkDiesel),
+    P('PRE-ESCAV-250', 'Escavadeira — 250 h', 'ESCAV', 250, 180, chkDiesel),
+    P('PRE-MINI-250', 'Minicarregadeira — 250 h', 'MINICAR', 250, 180, chkDiesel),
+    P('PRE-GER-250', 'Gerador — 250 h ou 90 dias', 'GERADOR', 250, 90, ['Troca de óleo e filtros', 'Bateria e carregador', 'Líquido de arrefecimento', 'Teste com carga']),
+    P('PRE-PLAT-180', 'Plataforma — semestral', 'PLAT', 0, 180, ['Baterias', 'Sistema hidráulico', 'Dispositivos de segurança', 'Teste de elevação']),
+    P('PRE-PICAPE-10K', 'Picape — 10.000 km', 'PICAPE', 10000, 180, chkVei),
+    P('PRE-CAM-10K', 'Caminhão — 10.000 km', 'CAMINHAO', 10000, 180, chkVei),
+  ];
+
+  const chk = (itens) => JSON.stringify(Object.fromEntries(itens.map((i) => [i, { r: 'OK' }])));
+  const I = (LineId, U_Tipo, U_ItemCode, U_Descr, U_Qtd, U_Preco, U_Cobrar) => ({ LineId, U_Tipo, U_ItemCode, U_Descr, U_Qtd, U_Preco, U_Cobrar });
+  const O = (o) => ({ U_Prior: 'MED', U_Email: '', U_CtrLine: 0, U_ChaEntry: 0, U_MovEntry: 0, U_Plano: '', U_HrAgenda: '08:00', U_Duracao: 120, U_Local: '',
+    U_Descricao: '', U_Laudo: '', U_CheckIn: '', U_CheckOut: '', U_Medidor: 0, U_Checklist: '{}', U_Fotos: '[]', U_Respons: '', U_DocResp: '', U_Assinatura: '',
+    U_Parada: 'N', U_DtParada: null, U_ForaCode: '', U_Orc: '', U_OrcAprov: '', U_Valor: 0, U_DocType: '', U_DocEntry: 0, U_DocNum: 0, U_Filial: 1,
+    U_Usuario: 'admin', U_Versao: 0, [OS1]: [], ...o });
+  sets.SPSLOS = [
+    O({ DocEntry: 1, DocNum: 1, U_Tipo: 'PRE', U_Status: 'CON', U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda', U_CtrEntry: 1, U_CtrLine: 1,
+      U_Ativo: 'EQP-0001', U_Plano: 'PRE-RETRO-250', U_Tecnico: 'T01', U_DtAgenda: addDias(h, -40), U_Local: 'Residencial Parque das Águas — Contagem/MG',
+      U_Descricao: 'Preventiva de 250 h.', U_Laudo: 'Revisão completa. Sem anomalias.', U_CheckIn: dt(-40, '08:10'), U_CheckOut: dt(-40, '10:05'), U_Medidor: 4300,
+      U_Checklist: chk(chkDiesel), U_Respons: 'Eng. Paulo Mendes',
+      [OS1]: [I(1, 'PEC', 'PEC-0101', 'Filtro de óleo do motor', 1, 89.9, 'N'), I(2, 'PEC', 'PEC-0102', 'Óleo lubrificante 15W40 (litro)', 18, 32.5, 'N')] }),
+    O({ DocEntry: 2, DocNum: 2, U_Tipo: 'PRE', U_Status: 'CON', U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda', U_CtrEntry: 1, U_CtrLine: 2,
+      U_Ativo: 'EQP-0004', U_Plano: 'PRE-GER-250', U_Tecnico: 'T03', U_DtAgenda: addDias(h, -60), U_Descricao: 'Preventiva de 250 h.', U_Laudo: 'Troca de óleo e filtros.',
+      U_CheckIn: dt(-60, '13:00'), U_CheckOut: dt(-60, '14:20'), U_Medidor: 600, U_Respons: 'Eng. Paulo Mendes' }),
+    O({ DocEntry: 3, DocNum: 3, U_Tipo: 'COR', U_Status: 'AGE', U_Prior: 'URG', U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda',
+      U_Email: 'financeiro@horizonte.example', U_CtrEntry: 1, U_CtrLine: 2, U_Ativo: 'EQP-0004', U_ChaEntry: 1, U_Tecnico: 'T03', U_DtAgenda: h, U_HrAgenda: '14:00',
+      U_Local: 'Residencial Parque das Águas — Contagem/MG', U_Descricao: 'Gerador não parte. Painel indica falha de bateria.', U_Parada: 'S', U_DtParada: h,
+      U_ForaCode: 'F-seed-1' }),
+    O({ DocEntry: 4, DocNum: 4, U_Tipo: 'VIS', U_Status: 'CON', U_CardCode: 'C0003', U_CardName: 'Transportes Rota Sul Ltda', U_Email: 'fiscal@rotasul.example',
+      U_CtrEntry: 2, U_CtrLine: 1, U_Ativo: 'VEI-0001', U_Tecnico: 'T02', U_DtAgenda: addDias(h, -10), U_Descricao: 'Vistoria trimestral da frota.',
+      U_Laudo: 'Veículo em bom estado. Pneus com 60% de vida útil.', U_CheckIn: dt(-10, '09:00'), U_CheckOut: dt(-10, '09:40'), U_Medidor: 47800, U_Respons: 'Carlos A. Souza' }),
+    O({ DocEntry: 5, DocNum: 5, U_Tipo: 'COR', U_Status: 'CON', U_Prior: 'ALT', U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda',
+      U_Email: 'financeiro@horizonte.example', U_CtrEntry: 1, U_CtrLine: 1, U_Ativo: 'EQP-0001', U_ChaEntry: 3, U_Tecnico: 'T01', U_DtAgenda: addDias(h, -5),
+      U_Descricao: 'Vazamento de óleo no braço da retro.', U_Laudo: 'Mangueira do cilindro do braço rompida por desgaste. Substituída.', U_CheckIn: dt(-5, '10:00'),
+      U_CheckOut: dt(-5, '12:30'), U_Medidor: 4495, U_Respons: 'Eng. Paulo Mendes',
+      [OS1]: [I(1, 'PEC', 'PEC-0210', 'Mangueira hidráulica 1/2"', 2, 145, 'N'), I(2, 'SRV', 'SLOC800', 'Mão de obra técnica', 2.5, 180, 'N')] }),
+  ];
+  sets.U_SPS_LFORA = [{ Code: 'F-seed-1', Name: 'F-seed-1', U_CtrEntry: 1, U_CtrLine: 2, U_Ativo: 'EQP-0004', U_Ini: h, U_Fim: null, U_Motivo: 'Parado — OS 3' }];
+
+  const C = (o) => ({ U_Contato: '', U_Fone: '', U_Email: '', U_CtrEntry: 0, U_Ativo: '', U_Origem: 'TEL', U_Prior: 'MED', U_Parado: 'N', U_DtResp: '', U_DtSol: '',
+    U_Respons: '', U_OsEntry: 0, U_Filial: 1, U_Versao: 0, [CH1]: [], ...o });
+  const ab1 = addHoras(t0, -3);
+  const ab2 = addHoras(t0, -26);
+  const ab3 = `${addDias(h, -6)}T16:20`;
+  sets.SPSLCHA = [
+    C({ DocEntry: 1, DocNum: 1, U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda', U_Contato: 'Eng. Paulo Mendes', U_Fone: '(31) 3333-1020',
+      U_Email: 'financeiro@horizonte.example', U_CtrEntry: 1, U_Ativo: 'EQP-0004', U_Tipo: 'PAR', U_Prior: 'URG', U_Status: 'AND', U_Parado: 'S',
+      U_Assunto: 'Gerador parado na obra', U_Descricao: 'Gerador não dá partida desde a manhã. Obra sem energia no canteiro.', U_Abertura: ab1,
+      U_PrazoResp: addHoras(ab1, 1), U_PrazoSol: addHoras(ab1, 8), U_DtResp: addHoras(ab1, 0.5), U_Respons: 'admin', U_OsEntry: 3,
+      [CH1]: [{ LineId: 1, U_Data: addHoras(ab1, 0.5), U_Usuario: 'admin', U_Texto: 'Técnico Marcos agendado para hoje às 14h. Parada registrada para desconto.', U_Publico: 'S' }] }),
+    C({ DocEntry: 2, DocNum: 2, U_CardCode: 'C0003', U_CardName: 'Transportes Rota Sul Ltda', U_Contato: 'Carlos A. Souza', U_Fone: '(31) 98100-2233',
+      U_Email: 'fiscal@rotasul.example', U_CtrEntry: 2, U_Ativo: 'VEI-0002', U_Tipo: 'MAN', U_Origem: 'WPP', U_Status: 'ABE',
+      U_Assunto: 'Luz de injeção acesa na Ranger', U_Descricao: 'Luz da injeção acendeu na estrada. Veículo rodando normalmente.', U_Abertura: ab2,
+      U_PrazoResp: addHoras(ab2, 4), U_PrazoSol: addHoras(ab2, 48) }),
+    C({ DocEntry: 3, DocNum: 3, U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda', U_Contato: 'Eng. Paulo Mendes', U_Email: 'financeiro@horizonte.example',
+      U_CtrEntry: 1, U_Ativo: 'EQP-0001', U_Tipo: 'MAN', U_Prior: 'ALT', U_Status: 'FEC', U_Assunto: 'Vazamento de óleo na retroescavadeira',
+      U_Descricao: 'Operador viu óleo pingando no braço.', U_Abertura: ab3, U_PrazoResp: addHoras(ab3, 2), U_PrazoSol: addHoras(ab3, 24),
+      U_DtResp: addHoras(ab3, 1), U_DtSol: dt(-5, '12:30'), U_Respons: 'admin', U_OsEntry: 5,
+      [CH1]: [{ LineId: 1, U_Data: addHoras(ab3, 1), U_Usuario: 'admin', U_Texto: 'Técnico agendado para amanhã às 10h.', U_Publico: 'S' },
+        { LineId: 2, U_Data: dt(-5, '12:30'), U_Usuario: 'admin', U_Texto: 'OS 5 concluída: mangueira substituída por desgaste, sem custo.', U_Publico: 'S' }] }),
+  ];
+
+  const S = (Code, os, cha, card, name, tec, dias, nota, com) => ({ Code, Name: Code, U_OsEntry: os, U_ChaEntry: cha, U_CardCode: card, U_CardName: name, U_Email: '',
+    U_Tecnico: tec, U_Enviada: addDias(h, dias), U_Nota: nota, U_Comentario: com, U_Respondida: nota >= 0 ? dt(dias + 1, '09:12') : '' });
+  sets.U_SPS_LPES = [
+    S('pesq-demo-a1', 4, 0, 'C0003', 'Transportes Rota Sul Ltda', 'T02', -10, 9, 'Vistoria rápida e bem explicada.'),
+    S('pesq-demo-b2', 5, 3, 'C0001', 'Construtora Horizonte Ltda', 'T01', -5, 6, 'Resolveu, mas demorou para chegar.'),
+    S('pesq-demo-c3', 1, 0, 'C0001', 'Construtora Horizonte Ltda', 'T01', -40, 10, ''),
+  ];
   sets.Drafts = [];
   sets.Orders = [];
   sets.Invoices = [];
 
-  return { sets, seq: { SPSLCTR: 3, SPSLMOV: 0, Drafts: 0, Orders: 0, Invoices: 0 } };
+  return { sets, seq: { SPSLCTR: 3, SPSLMOV: 0, SPSLCHA: 3, SPSLOS: 5, Drafts: 0, Orders: 0, Invoices: 0 } };
 }

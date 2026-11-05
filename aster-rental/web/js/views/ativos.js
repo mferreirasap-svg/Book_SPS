@@ -2,6 +2,7 @@
 import { $, $$, esc, brl, num, UN, DOM, badge, options, toast, acao, modal, closeModal, confirmar, debounce, pager, SEARCH, msg } from '../util.js';
 import { get, post, put, qs } from '../api.js';
 import { filtro } from '../state.js';
+import { abrirHistorico } from './historico.js';
 
 let ctx;
 let fams = [];
@@ -21,7 +22,8 @@ export async function render(root, params, c) {
   <div class="tbl"><table><thead><tr><th>Código</th><th>Descrição</th><th>Família</th><th>Placa / série</th><th class="num">Medidor</th><th class="num">Valor mês</th><th>Status</th><th></th></tr></thead><tbody>
   ${r.items.map((a) => `<tr><td><b>${esc(a.Code)}</b></td><td>${esc(a.Name)}</td><td>${esc(fams.find((x) => x.Code === a.U_Familia)?.Name || a.U_Familia || '')}</td>
     <td>${esc(a.U_Placa || a.U_Serie)}</td><td class="num">${num(a.U_Medidor, 0)} ${UN(a.U_Tipo)}</td><td class="num">${brl(a.U_ValorMes)}</td><td>${badge(a.U_Status, DOM.statusAtivo)}</td>
-    <td class="right">${c.can('ativos.editar') ? `<button class="mini" type="button" data-a="editar" data-code="${esc(a.Code)}">Editar</button>` : ''}
+    <td class="right"><button class="mini" type="button" data-a="hist" data-code="${esc(a.Code)}">Histórico</button>
+      ${c.can('ativos.editar') ? `<button class="mini" type="button" data-a="editar" data-code="${esc(a.Code)}">Editar</button>` : ''}
       ${a.U_Status === 'DIS' && c.can('ativos.editar') ? `<button class="mini" type="button" data-a="st" data-st="MAN" data-code="${esc(a.Code)}" data-v="${a.U_Versao}">Manutenção</button>` : ''}
       ${a.U_Status === 'MAN' && !a.U_CtrAtual && c.can('ativos.editar') ? `<button class="mini" type="button" data-a="st" data-st="DIS" data-code="${esc(a.Code)}" data-v="${a.U_Versao}">Liberar</button>` : ''}
       ${['DIS', 'MAN'].includes(a.U_Status) && !a.U_CtrAtual && c.can('ativos.baixar') ? `<button class="mini danger" type="button" data-a="st" data-st="BAI" data-code="${esc(a.Code)}" data-v="${a.U_Versao}">Baixar</button>` : ''}
@@ -46,6 +48,7 @@ export async function render(root, params, c) {
     const b = ev.target.closest('[data-a]');
     if (!b) return;
     if (b.dataset.a === 'novo') return form(null, reload);
+    if (b.dataset.a === 'hist') return acao(() => abrirHistorico(b.dataset.code));
     if (b.dataset.a === 'editar') return form(await get(`/assets/${encodeURIComponent(b.dataset.code)}`), reload);
     if (b.dataset.a === 'st') {
       const st = b.dataset.st;

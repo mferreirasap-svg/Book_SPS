@@ -2,7 +2,7 @@
 // Usada em desenvolvimento, demonstração e testes automatizados. Nunca em produção.
 import { B1Error } from './errors.js';
 
-const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'Drafts', 'Orders', 'Invoices', 'Quotations']);
+const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'SPSLCHA', 'SPSLOS', 'Drafts', 'Orders', 'Invoices', 'Quotations']);
 const KEYS = { UserTablesMD: 'TableName', UserObjectsMD: 'Code', BusinessPartners: 'CardCode', Items: 'ItemCode', BusinessPlaces: 'BPLID' };
 
 const clone = (o) => structuredClone(o);
@@ -146,6 +146,27 @@ export class MockServiceLayer {
       saved = null;
     }
     this.db = saved || (seed ? seed() : { sets: {}, seq: {} });
+    if (saved && seed) this.upgrade(seed());
+  }
+
+  /** Base salva por uma versão anterior: acrescenta tabelas novas da semente e atualiza os metadados. */
+  upgrade(fresh) {
+    const db = this.db;
+    db.sets ||= {};
+    db.seq ||= {};
+    for (const [set, rows] of Object.entries(fresh.sets)) {
+      if (!(set in db.sets)) {
+        db.sets[set] = rows;
+        if (fresh.seq?.[set] != null) db.seq[set] = fresh.seq[set];
+      }
+    }
+    for (const set of ['UserTablesMD', 'UserFieldsMD', 'UserObjectsMD']) if (fresh.sets[set]) db.sets[set] = fresh.sets[set];
+    const cfg = (db.sets.U_SPS_LCFG ||= []);
+    for (const r of fresh.sets.U_SPS_LCFG || []) {
+      const cur = cfg.find((x) => x.Code === r.Code);
+      if (!cur) cfg.push(r);
+      else if (r.Code === 'SCHEMA_VERSION') cur.U_Valor = r.U_Valor;
+    }
   }
 
   persist() {

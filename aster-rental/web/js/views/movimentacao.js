@@ -11,7 +11,7 @@ let F; // formulário
 let ctx;
 
 const novoForm = (p = {}) => ({ tipo: p.tipo || 'ENT', ctr: p.ctr || '', linha: p.linha || '', ativo: '', ativoNovo: '', data: hoje(), leitura: '', leituraNovo: '',
-  combustivel: '', destino: 'DIS', checklist: {}, avarias: '', responsavel: '', documento: '', assinatura: '', key: uuid() });
+  combustivel: '', destino: 'DIS', checklist: {}, avarias: '', responsavel: '', documento: '', assinatura: '', abrirOS: false, key: uuid() });
 
 export async function render(root, params, c) {
   ctx = c;
@@ -57,6 +57,8 @@ export async function render(root, params, c) {
     <div class="span2"><label>${F.tipo === 'MAN' ? 'Motivo da manutenção' : 'Avarias / observações'}</label><textarea data-m="avarias">${esc(F.avarias)}</textarea></div>
     ${pedeChecklist ? `<div><label>Responsável do cliente</label><input data-m="responsavel" value="${esc(F.responsavel)}"></div>
     <div><label>Documento (CPF/RG)</label><input data-m="documento" value="${esc(F.documento)}"></div>` : ''}
+    ${['DEV', 'SUB'].includes(F.tipo) ? `<div class="span2"><label class="chk-inline"><input type="checkbox" id="abrirOS" ${F.abrirOS ? 'checked' : ''}> Abrir OS de reparo da avaria
+      (pós-venda avalia e, se for mau uso, cobra do cliente com orçamento aprovado)</label></div>` : ''}
   </div>
   ${pedeChecklist ? `<h3>Assinatura do responsável</h3><canvas class="sig" id="sig" width="1040" height="320"></canvas>
     <div class="row"><button type="button" class="mini" data-a="limpar">Limpar assinatura</button></div>` : ''}
@@ -101,6 +103,7 @@ export async function render(root, params, c) {
 
 function ler(root) {
   $$('[data-m]', root).forEach((e) => (F[e.dataset.m] = e.value));
+  if ($('#abrirOS', root)) F.abrirOS = $('#abrirOS', root).checked;
   $$('[data-chk]', root).forEach((e) => {
     if (e.checked) F.checklist[e.dataset.chk] = { ...(F.checklist[e.dataset.chk] || {}), r: e.value };
   });
@@ -148,10 +151,15 @@ async function registrar(root) {
   ler(root);
   const body = { tipo: F.tipo, contrato: Number(F.ctr), linha: Number(F.linha), ativo: F.ativo, ativoNovo: F.ativoNovo, data: F.data, leitura: F.leitura,
     leituraNovo: F.leituraNovo, combustivel: F.combustivel, destino: F.destino, checklist: F.checklist, avarias: F.avarias, responsavel: F.responsavel,
-    documento: F.documento, assinatura: F.assinatura };
+    documento: F.documento, assinatura: F.assinatura, abrirOS: F.abrirOS };
+  const temAvaria = Object.values(F.checklist).some((v) => v.r === 'NOK');
+  if (['DEV', 'SUB'].includes(F.tipo) && temAvaria && !F.abrirOS) {
+    body.abrirOS = await confirmar({ titulo: 'Itens com avaria', texto: 'O checklist tem itens "Não OK". Deseja abrir uma OS de reparo para o pós-venda avaliar e, se for o caso, cobrar o cliente?', ok: 'Abrir OS de reparo' });
+  }
   try {
     const r = await post('/movements', body, { 'Idempotency-Key': F.key });
-    toast(`${DOM.tipoMov[F.tipo]} registrada (nº ${r.DocNum}).`);
+    toast(`${DOM.tipoMov[F.tipo]} registrada (nº ${r.DocNum}).${r.os ? ` OS de reparo ${r.os.DocNum} aberta.` : ''}`);
+    if (r.avisoOS) toast(r.avisoOS, 'err');
     F = novoForm();
     await render(root, {}, ctx);
     if (['ENT', 'DEV', 'SUB'].includes(r.tipo) && (await confirmar({ titulo: 'Imprimir termo', texto: 'Deseja imprimir o termo para assinatura física ou arquivo?', ok: 'Imprimir' }))) termo(r.DocEntry);

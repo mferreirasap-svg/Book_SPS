@@ -12,6 +12,7 @@ import cadastroRoutes from '../../server/src/routes/cadastros.js';
 import operacaoRoutes from '../../server/src/routes/operacao.js';
 import faturamentoRoutes from '../../server/src/routes/faturamento.js';
 import adminRoutes from '../../server/src/routes/admin.js';
+import posvendaRoutes from '../../server/src/routes/posvenda.js';
 
 const DEMO_PASSWORD = 'Demo2026senha';
 const K = { b1: 'aster-rental-demo-b1', users: 'aster-rental-demo-users', audit: 'aster-rental-demo-audit', session: 'aster-rental-demo-sessions', token: 'aster-rental-demo-token' };
@@ -219,7 +220,7 @@ export async function createDemoBackend() {
   const deps = { cfg, auth, audit, jobs, sl, idem, ...createServices({ sl, audit, jobs }) };
 
   const { app, routes } = createRouter();
-  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes]) await r(app, { deps });
+  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes]) await r(app, { deps });
   app.get('/health', async () => ({ ok: true, b1Mode: 'mock', version: 'demo' }));
   const PUBLIC = new Set(['/auth/login', '/health']);
   let token = ls.get(K.token);
@@ -244,7 +245,7 @@ export async function createDemoBackend() {
       clearCookie() { token = null; ls.del(K.token); return this; },
     };
     try {
-      if (!PUBLIC.has(path)) {
+      if (!PUBLIC.has(path) && !path.startsWith('/public/')) {
         req.user = auth.session(token);
         if (!req.user) throw new HttpError(401, 'Sessão expirada. Entre novamente.');
       }

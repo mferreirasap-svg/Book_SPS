@@ -20,6 +20,7 @@ import cadastroRoutes from './routes/cadastros.js';
 import operacaoRoutes from './routes/operacao.js';
 import faturamentoRoutes from './routes/faturamento.js';
 import adminRoutes from './routes/admin.js';
+import posvendaRoutes from './routes/posvenda.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = join(here, '..', '..', 'web');
@@ -85,7 +86,7 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
       }
     }
     const path = req.url.split('?')[0];
-    if (PUBLIC.has(path)) return;
+    if (PUBLIC.has(path) || path.startsWith('/api/public/')) return;
     const user = auth.session(req.cookies[cfg.session.cookieName]);
     if (!user) throw new HttpError(401, 'Sessão expirada. Entre novamente.');
     req.user = user;
@@ -108,6 +109,7 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   await app.register(operacaoRoutes, { prefix: '/api', deps });
   await app.register(faturamentoRoutes, { prefix: '/api', deps });
   await app.register(adminRoutes, { prefix: '/api', deps });
+  await app.register(posvendaRoutes, { prefix: '/api', deps });
 
   app.get('/api/health', async () => ({ ok: true, b1Mode: cfg.b1.mode, version: process.env.npm_package_version || '0.1.0' }));
 

@@ -81,6 +81,18 @@ async function parametros(box) {
     <div><label>Avisar parcela a vencer com quantos dias</label><input data-p="DIAS_ALERTA_FAT" type="number" min="0" value="${esc(p.DIAS_ALERTA_FAT)}"></div>
     <div class="span2"><label>Checklist de máquinas e equipamentos (um item por linha)</label><textarea data-p="CHK_EQP" rows="7">${esc(p.CHK_EQP)}</textarea></div>
     <div class="span2"><label>Checklist de veículos (um item por linha)</label><textarea data-p="CHK_VEI" rows="7">${esc(p.CHK_VEI)}</textarea></div>
+  </div>
+  <h3>Pós-venda</h3>
+  <p class="sub">SLA em horas corridas no formato "primeira resposta / solução". Ex.: 2/24 = responder em 2 h e resolver em 24 h.</p>
+  <div class="grid">
+    <div><label>SLA urgente</label><input data-p="SLA_URG" value="${esc(p.SLA_URG)}"></div><div><label>SLA alta</label><input data-p="SLA_ALT" value="${esc(p.SLA_ALT)}"></div>
+    <div><label>SLA média</label><input data-p="SLA_MED" value="${esc(p.SLA_MED)}"></div><div><label>SLA baixa</label><input data-p="SLA_BAI" value="${esc(p.SLA_BAI)}"></div>
+    <div><label>Item de serviço padrão (SAP B1)</label><input data-p="ITEM_SERVICO" value="${esc(p.ITEM_SERVICO)}"></div>
+    <div><label>Pesquisa de satisfação automática</label><select data-p="PESQ_AUTO"><option value="S">Enviar ao concluir a OS</option><option value="N" ${p.PESQ_AUTO === 'N' ? 'selected' : ''}>Não enviar</option></select></div>
+    <div class="span2"><label>Checklist de OS corretiva (um item por linha)</label><textarea data-p="CHK_OS_COR" rows="5">${esc(p.CHK_OS_COR)}</textarea></div>
+    <div class="span2"><label>Checklist de entrega técnica</label><textarea data-p="CHK_OS_INS" rows="4">${esc(p.CHK_OS_INS)}</textarea></div>
+    <div class="span2"><label>Checklist de vistoria</label><textarea data-p="CHK_OS_VIS" rows="4">${esc(p.CHK_OS_VIS)}</textarea></div>
+    <div class="span2"><label>Checklist de reparo de avaria</label><textarea data-p="CHK_OS_REP" rows="4">${esc(p.CHK_OS_REP)}</textarea></div>
   </div><div class="row" style="margin-top:12px"><span class="spacer"></span><button type="button" class="primary" data-a="salvar">Salvar parâmetros</button></div>`;
   box.onclick = async (ev) => {
     if (!ev.target.closest('[data-a=salvar]')) return;

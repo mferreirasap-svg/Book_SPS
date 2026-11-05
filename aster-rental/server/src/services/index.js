@@ -5,6 +5,7 @@ import { createContractService } from './contracts.js';
 import { createMovementService } from './movements.js';
 import { createBillingService } from './billing.js';
 import { createOperationsService } from './operations.js';
+import { createAfterSalesService } from './aftersales.js';
 
 export function createServices({ sl, audit, jobs }) {
   const repos = createRepos(sl);
@@ -12,5 +13,6 @@ export function createServices({ sl, audit, jobs }) {
   const movements = createMovementService({ repos, audit, contracts });
   const billing = createBillingService({ repos, audit, jobs });
   const operations = createOperationsService({ repos, audit, billing });
-  return { repos, contracts, movements, billing, operations };
+  const aftersales = createAfterSalesService({ repos, audit });
+  return { repos, contracts, movements, billing, operations, aftersales };
 }

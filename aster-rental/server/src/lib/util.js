@@ -8,6 +8,15 @@ export const d10 = (v) => (v ? String(v).slice(0, 10) : '');
 export function hoje(tz = 'America/Sao_Paulo') {
   return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
+/** Data e hora local (AAAA-MM-DDTHH:MM) no fuso de Brasília. Usada nos prazos de SLA e nos registros de campo. */
+export function agora(tz = 'America/Sao_Paulo', base = new Date()) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit',
+    minute: '2-digit', hourCycle: 'h23' }).formatToParts(base).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+/** Soma horas a uma data e hora local (sem fuso: o cálculo é feito como se fosse UTC). */
+export const addHoras = (dt, h) => new Date(Date.parse(`${dt}:00Z`) + Number(h) * 36e5).toISOString().slice(0, 16);
+export const difHoras = (a, b) => (Date.parse(`${b}:00Z`) - Date.parse(`${a}:00Z`)) / 36e5;
 export const addDias = (s, n) => {
   const d = new Date(`${s}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);

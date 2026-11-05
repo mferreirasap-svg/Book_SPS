@@ -113,16 +113,42 @@ O sistema pode abrir dentro do Áster (iframe) ou como link. Libere o domínio d
 | Concorrência | Versão do registro: quem grava por cima recebe aviso (409) |
 | Duplicidade | Parcela travada por contrato e competência; movimentação com chave de idempotência |
 
+## Pós-venda
+
+Menu **Pós-venda** (referência de escopo e decisões em `docs/pos-venda/01-pesquisa-auvo.md`):
+
+| Tela | Resumo |
+|---|---|
+| Chamados | Abertura por telefone, e-mail, WhatsApp ou portal; SLA de 1ª resposta e de solução por prioridade; conversa com o cliente; gera OS |
+| Ordens de serviço | Corretiva, preventiva, entrega técnica, vistoria e reparo de avaria; técnico e agenda; checklist, peças e serviços, fotos, laudo e assinatura; orçamento aprovado pelo cliente; relatório |
+| Agenda da equipe | Semana por técnico e fila sem agenda |
+| Preventivas | Planos por família (horas/km e dias); vencidas e próximas pela leitura atual; gera a OS com o checklist do plano |
+| Satisfação (NPS) | Link público por token (`#/pesquisa/<código>`), NPS geral e por técnico; nota 0–6 abre chamado de reclamação |
+| Técnicos e planos | Técnico ligado ao usuário (perfil "Técnico de campo" vê só as próprias OS) e planos preventivos |
+
+Integrações com o que já existia:
+- **Equipamento parado no cliente** vira "dias fora" no contrato, e o faturamento já desconta esses dias. A parada fecha quando a OS é concluída. Conserto no mesmo dia não gera desconto.
+- **Concluir a OS** atualiza o horímetro (com leitura para o consumo do contrato), resolve o chamado, cria **rascunho de NF no SAP B1** com os itens cobráveis aprovados (`U_SPS_OsEntry`) e envia a pesquisa.
+- **Devolução ou substituição com avaria** pode abrir a OS de reparo já ligada ao contrato e ao cliente.
+- **Ativos › Histórico** reúne contratos, movimentações, chamados, OS e leituras do equipamento.
+
+Estruturas novas no B1 (versão 3): `SPSLCHA` (chamados e interações), `SPSLOS` (OS e itens), `@SPS_LTEC`, `@SPS_LPLN` e `@SPS_LPES`. Rode a instalação de novo em Administração › SAP B1.
+
 ## API (principais rotas)
 
 `/api/auth/*` · `/api/dashboard` · `/api/assets` · `/api/assets/availability` · `/api/families` · `/api/rules` ·
 `/api/contracts` · `/api/contracts/:id/status` · `/api/movements` · `/api/readings` · `/api/readings/import` ·
-`/api/fines` · `/api/billing` · `/api/billing/generate` · `/api/billing/installment/:code/release` · `/api/jobs/:id` · `/api/admin/*`
+`/api/fines` · `/api/billing` · `/api/billing/generate` · `/api/billing/installment/:code/release` · `/api/jobs/:id` · `/api/admin/*` ·
+`/api/tickets` · `/api/tickets/:id/interactions` · `/api/tickets/:id/order` · `/api/orders` · `/api/orders/:id/{schedule,start,quote,conclude,cancel}` ·
+`/api/preventive` · `/api/technicians` · `/api/plans` · `/api/surveys` · `/api/assets/:code/history` · `/api/aftersales/dashboard` ·
+`/api/public/survey/:code` (sem login)
 
 ## Próximos passos
 
 - Equipamento como número de série do B1, com nota de remessa e de retorno (`DeliveryNotes` e `Returns`) na entrega e na devolução.
 - Fotos no checklist como anexos do B1 e modo offline no celular.
 - Proposta e pré-contrato a partir de cotação e pedido do B1.
-- Envio da fatura e do extrato por e-mail; manutenção preventiva com O.S.
+- Envio da fatura, do extrato e da pesquisa de satisfação por e-mail (hoje a pesquisa é gerada e o link pode ser copiado).
+- Pós-venda, próxima etapa: portal do cliente (abrir chamado por QR Code, acompanhar OS, aprovar orçamento), app do técnico offline com GPS,
+  SLA em horário comercial, baixa de peças no estoque do B1 e contrato de manutenção de equipamento do cliente.
 - Teste de carga, teste de invasão e homologação com cliente piloto.

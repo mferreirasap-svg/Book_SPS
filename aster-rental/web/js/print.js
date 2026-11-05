@@ -71,3 +71,35 @@ export function imprimirTermo(m, { empresa = '', contrato = null, ativo = null, 
       <div>${m.U_Assinatura && /^data:image\/png;base64,/.test(m.U_Assinatura) ? `<img src="${m.U_Assinatura}" style="max-height:70px;display:block;margin:-80px auto 4px">` : ''}
       ${esc(m.U_Respons || '')}${m.U_DocResp ? ` — ${esc(m.U_DocResp)}` : ''}</div></div>`);
 }
+
+const TIPO_OS = { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' };
+
+/** Relatório da ordem de serviço para o cliente (laudo, checklist, peças, fotos e assinatura). */
+export function imprimirOS(o, { empresa = '' } = {}) {
+  let chk = {};
+  try {
+    chk = JSON.parse(o.U_Checklist || '{}');
+  } catch {
+    chk = {};
+  }
+  const itens = o.itens || [];
+  const cobrar = itens.filter((i) => i.cobrar === 'S').reduce((s, i) => s + (Number(i.qtd) || 0) * (Number(i.preco) || 0), 0);
+  const dt = (v) => (v ? `${fmtD(v)} ${String(v).slice(11, 16)}` : '—');
+  const titulo = `Ordem de serviço nº ${o.DocNum} — ${TIPO_OS[o.U_Tipo] || ''}`;
+  imprimir(titulo, `<h1>${esc(titulo)}</h1><div>${esc(empresa)}</div>
+    <h2>Atendimento</h2><p><b>Cliente:</b> ${esc(o.U_CardName)}${o.U_CtrEntry ? ` · contrato ${o.U_CtrEntry}` : ''}<br><b>Local:</b> ${esc(o.U_Local || '—')}<br>
+      <b>Equipamento:</b> ${esc(o.U_Ativo)} ${esc(o.ativo?.Name || '')}${o.ativo?.U_Placa ? ` · placa ${esc(o.ativo.U_Placa)}` : ''}${o.ativo?.U_Serie ? ` · série ${esc(o.ativo.U_Serie)}` : ''}
+      · leitura ${num(o.U_Medidor, 1)} ${UN(o.ativo?.U_Tipo)}<br><b>Técnico:</b> ${esc(o.tecnicoNome || '—')} · início ${dt(o.U_CheckIn)} · fim ${dt(o.U_CheckOut)}</p>
+    ${o.U_Descricao ? `<h2>Solicitação</h2><p style="white-space:pre-wrap">${esc(o.U_Descricao)}</p>` : ''}
+    <h2>Laudo</h2><p style="white-space:pre-wrap">${esc(o.U_Laudo || '—')}</p>
+    ${Object.keys(chk).length ? `<h2>Checklist</h2><table><tr><th>Item</th><th>Situação</th><th>Observação</th></tr>
+      ${Object.entries(chk).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc({ OK: 'OK', NOK: 'Não OK', NA: 'N/A' }[v.r] || '')}</td><td>${esc(v.o || '')}</td></tr>`).join('')}</table>` : ''}
+    ${itens.length ? `<h2>Peças e serviços</h2><table><tr><th>Descrição</th><th class="r">Qtd</th><th class="r">Preço</th><th class="r">Total</th><th>Cobrado</th></tr>
+      ${itens.map((i) => `<tr><td>${esc(i.descr)}</td><td class="r">${num(i.qtd, 2)}</td><td class="r">${brl(i.preco)}</td><td class="r">${brl((Number(i.qtd) || 0) * (Number(i.preco) || 0))}</td>
+        <td>${i.cobrar === 'S' ? 'Sim' : 'Não'}</td></tr>`).join('')}
+      <tr><td colspan="3"><b>Valor a cobrar do cliente</b></td><td class="r"><b>${brl(cobrar)}</b></td><td>${o.U_OrcAprov ? `aprovado por ${esc(o.U_OrcAprov)}` : ''}</td></tr></table>` : ''}
+    ${(o.fotos || []).length ? `<h2>Fotos</h2><div>${o.fotos.map((f) => `<figure style="display:inline-block;margin:4px;width:220px"><img src="${f.src}" style="width:220px"><figcaption style="font-size:11px">${esc(f.legenda || '')}</figcaption></figure>`).join('')}</div>` : ''}
+    <div class="ass"><div>${esc(o.tecnicoNome || empresa || 'Técnico')}</div>
+      <div>${o.U_Assinatura && /^data:image\/png;base64,/.test(o.U_Assinatura) ? `<img src="${o.U_Assinatura}" style="max-height:70px;display:block;margin:-80px auto 4px">` : ''}
+      ${esc(o.U_Respons || 'Responsável do cliente')}${o.U_DocResp ? ` — ${esc(o.U_DocResp)}` : ''}</div></div>`);
+}

@@ -131,8 +131,9 @@ test('manutenção: envio e retorno registram os dias fora do cliente', async ()
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal((await admin.get('/api/assets/EQP-0001')).body.U_Status, 'LOC');
   const h = (await admin.get('/api/contracts/1/history')).body;
-  assert.equal(h.foras.length, 1);
-  assert.ok(h.foras[0].U_Fim);
+  const linha1 = h.foras.filter((f) => f.U_CtrLine === 1); // a linha 2 tem a parada do gerador da base de demonstração
+  assert.equal(linha1.length, 1);
+  assert.ok(linha1[0].U_Fim);
 });
 
 test('substituição exige a mesma família', async () => {

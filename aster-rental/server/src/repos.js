@@ -1,6 +1,6 @@
 // Acesso aos dados de locação no SAP B1 via Service Layer. Toda consulta usa filtros montados
 // por odata.js; listas são paginadas no B1 (requisito PER-02).
-import { SET, LN, GR } from './b1/schema.js';
+import { SET, LN, GR, CH1, OS1 } from './b1/schema.js';
 import { query, eq, ge, le, and, or, contains, anyOf, key } from './b1/odata.js';
 import { conflict, notFound } from './lib/util.js';
 
@@ -157,7 +157,67 @@ export function createRepos(sl) {
     get: (code) => getOrNull(`Items${key(code)}`),
   };
 
+  /* ---- pós-venda ---- */
+  const docRepo = (set, child) => {
+    const r = {
+      get: async (id) => {
+        const d = await getOrNull(`${set}(${Number(id)})`);
+        if (d) d[child] ||= [];
+        return d;
+      },
+      create: (rec) => sl.request('POST', set, { ...rec, U_Versao: 0 }),
+      update: async (id, patch, version, { replaceLines = false } = {}) => {
+        const cur = await r.get(id);
+        if (!cur) throw notFound(set === SET.OS ? 'Ordem de serviço' : 'Chamado');
+        await patchVersioned(`${set}(${Number(id)})`, cur, patch, version, replaceLines ? { 'B1S-ReplaceCollectionsOnPatch': 'true' } : {});
+        return { before: cur, after: await r.get(id) };
+      },
+    };
+    return r;
+  };
+
+  const tickets = {
+    ...docRepo(SET.CHA, CH1),
+    list: ({ status, abertos, q, cardCode, ativo, branches }, pg) =>
+      paged(sl, SET.CHA, {
+        filter: and(status && eq('U_Status', status), abertos && anyOf('U_Status', ['ABE', 'AND', 'AGC']), cardCode && eq('U_CardCode', cardCode),
+          ativo && eq('U_Ativo', ativo), like(q, ['U_CardName', 'U_Assunto', 'U_Ativo', 'U_Contato']), branchFilter(branches)),
+        orderby: 'DocEntry desc',
+      }, pg),
+    all: ({ abertos, ativo, branches } = {}) =>
+      sl.getAll(query(SET.CHA, { filter: and(abertos && anyOf('U_Status', ['ABE', 'AND', 'AGC']), ativo && eq('U_Ativo', ativo), branchFilter(branches)) })),
+  };
+
+  const orders = {
+    ...docRepo(SET.OS, OS1),
+    list: ({ status, abertas, tipo, tecnico, de, ate, q, ativo, branches }, pg) =>
+      paged(sl, SET.OS, {
+        filter: and(status && eq('U_Status', status), abertas && anyOf('U_Status', ['ABE', 'AGE', 'EXE', 'AOR']), tipo && eq('U_Tipo', tipo),
+          tecnico && eq('U_Tecnico', tecnico), de && ge('U_DtAgenda', de), ate && le('U_DtAgenda', ate), ativo && eq('U_Ativo', ativo),
+          like(q, ['U_CardName', 'U_Ativo', 'U_Descricao']), branchFilter(branches)),
+        orderby: 'DocEntry desc',
+      }, pg),
+    all: ({ ativo, tipo, status, abertas, branches } = {}) =>
+      sl.getAll(query(SET.OS, { filter: and(ativo && eq('U_Ativo', ativo), tipo && eq('U_Tipo', tipo), status && eq('U_Status', status),
+        abertas && anyOf('U_Status', ['ABE', 'AGE', 'EXE', 'AOR']), branchFilter(branches)) })),
+  };
+
+  const udt = (set) => ({
+    all: () => sl.getAll(query(set, { orderby: 'Code asc' })),
+    get: (code) => getOrNull(`${set}${key(code)}`),
+    create: (rec) => sl.request('POST', set, rec),
+    patch: (code, patch) => sl.request('PATCH', `${set}${key(code)}`, patch),
+  });
+  const technicians = udt(SET.TEC);
+  const plans = udt(SET.PLN);
+  const surveys = {
+    ...udt(SET.PES),
+    all: () => sl.getAll(query(SET.PES, { orderby: 'U_Enviada desc' })),
+    byOs: (os) => sl.getAll(query(SET.PES, { filter: eq('U_OsEntry', Number(os)) })),
+  };
+
   const period = (from, to) => and(ge('U_Data', from), le('U_Data', to));
 
-  return { sl, assets, families, rules, contracts, movements, readings, offPeriods, installments, fines, settings, partners, items, period };
+  return { sl, assets, families, rules, contracts, movements, readings, offPeriods, installments, fines, settings, partners, items, period,
+    tickets, orders, technicians, plans, surveys };
 }

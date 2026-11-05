@@ -2,7 +2,7 @@
 import { notFound, forbidden, badRequest } from '../lib/util.js';
 
 export default async function operacaoRoutes(app, { deps }) {
-  const { repos, contracts, movements, operations, idem: idemStore } = deps;
+  const { repos, contracts, movements, operations, aftersales, idem: idemStore } = deps;
   const can = app.can;
   const inBranch = (req, c) => !req.user.branches.length || req.user.branches.includes(Number(c.U_Filial));
 
@@ -62,6 +62,14 @@ export default async function operacaoRoutes(app, { deps }) {
       if (prev) return reply.status(prev.status).send(JSON.parse(prev.response));
     }
     const result = await movements.register(req, req.body || {});
+    // Devolução ou substituição com avaria: abre a OS de reparo já ligada ao contrato (base para cobrar o cliente).
+    if (req.body?.abrirOS && ['DEV', 'SUB'].includes(result.tipo) && req.user.perms.some((p) => ['os.editar', 'mov.registrar'].includes(p))) {
+      try {
+        result.os = await aftersales.orderFromReturn(req, result.DocEntry);
+      } catch (e) {
+        result.avisoOS = `Movimentação registrada, mas a OS de reparo não foi aberta: ${e.message}`;
+      }
+    }
     if (idem) idemStore.save(idem, req.user.login, 200, JSON.stringify(result));
     return result;
   });

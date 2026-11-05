@@ -1,7 +1,7 @@
 // Estruturas do Áster Rental no SAP B1: tabelas (UDT), campos (UDF) e objetos (UDO).
 // O instalador cria tudo pela Service Layer. Ao mudar algo aqui, incremente SCHEMA_VERSION.
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const SET = {
   ATV: 'SPSLATV',
@@ -14,9 +14,16 @@ export const SET = {
   FAT: 'U_SPS_LFAT',
   MUL: 'U_SPS_LMUL',
   CFG: 'U_SPS_LCFG',
+  CHA: 'SPSLCHA',
+  OS: 'SPSLOS',
+  TEC: 'U_SPS_LTEC',
+  PLN: 'U_SPS_LPLN',
+  PES: 'U_SPS_LPES',
 };
 export const LN = 'SPS_LCT1Collection'; // itens do contrato
 export const GR = 'SPS_LCT2Collection'; // grupos de cobrança agrupada
+export const CH1 = 'SPS_LCH1Collection'; // interações do chamado
+export const OS1 = 'SPS_LOS1Collection'; // peças e serviços da OS
 
 export const DOM = {
   tipoAtivo: { EQP: 'Máquina/Equipamento', VEI: 'Veículo' },
@@ -30,6 +37,15 @@ export const DOM = {
   tipoMov: { ENT: 'Entrega', DEV: 'Devolução', SUB: 'Substituição', MAN: 'Envio à manutenção', RET: 'Retorno da manutenção' },
   statusFat: { PRO: 'Em processamento', OK: 'Gerada', CAN: 'Cancelada', ERR: 'Com erro' },
   statusMulta: { PEN: 'Pendente', IND: 'Condutor indicado', REP: 'A repassar', FAT: 'Faturada', PAG: 'Paga pela locadora' },
+  // pós-venda
+  tipoCha: { PAR: 'Equipamento parado', MAN: 'Manutenção solicitada', DUV: 'Dúvida / solicitação', REC: 'Reclamação', TRO: 'Troca de equipamento', RET: 'Retirada antecipada' },
+  origemCha: { TEL: 'Telefone', EMA: 'E-mail', WPP: 'WhatsApp', POR: 'Portal / QR Code', INT: 'Interno' },
+  prioridade: { URG: 'Urgente', ALT: 'Alta', MED: 'Média', BAI: 'Baixa' },
+  statusCha: { ABE: 'Aberto', AND: 'Em atendimento', AGC: 'Aguardando cliente', RES: 'Resolvido', FEC: 'Fechado', CAN: 'Cancelado' },
+  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' },
+  statusOS: { ABE: 'Sem agenda', AGE: 'Agendada', EXE: 'Em execução', AOR: 'Aguardando aprovação', CON: 'Concluída', CAN: 'Cancelada' },
+  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento' },
+  orcamento: { '': 'Sem orçamento', PEN: 'Aguardando cliente', APR: 'Aprovado', REC: 'Recusado' },
 };
 
 const F = (n, t, d, o = {}) => ({ n, t, d, ...o });
@@ -48,6 +64,13 @@ export const SCHEMA = {
     { TableName: 'SPS_LFAT', TableDescription: 'Locação - Parcelas', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LMUL', TableDescription: 'Locação - Multas', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LCFG', TableDescription: 'Locação - Parâmetros', TableType: 'bott_NoObject' },
+    { TableName: 'SPS_LCHA', TableDescription: 'Pós-venda - Chamados', TableType: 'bott_Document' },
+    { TableName: 'SPS_LCH1', TableDescription: 'Pós-venda - Interações', TableType: 'bott_DocumentLines' },
+    { TableName: 'SPS_LOS', TableDescription: 'Pós-venda - Ordens de serviço', TableType: 'bott_Document' },
+    { TableName: 'SPS_LOS1', TableDescription: 'Pós-venda - Itens da OS', TableType: 'bott_DocumentLines' },
+    { TableName: 'SPS_LTEC', TableDescription: 'Pós-venda - Técnicos', TableType: 'bott_NoObject' },
+    { TableName: 'SPS_LPLN', TableDescription: 'Pós-venda - Planos preventivos', TableType: 'bott_NoObject' },
+    { TableName: 'SPS_LPES', TableDescription: 'Pós-venda - Pesquisas', TableType: 'bott_NoObject' },
   ],
   fields: {
     '@SPS_LATV': [
@@ -120,7 +143,52 @@ export const SCHEMA = {
       F('Status', 'A', 'Status', { size: 3, vv: DOM.statusMulta, def: 'PEN' }), F('Comp', 'A', 'Competência faturada', { size: 6 }),
     ],
     '@SPS_LCFG': [F('Valor', 'T', 'Valor do parâmetro')],
-    OINV: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Comp', 'A', 'Competência da locação', { size: 6 })],
+    '@SPS_LCHA': [
+      F('CardCode', 'A', 'Cliente', { size: 15 }), F('CardName', 'A', 'Nome do cliente', { size: 100 }), F('Contato', 'A', 'Contato', { size: 100 }),
+      F('Fone', 'A', 'Telefone', { size: 30 }), F('Email', 'A', 'E-mail', { size: 100 }), F('CtrEntry', 'N', 'Contrato (DocEntry)'),
+      F('Ativo', 'A', 'Ativo', { size: 50 }), F('Tipo', 'A', 'Tipo', { size: 3, vv: DOM.tipoCha }), F('Origem', 'A', 'Origem', { size: 3, vv: DOM.origemCha }),
+      F('Prior', 'A', 'Prioridade', { size: 3, vv: DOM.prioridade, def: 'MED' }), F('Status', 'A', 'Status', { size: 3, vv: DOM.statusCha, def: 'ABE' }),
+      F('Assunto', 'A', 'Assunto', { size: 150 }), F('Descricao', 'T', 'Descrição'), F('Parado', 'A', 'Equipamento parado', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' }),
+      F('Abertura', 'A', 'Aberto em (data e hora)', { size: 16 }), F('PrazoResp', 'A', 'Prazo 1ª resposta', { size: 16 }),
+      F('PrazoSol', 'A', 'Prazo de solução', { size: 16 }), F('DtResp', 'A', '1ª resposta em', { size: 16 }), F('DtSol', 'A', 'Resolvido em', { size: 16 }),
+      F('Respons', 'A', 'Responsável', { size: 50 }), F('OsEntry', 'N', 'OS gerada'), F('Filial', 'N', 'Filial (BPLId)'), F('Versao', 'N', 'Versão do registro'),
+    ],
+    '@SPS_LCH1': [F('Data', 'A', 'Data e hora', { size: 16 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Texto', 'T', 'Texto'),
+      F('Publico', 'A', 'Visível ao cliente', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' })],
+    '@SPS_LOS': [
+      F('Tipo', 'A', 'Tipo', { size: 3, vv: DOM.tipoOS }), F('Status', 'A', 'Status', { size: 3, vv: DOM.statusOS, def: 'ABE' }),
+      F('Prior', 'A', 'Prioridade', { size: 3, vv: DOM.prioridade, def: 'MED' }), F('CardCode', 'A', 'Cliente', { size: 15 }),
+      F('CardName', 'A', 'Nome do cliente', { size: 100 }), F('Email', 'A', 'E-mail do cliente', { size: 100 }), F('CtrEntry', 'N', 'Contrato (DocEntry)'),
+      F('CtrLine', 'N', 'Linha do contrato'), F('Ativo', 'A', 'Ativo', { size: 50 }), F('ChaEntry', 'N', 'Chamado (DocEntry)'), F('MovEntry', 'N', 'Movimentação de origem'),
+      F('Plano', 'A', 'Plano preventivo', { size: 50 }), F('Tecnico', 'A', 'Técnico', { size: 50 }), F('DtAgenda', 'D', 'Data agendada'),
+      F('HrAgenda', 'A', 'Hora agendada', { size: 5 }), F('Duracao', 'N', 'Duração prevista (min)'), F('Local', 'A', 'Local do atendimento', { size: 150 }),
+      F('Descricao', 'T', 'Problema / solicitação'), F('Laudo', 'T', 'Laudo / solução'), F('CheckIn', 'A', 'Início (data e hora)', { size: 16 }),
+      F('CheckOut', 'A', 'Fim (data e hora)', { size: 16 }), F('Medidor', 'M', 'Leitura no atendimento'), F('Checklist', 'T', 'Checklist (JSON)'),
+      F('Fotos', 'T', 'Fotos (JSON)'), F('Respons', 'A', 'Responsável do cliente', { size: 100 }), F('DocResp', 'A', 'Documento do responsável', { size: 30 }),
+      F('Assinatura', 'T', 'Assinatura (PNG base64)'), F('Parada', 'A', 'Desconta parada', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' }),
+      F('DtParada', 'D', 'Parado desde'), F('ForaCode', 'A', 'Registro de dias fora', { size: 50 }),
+      F('Orc', 'A', 'Orçamento', { size: 3, vv: DOM.orcamento }), F('OrcAprov', 'A', 'Aprovado / recusado por', { size: 100 }),
+      F('Valor', 'S', 'Valor cobrável'), F('DocType', 'A', 'Documento gerado', { size: 10 }), F('DocEntry', 'N', 'DocEntry do documento'),
+      F('DocNum', 'N', 'Número do documento'), F('Filial', 'N', 'Filial (BPLId)'), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Versao', 'N', 'Versão do registro'),
+    ],
+    '@SPS_LOS1': [
+      F('Tipo', 'A', 'Tipo', { size: 3, vv: DOM.tipoItemOS }), F('ItemCode', 'A', 'Item SAP B1', { size: 50 }), F('Descr', 'A', 'Descrição', { size: 100 }),
+      F('Qtd', 'Q', 'Quantidade'), F('Preco', 'P', 'Preço unitário'), F('Cobrar', 'A', 'Cobrar do cliente', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' }),
+    ],
+    '@SPS_LTEC': [
+      F('Login', 'A', 'Usuário do Áster', { size: 50 }), F('Fone', 'A', 'Telefone', { size: 30 }), F('Email', 'A', 'E-mail', { size: 100 }),
+      F('Especial', 'A', 'Especialidade', { size: 100 }), F('Filial', 'N', 'Filial (BPLId)'), F('Ativo', 'A', 'Ativo', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'S' }),
+    ],
+    '@SPS_LPLN': [
+      F('Familia', 'A', 'Família', { size: 50 }), F('IntMed', 'M', 'Intervalo (h ou km)'), F('IntDias', 'N', 'Intervalo (dias)'),
+      F('Aviso', 'N', 'Avisar antes (%)'), F('Checklist', 'T', 'Checklist'), F('Ativo', 'A', 'Ativo', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'S' }),
+    ],
+    '@SPS_LPES': [
+      F('OsEntry', 'N', 'OS (DocEntry)'), F('ChaEntry', 'N', 'Chamado (DocEntry)'), F('CardCode', 'A', 'Cliente', { size: 15 }),
+      F('CardName', 'A', 'Nome do cliente', { size: 100 }), F('Email', 'A', 'E-mail', { size: 100 }), F('Tecnico', 'A', 'Técnico', { size: 50 }),
+      F('Enviada', 'D', 'Enviada em'), F('Nota', 'N', 'Nota (0 a 10)'), F('Comentario', 'T', 'Comentário'), F('Respondida', 'A', 'Respondida em', { size: 16 }),
+    ],
+    OINV: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Comp', 'A', 'Competência da locação', { size: 6 }), F('SPS_OsEntry', 'N', 'Ordem de serviço')],
   },
   udos: [
     { Code: 'SPSLATV', Name: 'Locação - Ativos', TableName: 'SPS_LATV', ObjectType: 'boud_MasterData', CanFind: 'tYES', CanDelete: 'tNO', CanLog: 'tYES',
@@ -133,6 +201,12 @@ export const SCHEMA = {
       UserObjectMD_FindColumns: [{ ColumnAlias: 'U_CardCode' }, { ColumnAlias: 'U_CardName' }] },
     { Code: 'SPSLMOV', Name: 'Locação - Movimentações', TableName: 'SPS_LMOV', ObjectType: 'boud_Document', CanFind: 'tYES', CanCancel: 'tYES', CanLog: 'tYES',
       ManageSeries: 'tYES', UserObjectMD_FindColumns: [{ ColumnAlias: 'U_Ativo' }, { ColumnAlias: 'U_CardName' }] },
+    { Code: 'SPSLCHA', Name: 'Pós-venda - Chamados', TableName: 'SPS_LCHA', ObjectType: 'boud_Document', CanFind: 'tYES', CanCancel: 'tYES', CanLog: 'tYES',
+      ManageSeries: 'tYES', UserObjectMD_ChildTables: [{ TableName: 'SPS_LCH1', ObjectName: 'SPS_LCH1' }],
+      UserObjectMD_FindColumns: [{ ColumnAlias: 'U_CardName' }, { ColumnAlias: 'U_Assunto' }] },
+    { Code: 'SPSLOS', Name: 'Pós-venda - Ordens de serviço', TableName: 'SPS_LOS', ObjectType: 'boud_Document', CanFind: 'tYES', CanCancel: 'tYES', CanLog: 'tYES',
+      ManageSeries: 'tYES', UserObjectMD_ChildTables: [{ TableName: 'SPS_LOS1', ObjectName: 'SPS_LOS1' }],
+      UserObjectMD_FindColumns: [{ ColumnAlias: 'U_CardName' }, { ColumnAlias: 'U_Ativo' }, { ColumnAlias: 'U_Tecnico' }] },
   ],
 };
 
@@ -156,5 +230,16 @@ export const CFG_DEFAULTS = {
   DIAS_ALERTA_FAT: '7',
   CHK_EQP: ['Limpeza geral', 'Nível de óleo e fluidos', 'Sem vazamentos', 'Pneus / esteiras', 'Implementos e acessórios', 'Funcionamento geral', 'Manual e documentação'].join('\n'),
   CHK_VEI: ['Documento (CRLV)', 'Pneus e estepe', 'Macaco, triângulo e chave de roda', 'Lataria sem avarias', 'Vidros e retrovisores', 'Faróis e lanternas', 'Limpeza interna', 'Tapetes'].join('\n'),
+  // pós-venda: prazos de SLA em horas corridas (primeira resposta / solução) por prioridade
+  SLA_URG: '1/8',
+  SLA_ALT: '2/24',
+  SLA_MED: '4/48',
+  SLA_BAI: '8/96',
+  ITEM_SERVICO: 'SLOC800',
+  PESQ_AUTO: 'S',
+  CHK_OS_COR: ['Equipamento identificado (série/placa)', 'Defeito reproduzido', 'Causa identificada', 'Peças substituídas testadas', 'Teste de funcionamento final', 'Local limpo e organizado'].join('\n'),
+  CHK_OS_INS: ['Equipamento conferido na chegada', 'Operador do cliente orientado', 'Itens de segurança apresentados', 'Teste de funcionamento com o cliente'].join('\n'),
+  CHK_OS_VIS: ['Estado geral', 'Uso conforme contrato', 'Horímetro / hodômetro conferido', 'Sinais de mau uso'].join('\n'),
+  CHK_OS_REP: ['Avaria registrada com fotos', 'Causa (desgaste normal ou mau uso)', 'Reparo executado', 'Teste de funcionamento final'].join('\n'),
   SCHEMA_VERSION: '0',
 };

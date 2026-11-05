@@ -12,6 +12,12 @@ import * as faturamento from './views/faturamento.js';
 import * as multas from './views/multas.js';
 import * as cadastros from './views/cadastros.js';
 import * as admin from './views/admin.js';
+import * as chamados from './views/chamados.js';
+import * as os from './views/os.js';
+import * as agenda from './views/agenda.js';
+import * as preventivas from './views/preventivas.js';
+import * as satisfacao from './views/satisfacao.js';
+import * as tecnicos from './views/tecnicos.js';
 
 const VIEWS = [
   { sec: 'Locação' },
@@ -21,6 +27,13 @@ const VIEWS = [
   { key: 'leituras', title: 'Leituras', perm: 'leituras.ver', mod: leituras },
   { key: 'faturamento', title: 'Faturamento', perm: 'faturamento.ver', mod: faturamento },
   { key: 'multas', title: 'Multas', perm: 'multas.ver', mod: multas },
+  { sec: 'Pós-venda' },
+  { key: 'chamados', title: 'Chamados', perm: 'chamados.ver', mod: chamados },
+  { key: 'os', title: 'Ordens de serviço', perm: 'os.ver', mod: os },
+  { key: 'agenda', title: 'Agenda da equipe', perm: 'os.ver', mod: agenda },
+  { key: 'preventivas', title: 'Preventivas', perm: 'os.ver', mod: preventivas },
+  { key: 'satisfacao', title: 'Satisfação (NPS)', perm: 'pesquisa.ver', mod: satisfacao },
+  { key: 'tecnicos', title: 'Técnicos e planos', perm: ['planos.editar', 'os.editar'], mod: tecnicos },
   { sec: 'Frota' },
   { key: 'ativos', title: 'Ativos', perm: 'ativos.ver', mod: ativos },
   { key: 'disponibilidade', title: 'Disponibilidade', perm: 'ativos.ver', mod: disponibilidade },
@@ -186,4 +199,16 @@ window.addEventListener('unhandledrejection', (e) => {
   if (e.reason?.status !== 401) toast(e.reason?.message || 'Erro inesperado.', 'err');
 });
 
-get('/auth/me').then(startApp).catch(showLogin);
+// Link da pesquisa de satisfação (#/pesquisa/<código>): página pública, sem login.
+const pesq = /^#\/pesquisa\/([a-z0-9-]{8,40})$/.exec(location.hash);
+if (pesq) {
+  $('#login').hidden = true;
+  $('#app').hidden = true;
+  const w = document.createElement('div');
+  w.className = 'public-wrap';
+  w.innerHTML = '<div class="login-card" id="pubBox"></div>';
+  document.body.appendChild(w);
+  satisfacao.formularioPesquisa($('#pubBox'), pesq[1]);
+} else {
+  get('/auth/me').then(startApp).catch(showLogin);
+}
