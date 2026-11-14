@@ -20,7 +20,13 @@ export function demoSeed() {
     ['C0003', 'Transportes Rota Sul Ltda', '34.567.890/0001-12', 'fiscal@rotasul.example'],
     ['C0004', 'Agro Vale Verde Ltda', '45.678.901/0001-23', 'adm@valeverde.example'],
     ['C0005', 'Eventos Prime Montagens ME', '56.789.012/0001-34', 'contato@prime.example'],
-  ].map(([CardCode, CardName, FederalTaxID, EmailAddress]) => ({ CardCode, CardName, FederalTaxID, EmailAddress, CardType: 'cCustomer', Valid: 'tYES' }));
+  ].map(([CardCode, CardName, FederalTaxID, EmailAddress]) => ({ CardCode, CardName, FederalTaxID, EmailAddress, CardType: 'cCustomer', Valid: 'tYES',
+    BPAddresses: [{ AddressName: 'COBRANCA', AddressType: 'bo_BillTo', Street: 'Endereço de cobrança', City: 'Belo Horizonte', State: 'MG' }] }));
+  // Endereços de entrega (obras) cadastrados no parceiro de negócio do B1
+  sets.BusinessPartners[0].BPAddresses.push({ AddressName: 'OBRA PARQUE DAS AGUAS', AddressType: 'bo_ShipTo', Street: 'Av. das Águas, 1500', City: 'Contagem', State: 'MG' },
+    { AddressName: 'OBRA CENTRO', AddressType: 'bo_ShipTo', Street: 'Rua da Bahia, 900', City: 'Belo Horizonte', State: 'MG' });
+  sets.BusinessPartners[2].BPAddresses.push({ AddressName: 'BASE BETIM', AddressType: 'bo_ShipTo', Street: 'Rod. Fernão Dias, km 492', City: 'Betim', State: 'MG' });
+  sets.BusinessPartners[3].BPAddresses.push({ AddressName: 'FAZENDA BOA VISTA', AddressType: 'bo_ShipTo', Street: 'Estrada Municipal, km 12', City: 'Unaí', State: 'MG' });
 
   sets.Items = [
     ['SLOC001', 'Locação de máquinas e equipamentos'],
@@ -33,6 +39,34 @@ export function demoSeed() {
     ['PEC-0210', 'Mangueira hidráulica 1/2"'],
     ['PEC-0305', 'Bateria 150 Ah'],
   ].map(([ItemCode, ItemName]) => ({ ItemCode, ItemName, SalesItem: 'tYES', Valid: 'tYES' }));
+
+  // Itens dos bens (controlados por nº de série) — cada equipamento da frota é um nº de série no B1
+  const BENS = [['BEM-RETRO', 'Retroescavadeira'], ['BEM-ESCAV', 'Escavadeira hidráulica'], ['BEM-MINI', 'Minicarregadeira'], ['BEM-GER', 'Gerador'],
+    ['BEM-PLAT', 'Plataforma elevatória'], ['BEM-PICAPE', 'Picape'], ['BEM-CAM', 'Caminhão leve'], ['BEM-UTIL', 'Utilitário leve']];
+  sets.Items.push(...BENS.map(([ItemCode, ItemName]) => ({ ItemCode, ItemName, SalesItem: 'tYES', InventoryItem: 'tYES', ManageSerialNumbers: 'tYES', Valid: 'tYES' })));
+
+  sets.BusinessPlaces = [{ BPLID: 1, BPLName: 'Matriz — Contagem/MG', DefaultWarehouseID: '01' }, { BPLID: 2, BPLName: 'Filial — Betim/MG', DefaultWarehouseID: '02' }];
+  sets.Warehouses = [['01', 'Pátio Contagem'], ['02', 'Pátio Betim'], ['LOC', 'Equipamentos em clientes'], ['MAN', 'Oficina / manutenção']]
+    .map(([WarehouseCode, WarehouseName]) => ({ WarehouseCode, WarehouseName }));
+  sets.NotaFiscalUsage = [[9, 'Locação de bens móveis'], [12, 'Remessa de bem em locação'], [13, 'Retorno de bem locado'], [15, 'Serviço e peças de assistência']]
+    .map(([ID, Usage]) => ({ ID, Usage, Description: Usage }));
+  sets.PaymentTermsTypes = [[-1, 'À vista'], [1, '30 dias'], [2, '28/56 dias']].map(([GroupNumber, PaymentTermsGroupName]) => ({ GroupNumber, PaymentTermsGroupName }));
+  sets.WizardPaymentMethods = [['BOLETO-ITAU', 'Boleto Itaú', 'boptIncoming'], ['BOLETO-BB', 'Boleto Banco do Brasil', 'boptIncoming'], ['DEPOSITO', 'Depósito em conta', 'boptIncoming'],
+    ['TED-FORN', 'TED fornecedores', 'boptOutgoing']].map(([PaymentMethodCode, Description, Type]) => ({ PaymentMethodCode, Description, Type, Active: 'tYES' }));
+  sets.SalesPersons = [[-1, '-Nenhum vendedor-'], [1, 'Ana Paula Rocha'], [2, 'Roberto Dias']].map(([SalesEmployeeCode, SalesEmployeeName]) => ({ SalesEmployeeCode, SalesEmployeeName, Active: 'tYES' }));
+  sets.Projects = [['OBRA-PQAGUAS', 'Residencial Parque das Águas'], ['FROTA-ROTASUL', 'Frota Rota Sul']].map(([Code, Name]) => ({ Code, Name, Active: 'tYES' }));
+  sets.EmployeesInfo = [[11, 'Rafael', 'Moreira'], [12, 'Juliana', 'Costa'], [13, 'Marcos', 'Tavares'], [14, 'Paulo', 'Lima']]
+    .map(([EmployeeID, FirstName, LastName]) => ({ EmployeeID, FirstName, LastName, Active: 'tYES' }));
+  sets.ServiceCallStatus = [[-3, 'Aberto'], [-2, 'Pendente'], [-1, 'Fechado']].map(([StatusId, Name]) => ({ StatusId, Name }));
+  sets.ServiceCallTypes = [[1, 'Manutenção corretiva'], [2, 'Manutenção preventiva'], [3, 'Reclamação / qualidade']].map(([CallTypeID, Name]) => ({ CallTypeID, Name }));
+  sets.ServiceCallOrigins = [[1, 'Telefone'], [2, 'E-mail'], [3, 'WhatsApp'], [4, 'Portal do cliente']].map(([OriginID, Name]) => ({ OriginID, Name }));
+  sets.ServiceCallProblemTypes = [[1, 'Mecânico'], [2, 'Elétrico'], [3, 'Hidráulico'], [4, 'Avaria / mau uso']].map(([ProblemTypeID, Name]) => ({ ProblemTypeID, Name }));
+  sets.ActivityTypes = [[1, 'Visita técnica'], [2, 'Ligação']].map(([Code, Name]) => ({ Code, Name }));
+  sets.ServiceCalls = [];
+  sets.Activities = [];
+  sets.DeliveryNotes = [];
+  sets.Returns = [];
+  sets.StockTransfers = [];
 
   sets.U_SPS_LFAM = [
     ['RETRO', 'Retroescavadeiras', 'EQP', 'linha amarela, diesel'],
@@ -55,8 +89,10 @@ export function demoSeed() {
     { Code: 'COMODATO', Name: 'Sem cobrança (comodato)', U_Tipo: 'SEM', U_ProRata: 'LIN', U_FranqProp: 'N', U_Toler: 0, U_MesesNF: '', U_Tabela: '[]' },
   ];
 
+  const ITEM_BEM = { RETRO: 'BEM-RETRO', ESCAV: 'BEM-ESCAV', MINICAR: 'BEM-MINI', GERADOR: 'BEM-GER', PLAT: 'BEM-PLAT', PICAPE: 'BEM-PICAPE', CAMINHAO: 'BEM-CAM', UTIL: 'BEM-UTIL' };
   const A = (Code, Name, U_Tipo, U_Familia, U_Categoria, U_ItemCode, o) => ({
-    Code, Name, U_Tipo, U_Familia, U_Categoria, U_ItemCode, U_Status: 'DIS', U_CtrAtual: 0, U_Filial: 1, U_Versao: 0, ...o,
+    Code, Name, U_Tipo, U_Familia, U_Categoria, U_ItemCode, U_Status: 'DIS', U_CtrAtual: 0, U_Filial: 1, U_Versao: 0, U_ItemBem: ITEM_BEM[U_Familia] || '',
+    ...o, U_Serie: o.U_Serie || o.U_Chassi || '', U_VlrBem: (o.U_ValorMes || 0) * 30,
   });
   sets.SPSLATV = [
     A('EQP-0001', 'Retroescavadeira JCB 3CX', 'EQP', 'RETRO', 'Linha amarela', 'SLOC001', { U_Serie: 'JCB3CX-778812', U_Marca: 'JCB', U_Modelo: '3CX', U_Ano: '2021', U_Medidor: 4520, U_ValorMes: 18000, U_ValorDia: 900, U_Status: 'LOC', U_CtrAtual: 1 }),
@@ -71,12 +107,19 @@ export function demoSeed() {
     A('VEI-0004', 'Fiat Strada Freedom CS', 'VEI', 'UTIL', 'Utilitários leves', 'SLOC002', { U_Placa: 'MNO1P23', U_Chassi: '9BD281A2DRY998877', U_Renavam: '22334455667', U_Marca: 'Fiat', U_Modelo: 'Strada Freedom', U_Ano: '2024', U_Medidor: 22340, U_ValorMes: 3200, U_ValorDia: 160 }),
   ];
 
+  // Números de série no B1: os da frota já cadastrada e dois equipamentos novos que ainda não estão no Áster
+  sets.SerialNumberDetails = [
+    ...sets.SPSLATV.map((a) => ({ ItemCode: a.U_ItemBem, ItemDescription: a.Name, SerialNumber: a.U_Serie, MfrSerialNo: a.U_Serie, Status: 0 })),
+    { ItemCode: 'BEM-GER', ItemDescription: 'Gerador 260 kVA Stemac', SerialNumber: 'STM-260-77801', MfrSerialNo: 'STM-260-77801', Status: 0 },
+    { ItemCode: 'BEM-PLAT', ItemDescription: 'Plataforma articulada JLG 450AJ', SerialNumber: 'JLG450-31877', MfrSerialNo: 'JLG450-31877', Status: 0 },
+  ].map((x, i) => ({ DocEntry: i + 1, ...x }));
+
   const L = (o) => ({ U_Familia: '', U_Ativo: '', U_AtvDesc: '', U_ItemCode: '', U_Regra: 'MENSAL', U_Grupo: '', U_Valor: 0, U_Diaria: 0, U_Franquia: 0,
     U_VlrExced: 0, U_DtSaida: null, U_DtDevol: null, U_Condutor: '', U_Local: '', U_StatusL: 'PEN', ...o });
   sets.SPSLCTR = [
     { DocEntry: 1, DocNum: 1, U_CardCode: 'C0001', U_CardName: 'Construtora Horizonte Ltda', U_Tipo: 'LOC', U_DtInicio: m2, U_DtFim: addDias(m2, 365), U_DtCorte: null,
       U_DiaFat: 5, U_Status: 'ATV', U_Filial: 1, U_Obra: 'Residencial Parque das Águas — Contagem/MG', U_Indice: 'IGP-M', U_ModoFat: 'RAS',
-      U_Email: 'financeiro@horizonte.example', U_Obs: '', U_Versao: 0,
+      U_Email: 'financeiro@horizonte.example', U_Obs: '', U_Versao: 0, U_EndEntrega: 'OBRA PARQUE DAS AGUAS', U_SlpCode: 1, U_CondPgto: 1, U_Projeto: 'OBRA-PQAGUAS',
       [LN]: [
         L({ LineId: 1, U_Familia: 'RETRO', U_Ativo: 'EQP-0001', U_AtvDesc: 'Retroescavadeira JCB 3CX', U_ItemCode: 'SLOC001', U_Valor: 18000, U_Diaria: 900, U_Franquia: 200, U_VlrExced: 95, U_DtSaida: m2, U_StatusL: 'LOC' }),
         L({ LineId: 2, U_Familia: 'GERADOR', U_Ativo: 'EQP-0004', U_AtvDesc: 'Gerador 180 kVA Cummins', U_ItemCode: 'SLOC003', U_Regra: 'MENSAL-TAB', U_Valor: 7800, U_Diaria: 390, U_Franquia: 300, U_VlrExced: 30, U_DtSaida: addDias(mPrev, 9), U_StatusL: 'LOC' }),
@@ -84,7 +127,7 @@ export function demoSeed() {
       [GR]: [] },
     { DocEntry: 2, DocNum: 2, U_CardCode: 'C0003', U_CardName: 'Transportes Rota Sul Ltda', U_Tipo: 'LOC', U_DtInicio: addDias(mPrev, 14), U_DtFim: addDias(h, 20), U_DtCorte: null,
       U_DiaFat: 15, U_Status: 'ATV', U_Filial: 1, U_Obra: 'Base operacional — Betim/MG', U_Indice: 'IPCA', U_ModoFat: 'PRE',
-      U_Email: 'fiscal@rotasul.example', U_Obs: '', U_Versao: 0,
+      U_Email: 'fiscal@rotasul.example', U_Obs: '', U_Versao: 0, U_EndEntrega: 'BASE BETIM', U_SlpCode: 2, U_CondPgto: 2, U_Projeto: 'FROTA-ROTASUL',
       [LN]: [
         L({ LineId: 1, U_Familia: 'PICAPE', U_Ativo: 'VEI-0001', U_AtvDesc: 'Picape Toyota Hilux CD 4x4', U_ItemCode: 'SLOC002', U_Regra: 'FROTA', U_Grupo: 'G1', U_DtSaida: addDias(mPrev, 14), U_Condutor: 'Carlos A. Souza — CNH 01234567890', U_StatusL: 'LOC' }),
         L({ LineId: 2, U_Familia: 'PICAPE', U_Ativo: 'VEI-0002', U_AtvDesc: 'Picape Ford Ranger XLS', U_ItemCode: 'SLOC002', U_Regra: 'FROTA', U_Grupo: 'G1', U_DtSaida: addDias(mPrev, 14), U_Condutor: 'Paula R. Lima — CNH 98765432100', U_StatusL: 'LOC' }),
@@ -112,7 +155,11 @@ export function demoSeed() {
     U_Descricao: 'Excesso de velocidade até 20%', U_Valor: 130.16, U_CtrEntry: 2, U_CtrLine: 1, U_CardName: 'Transportes Rota Sul Ltda',
     U_Condutor: 'Carlos A. Souza — CNH 01234567890', U_Status: 'REP', U_Comp: '',
   }];
-  sets.U_SPS_LCFG = Object.entries({ ...CFG_DEFAULTS, EMPRESA: 'Locadora Demonstração Ltda', ITEM_MULTA: 'SLOC900', SCHEMA_VERSION: String(SCHEMA_VERSION) })
+  sets.U_SPS_LCFG = Object.entries({ ...CFG_DEFAULTS, EMPRESA: 'Locadora Demonstração Ltda', ITEM_MULTA: 'SLOC900', SCHEMA_VERSION: String(SCHEMA_VERSION),
+    // de-para da demonstração com os cadastros nativos simulados
+    USAGE: '9', B1_FILIAL: '1', B1_USAGE_SRV: '15', B1_USAGE_REM: '12', B1_USAGE_RET: '13', B1_FORMA_PGTO: 'BOLETO-ITAU', B1_COND_PGTO: '1',
+    B1_REMESSA: 'NF', B1_DEP_PATIO: '01', B1_DEP_LOCACAO: 'LOC', PV_SERVICECALL: 'S', PV_CALL_TIPO: '1', PV_CALL_ORIGEM: '1', PV_CALL_PROBLEMA: '1',
+    PV_ATIVIDADE: 'S', PV_ATV_TIPO: '1' })
     .map(([Code, v]) => ({ Code, Name: Code, U_Valor: v }));
 
   /* ---- pós-venda ---- */
@@ -122,7 +169,7 @@ export function demoSeed() {
     ['T01', 'Rafael Moreira', 'tecnico', '(31) 98811-2030', 'Linha amarela e hidráulica'],
     ['T02', 'Juliana Costa', '', '(31) 99702-4411', 'Veículos e elétrica'],
     ['T03', 'Marcos Tavares', '', '(31) 98455-7781', 'Geradores e plataformas'],
-  ].map(([Code, Name, U_Login, U_Fone, U_Especial]) => ({ Code, Name, U_Login, U_Fone, U_Email: '', U_Especial, U_Filial: 1, U_Ativo: 'S' }));
+  ].map(([Code, Name, U_Login, U_Fone, U_Especial], i) => ({ Code, Name, U_Login, U_Fone, U_Email: '', U_Especial, U_Filial: 1, U_Ativo: 'S', U_EmpID: 11 + i }));
 
   const P = (Code, Name, U_Familia, U_IntMed, U_IntDias, chk) => ({ Code, Name, U_Familia, U_IntMed, U_IntDias, U_Aviso: 10, U_Checklist: chk.join('\n'), U_Ativo: 'S' });
   const chkDiesel = ['Troca de óleo do motor', 'Troca do filtro de óleo', 'Filtro de ar', 'Filtro de combustível', 'Nível do óleo hidráulico', 'Graxa nos pinos e articulações', 'Teste de funcionamento'];
@@ -192,6 +239,7 @@ export function demoSeed() {
 
   const S = (Code, os, cha, card, name, tec, dias, nota, com) => ({ Code, Name: Code, U_OsEntry: os, U_ChaEntry: cha, U_CardCode: card, U_CardName: name, U_Email: '',
     U_Tecnico: tec, U_Enviada: addDias(h, dias), U_Nota: nota, U_Comentario: com, U_Respondida: nota >= 0 ? dt(dias + 1, '09:12') : '' });
+  sets.U_SPS_LINT = [];
   sets.U_SPS_LPES = [
     S('pesq-demo-a1', 4, 0, 'C0003', 'Transportes Rota Sul Ltda', 'T02', -10, 9, 'Vistoria rápida e bem explicada.'),
     S('pesq-demo-b2', 5, 3, 'C0001', 'Construtora Horizonte Ltda', 'T01', -5, 6, 'Resolveu, mas demorou para chegar.'),
@@ -201,5 +249,5 @@ export function demoSeed() {
   sets.Orders = [];
   sets.Invoices = [];
 
-  return { sets, seq: { SPSLCTR: 3, SPSLMOV: 0, SPSLCHA: 3, SPSLOS: 5, Drafts: 0, Orders: 0, Invoices: 0 } };
+  return { sets, seq: { SPSLCTR: 3, SPSLMOV: 0, SPSLCHA: 3, SPSLOS: 5, Drafts: 0, Orders: 0, Invoices: 0, DeliveryNotes: 0, Returns: 0, StockTransfers: 0, ServiceCalls: 0, Activities: 0 } };
 }

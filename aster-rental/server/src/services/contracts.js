@@ -38,6 +38,10 @@ export function createContractService({ repos, audit }) {
       U_ModoFat: input.U_ModoFat || 'RAS',
       U_Email: str(input.U_Email, 100),
       U_Obs: str(input.U_Obs, 4000),
+      U_EndEntrega: str(input.U_EndEntrega, 50),
+      U_SlpCode: Number(input.U_SlpCode) || 0,
+      U_CondPgto: input.U_CondPgto === '' || input.U_CondPgto == null ? 0 : Number(input.U_CondPgto) || 0,
+      U_Projeto: str(input.U_Projeto, 20),
     };
     if (!DOM.tipoContrato[h.U_Tipo]) throw badRequest('Tipo de contrato inválido.');
     if (!DOM.modoFat[h.U_ModoFat]) throw badRequest('Documento de faturamento inválido.');

@@ -73,7 +73,9 @@ function form(a, reload) {
     <div><label>Família</label><select data-af="U_Familia"><option value=""></option>${fams.map((x) => `<option value="${esc(x.Code)}" ${a.U_Familia === x.Code ? 'selected' : ''}>${esc(x.Name)}</option>`).join('')}</select></div>
     ${i('U_Categoria', 'Categoria')}
     <div><label>Item de faturamento (B1)</label><input data-af="U_ItemCode" list="dlItens" value="${esc(a.U_ItemCode || '')}"><datalist id="dlItens"></datalist></div>
-    ${i('U_Marca', 'Marca')}${i('U_Modelo', 'Modelo')}${i('U_Ano', 'Ano', 'maxlength="4"')}${i('U_Serie', 'Nº série / patrimônio')}
+    <div><label>Item do bem no B1 (controlado por nº de série)</label><input data-af="U_ItemBem" list="dlBens" value="${esc(a.U_ItemBem || '')}"><datalist id="dlBens"></datalist></div>
+    ${i('U_Marca', 'Marca')}${i('U_Modelo', 'Modelo')}${i('U_Ano', 'Ano', 'maxlength="4"')}${i('U_Serie', 'Nº de série no B1 (veículo: chassi)')}
+    <div><label>Valor do bem (NF de remessa, R$)</label><input type="number" step="0.01" min="0" data-af="U_VlrBem" value="${esc(a.U_VlrBem ?? '')}"></div>
     <div class="vei">${'<label>Placa</label>'}<input data-af="U_Placa" value="${esc(a.U_Placa || '')}" maxlength="7"></div>
     <div class="vei"><label>Chassi</label><input data-af="U_Chassi" value="${esc(a.U_Chassi || '')}" maxlength="30"></div>
     <div class="vei"><label>Renavam</label><input data-af="U_Renavam" value="${esc(a.U_Renavam || '')}" maxlength="20"></div>
@@ -92,9 +94,9 @@ function form(a, reload) {
   sync();
   m.onchange = (ev) => ev.target.dataset.af === 'U_Tipo' && sync();
   m.oninput = debounce(async (ev) => {
-    if (ev.target.dataset.af !== 'U_ItemCode') return;
+    if (!['U_ItemCode', 'U_ItemBem'].includes(ev.target.dataset.af)) return;
     const its = await get(`/lookup/items${qs({ q: ev.target.value })}`).catch(() => []);
-    $('#dlItens', m).innerHTML = its.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
+    $(ev.target.dataset.af === 'U_ItemBem' ? '#dlBens' : '#dlItens', m).innerHTML = its.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
   });
   m.onclick = async (ev) => {
     const b = ev.target.closest('[data-x]');

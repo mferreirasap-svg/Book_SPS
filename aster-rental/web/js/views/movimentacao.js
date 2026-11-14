@@ -67,10 +67,10 @@ export async function render(root, params, c) {
     <button type="button" class="primary" data-a="registrar">Registrar ${esc(DOM.tipoMov[F.tipo].toLowerCase())}</button></div>`
     : `<p class="sub" style="margin-top:12px">${candidatos.length ? 'Escolha o contrato e o item.' : 'Nenhum contrato com itens para este tipo de movimentação.'}</p>`}
   </div>
-  <div class="card"><h2>Últimas movimentações</h2><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Cliente</th><th>Equipamento</th><th class="num">Leitura</th><th>Usuário</th><th></th></tr></thead><tbody>
+  <div class="card"><h2>Últimas movimentações</h2><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Cliente</th><th>Equipamento</th><th class="num">Leitura</th><th>Usuário</th><th>SAP B1</th><th></th></tr></thead><tbody>
   ${hist.items.map((m) => `<tr><td>${m.DocNum}</td><td>${fmtD(m.U_Data)}</td><td>${esc(DOM.tipoMov[m.U_Tipo] || m.U_Tipo)}</td><td>${esc(m.U_CardName)}</td>
-    <td>${esc(m.U_Ativo)}${m.U_AtivoNovo ? ` → ${esc(m.U_AtivoNovo)}` : ''}</td><td class="num">${num(m.U_Medidor, 1)}</td><td>${esc(m.U_Usuario || '')}</td>
-    <td class="right"><button type="button" class="mini" data-termo="${m.DocEntry}">Termo</button></td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhuma.</td></tr>'}
+    <td>${esc(m.U_Ativo)}${m.U_AtivoNovo ? ` → ${esc(m.U_AtivoNovo)}` : ''}</td><td class="num">${num(m.U_Medidor, 1)}</td><td>${esc(m.U_Usuario || '')}</td><td>${m.U_DocNumB1 ? `${esc({ ENTREGA: 'Remessa', DEVOLUCAO: 'Retorno', TRANSF: 'Transf.' }[m.U_DocTipo] || String(m.U_DocTipo || '').replace(/ENTREGA/g, 'Remessa').replace(/DEVOLUCAO/g, 'Retorno'))} ${m.U_DocNumB1}` : '—'}</td>
+    <td class="right"><button type="button" class="mini" data-termo="${m.DocEntry}">Termo</button></td></tr>`).join('') || '<tr><td colspan="9" class="empty">Nenhuma.</td></tr>'}
   </tbody></table></div></div>`;
 
   assinatura(root);
@@ -158,7 +158,9 @@ async function registrar(root) {
   }
   try {
     const r = await post('/movements', body, { 'Idempotency-Key': F.key });
-    toast(`${DOM.tipoMov[F.tipo]} registrada (nº ${r.DocNum}).${r.os ? ` OS de reparo ${r.os.DocNum} aberta.` : ''}`);
+    const doc = r.integracao?.documentos?.map((d) => `${{ ENTREGA: 'NF de remessa', DEVOLUCAO: 'NF de retorno', TRANSF: 'Transferência' }[d.tipo] || d.tipo} nº ${d.docNum}`).join(' e ');
+    toast(`${DOM.tipoMov[F.tipo]} registrada (nº ${r.DocNum}).${doc ? ` SAP B1: ${doc}.` : ''}${r.os ? ` OS de reparo ${r.os.DocNum} aberta.` : ''}`);
+    if (r.integracao && !r.integracao.ok) toast(`Movimentação registrada, mas o documento no SAP B1 falhou: ${r.integracao.erro} Veja em Integração SAP B1 › Monitor.`, 'err');
     if (r.avisoOS) toast(r.avisoOS, 'err');
     F = novoForm();
     await render(root, {}, ctx);

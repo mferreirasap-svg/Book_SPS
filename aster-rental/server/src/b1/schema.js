@@ -1,7 +1,7 @@
 // Estruturas do Áster Rental no SAP B1: tabelas (UDT), campos (UDF) e objetos (UDO).
 // O instalador cria tudo pela Service Layer. Ao mudar algo aqui, incremente SCHEMA_VERSION.
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 export const SET = {
   ATV: 'SPSLATV',
@@ -19,6 +19,7 @@ export const SET = {
   TEC: 'U_SPS_LTEC',
   PLN: 'U_SPS_LPLN',
   PES: 'U_SPS_LPES',
+  INT: 'U_SPS_LINT',
 };
 export const LN = 'SPS_LCT1Collection'; // itens do contrato
 export const GR = 'SPS_LCT2Collection'; // grupos de cobrança agrupada
@@ -46,6 +47,9 @@ export const DOM = {
   statusOS: { ABE: 'Sem agenda', AGE: 'Agendada', EXE: 'Em execução', AOR: 'Aguardando aprovação', CON: 'Concluída', CAN: 'Cancelada' },
   tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento' },
   orcamento: { '': 'Sem orçamento', PEN: 'Aguardando cliente', APR: 'Aprovado', REC: 'Recusado' },
+  // integração com documentos nativos
+  remessa: { NAO: 'Não gerar documento', NF: 'Entrega (NF de remessa) e devolução (NF de retorno)', TRANSF: 'Transferência entre depósitos' },
+  statusInt: { OK: 'Integrado', ERR: 'Com erro', IGN: 'Ignorado' },
 };
 
 const F = (n, t, d, o = {}) => ({ n, t, d, ...o });
@@ -71,6 +75,7 @@ export const SCHEMA = {
     { TableName: 'SPS_LTEC', TableDescription: 'Pós-venda - Técnicos', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LPLN', TableDescription: 'Pós-venda - Planos preventivos', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LPES', TableDescription: 'Pós-venda - Pesquisas', TableType: 'bott_NoObject' },
+    { TableName: 'SPS_LINT', TableDescription: 'Áster - Log de integração', TableType: 'bott_NoObject' },
   ],
   fields: {
     '@SPS_LATV': [
@@ -82,6 +87,7 @@ export const SCHEMA = {
       F('Status', 'A', 'Status', { size: 3, vv: DOM.statusAtivo, def: 'DIS' }), F('ValorMes', 'P', 'Valor mensal'),
       F('ValorDia', 'P', 'Valor diária'), F('Filial', 'N', 'Filial (BPLId)'), F('CtrAtual', 'N', 'Contrato atual'),
       F('Obs', 'T', 'Observações'), F('Versao', 'N', 'Versão do registro'),
+      F('ItemBem', 'A', 'Item do bem no B1 (nº série)', { size: 50 }), F('VlrBem', 'P', 'Valor do bem (NF de remessa)'),
     ],
     '@SPS_LFAM': [F('Tipo', 'A', 'Tipo do ativo', { size: 3, vv: DOM.tipoAtivo }), F('Caract', 'A', 'Características', { size: 254 })],
     '@SPS_LREG': [
@@ -98,6 +104,8 @@ export const SCHEMA = {
       F('Obra', 'A', 'Obra / local de uso', { size: 100 }), F('Indice', 'A', 'Índice de reajuste', { size: 20 }),
       F('ModoFat', 'A', 'Documento gerado', { size: 3, vv: DOM.modoFat, def: 'RAS' }), F('Email', 'A', 'E-mail de cobrança', { size: 100 }),
       F('Obs', 'T', 'Observações'), F('Versao', 'N', 'Versão do registro'),
+      F('EndEntrega', 'A', 'Endereço de entrega (B1)', { size: 50 }), F('SlpCode', 'N', 'Vendedor (B1)'), F('CondPgto', 'N', 'Condição de pagamento (B1)'),
+      F('Projeto', 'A', 'Projeto (B1)', { size: 20 }),
     ],
     '@SPS_LCT1': [
       F('Familia', 'A', 'Família contratada', { size: 50 }), F('Ativo', 'A', 'Ativo', { size: 50 }), F('AtvDesc', 'A', 'Descrição', { size: 100 }),
@@ -119,6 +127,7 @@ export const SCHEMA = {
       F('Combust', 'A', 'Combustível', { size: 10 }), F('Checklist', 'T', 'Checklist (JSON)'), F('Avarias', 'T', 'Avarias / observações'),
       F('Respons', 'A', 'Responsável do cliente', { size: 100 }), F('DocResp', 'A', 'Documento do responsável', { size: 30 }),
       F('DestAtivo', 'A', 'Status do ativo após', { size: 3 }), F('Assinatura', 'T', 'Assinatura (PNG base64)'), F('Usuario', 'A', 'Usuário', { size: 50 }),
+      F('DocTipo', 'A', 'Documento no B1', { size: 20 }), F('DocEntryB1', 'N', 'DocEntry no B1'), F('DocNumB1', 'N', 'Número no B1'),
     ],
     '@SPS_LMED': [
       F('CtrEntry', 'N', 'Contrato (DocEntry)'), F('CtrLine', 'N', 'Linha do contrato'), F('Ativo', 'A', 'Ativo', { size: 50 }),
@@ -152,6 +161,7 @@ export const SCHEMA = {
       F('Abertura', 'A', 'Aberto em (data e hora)', { size: 16 }), F('PrazoResp', 'A', 'Prazo 1ª resposta', { size: 16 }),
       F('PrazoSol', 'A', 'Prazo de solução', { size: 16 }), F('DtResp', 'A', '1ª resposta em', { size: 16 }), F('DtSol', 'A', 'Resolvido em', { size: 16 }),
       F('Respons', 'A', 'Responsável', { size: 50 }), F('OsEntry', 'N', 'OS gerada'), F('Filial', 'N', 'Filial (BPLId)'), F('Versao', 'N', 'Versão do registro'),
+      F('CallID', 'N', 'Chamada de serviço (B1)'),
     ],
     '@SPS_LCH1': [F('Data', 'A', 'Data e hora', { size: 16 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Texto', 'T', 'Texto'),
       F('Publico', 'A', 'Visível ao cliente', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' })],
@@ -170,6 +180,7 @@ export const SCHEMA = {
       F('Orc', 'A', 'Orçamento', { size: 3, vv: DOM.orcamento }), F('OrcAprov', 'A', 'Aprovado / recusado por', { size: 100 }),
       F('Valor', 'S', 'Valor cobrável'), F('DocType', 'A', 'Documento gerado', { size: 10 }), F('DocEntry', 'N', 'DocEntry do documento'),
       F('DocNum', 'N', 'Número do documento'), F('Filial', 'N', 'Filial (BPLId)'), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Versao', 'N', 'Versão do registro'),
+      F('ActCode', 'N', 'Atividade (B1)'),
     ],
     '@SPS_LOS1': [
       F('Tipo', 'A', 'Tipo', { size: 3, vv: DOM.tipoItemOS }), F('ItemCode', 'A', 'Item SAP B1', { size: 50 }), F('Descr', 'A', 'Descrição', { size: 100 }),
@@ -178,6 +189,7 @@ export const SCHEMA = {
     '@SPS_LTEC': [
       F('Login', 'A', 'Usuário do Áster', { size: 50 }), F('Fone', 'A', 'Telefone', { size: 30 }), F('Email', 'A', 'E-mail', { size: 100 }),
       F('Especial', 'A', 'Especialidade', { size: 100 }), F('Filial', 'N', 'Filial (BPLId)'), F('Ativo', 'A', 'Ativo', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'S' }),
+      F('EmpID', 'N', 'Funcionário (B1)'),
     ],
     '@SPS_LPLN': [
       F('Familia', 'A', 'Família', { size: 50 }), F('IntMed', 'M', 'Intervalo (h ou km)'), F('IntDias', 'N', 'Intervalo (dias)'),
@@ -188,7 +200,17 @@ export const SCHEMA = {
       F('CardName', 'A', 'Nome do cliente', { size: 100 }), F('Email', 'A', 'E-mail', { size: 100 }), F('Tecnico', 'A', 'Técnico', { size: 50 }),
       F('Enviada', 'D', 'Enviada em'), F('Nota', 'N', 'Nota (0 a 10)'), F('Comentario', 'T', 'Comentário'), F('Respondida', 'A', 'Respondida em', { size: 16 }),
     ],
-    OINV: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Comp', 'A', 'Competência da locação', { size: 6 }), F('SPS_OsEntry', 'N', 'Ordem de serviço')],
+    '@SPS_LINT': [
+      F('Tipo', 'A', 'Integração', { size: 20 }), F('Ref', 'A', 'Registro no Áster', { size: 30 }), F('Objeto', 'A', 'Objeto do B1', { size: 40 }),
+      F('Status', 'A', 'Status', { size: 3, vv: DOM.statusInt }), F('DocEntry', 'N', 'Chave no B1'), F('DocNum', 'N', 'Número no B1'),
+      F('Erro', 'A', 'Erro', { size: 254 }), F('Data', 'A', 'Data e hora', { size: 16 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Tentativas', 'N', 'Tentativas'),
+    ],
+    // Campos de usuário em objetos nativos. Os de OINV valem para todos os documentos de marketing (pedido, entrega, devolução, NF, esboço).
+    OINV: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Comp', 'A', 'Competência da locação', { size: 6 }), F('SPS_OsEntry', 'N', 'Ordem de serviço'),
+      F('SPS_MovEntry', 'N', 'Movimentação de locação')],
+    OWTR: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_MovEntry', 'N', 'Movimentação de locação')],
+    OSCL: [F('SPS_ChaEntry', 'N', 'Chamado do Áster'), F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Parado', 'A', 'Equipamento parado', { size: 1, vv: { S: 'Sim', N: 'Não' } })],
+    OCLG: [F('SPS_OsEntry', 'N', 'Ordem de serviço do Áster')],
   },
   udos: [
     { Code: 'SPSLATV', Name: 'Locação - Ativos', TableName: 'SPS_LATV', ObjectType: 'boud_MasterData', CanFind: 'tYES', CanDelete: 'tNO', CanLog: 'tYES',
@@ -241,5 +263,26 @@ export const CFG_DEFAULTS = {
   CHK_OS_INS: ['Equipamento conferido na chegada', 'Operador do cliente orientado', 'Itens de segurança apresentados', 'Teste de funcionamento com o cliente'].join('\n'),
   CHK_OS_VIS: ['Estado geral', 'Uso conforme contrato', 'Horímetro / hodômetro conferido', 'Sinais de mau uso'].join('\n'),
   CHK_OS_REP: ['Avaria registrada com fotos', 'Causa (desgaste normal ou mau uso)', 'Reparo executado', 'Teste de funcionamento final'].join('\n'),
+  // integração com o SAP B1 (de-para com cadastros nativos; vazio = usar o padrão do B1)
+  B1_FILIAL: '',
+  B1_SERIE_LOC: '',
+  B1_SERIE_SRV: '',
+  B1_SERIE_REM: '',
+  B1_SERIE_RET: '',
+  B1_USAGE_SRV: '',
+  B1_USAGE_REM: '',
+  B1_USAGE_RET: '',
+  B1_FORMA_PGTO: '',
+  B1_COND_PGTO: '',
+  B1_VENDEDOR: '',
+  B1_REMESSA: 'NAO',
+  B1_DEP_PATIO: '',
+  B1_DEP_LOCACAO: '',
+  PV_SERVICECALL: 'N',
+  PV_CALL_TIPO: '',
+  PV_CALL_ORIGEM: '',
+  PV_CALL_PROBLEMA: '',
+  PV_ATIVIDADE: 'N',
+  PV_ATV_TIPO: '',
   SCHEMA_VERSION: '0',
 };

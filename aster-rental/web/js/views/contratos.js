@@ -67,6 +67,9 @@ async function editor(root, params) {
   }
   const avail = await get(`/assets/availability${qs({ ini: d10(E.U_DtInicio) || hoje(), fim: d10(E.U_DtFim) || d10(E.U_DtInicio) || hoje() })}`);
   aux.ativos = Object.fromEntries(avail.map((a) => [a.Code, a]));
+  // Cadastros nativos do B1 usados no faturamento (filial, vendedor, condição, projeto e endereço de entrega do parceiro).
+  aux.b1 = await get('/b1/lists?k=filiais,vendedores,condicoes,projetos').catch(() => ({}));
+  aux.enderecos = E.U_CardCode ? await get(`/b1/addresses/${encodeURIComponent(E.U_CardCode)}`).catch(() => []) : [];
   draw(root);
 }
 
@@ -80,6 +83,10 @@ function draw(root) {
   const regrasGrupo = aux.regras.filter((r) => ['AGRUP', 'CONS'].includes(r.U_Tipo));
   const entregue = E[LN].some((l) => l.U_StatusL !== 'PEN');
   const h = (k, t = 'text', o = '') => `<input type="${t}" data-h="${k}" value="${esc(t === 'date' ? d10(E[k]) : E[k] ?? '')}" ${ro} ${o}>`;
+  // Lista nativa do B1; se a lista não estiver disponível, volta para o campo digitado.
+  const b1sel = (k, lista, vazio, tipo = 'text') => (Array.isArray(lista)
+    ? `<select data-h="${k}" ${ro}><option value="">${esc(vazio)}</option>${lista.map((x) => `<option value="${esc(x.id)}" ${String(E[k] ?? '') === String(x.id) && E[k] !== 0 ? 'selected' : ''}>${esc(x.nome)}</option>`).join('')}</select>`
+    : h(k, tipo));
   const opcoesAtivo = (l) => {
     const lista = Object.values(aux.ativos).filter((a) => (a.status === 'DIS' && (!l.U_Familia || a.U_Familia === l.U_Familia)) || a.Code === l.U_Ativo);
     return `<option value="">${l.U_Familia ? '(definir na entrega)' : '—'}</option>${lista.map((a) => `<option value="${esc(a.Code)}" ${a.Code === l.U_Ativo ? 'selected' : ''}>${esc(a.Code)} — ${esc(a.Name)}</option>`).join('')}`;
@@ -112,9 +119,13 @@ function draw(root) {
     <div><label>Fim da vigência</label>${h('U_DtFim', 'date')}</div>
     <div><label>Data de corte (migração)</label>${h('U_DtCorte', 'date')}</div>
     <div><label>Dia de faturamento</label>${h('U_DiaFat', 'number', 'min="1" max="31"')}</div>
-    <div><label>Filial (BPLId)</label>${h('U_Filial', 'number')}</div>
+    <div><label>Filial</label>${b1sel('U_Filial', aux.b1?.filiais, '(empresa sem filiais)', 'number')}</div>
     <div><label>E-mail de cobrança</label>${h('U_Email', 'email')}</div>
     <div class="span2"><label>Obra / local de uso</label>${h('U_Obra', 'text', 'maxlength="100"')}</div>
+    <div class="span2"><label>Endereço de entrega no B1 (obra cadastrada no parceiro)</label>${b1sel('U_EndEntrega', E.U_CardCode ? aux.enderecos : [], E.U_CardCode ? '(endereço padrão do cliente)' : '(escolha o cliente)')}</div>
+    <div><label>Vendedor</label>${b1sel('U_SlpCode', aux.b1?.vendedores, '(padrão)', 'number')}</div>
+    <div><label>Condição de pagamento</label>${b1sel('U_CondPgto', aux.b1?.condicoes, '(padrão do cliente)', 'number')}</div>
+    <div><label>Projeto (resultado por obra)</label>${b1sel('U_Projeto', aux.b1?.projetos, '(sem projeto)')}</div>
     <div><label>Índice de reajuste</label>${h('U_Indice', 'text', 'placeholder="IGP-M, IPCA…"')}</div>
     <div class="span2"><label>Observações</label><textarea data-h="U_Obs" ${ro}>${esc(E.U_Obs || '')}</textarea></div>
   </div>
@@ -160,10 +171,10 @@ function historico() {
   return `<h3>Parcelas</h3><div class="tbl"><table><thead><tr><th>Competência</th><th>Documento</th><th class="num">Valor</th><th>Status</th></tr></thead><tbody>
     ${h.parcelas.map((p) => `<tr><td>${compFmt(p.U_Comp)}</td><td>${esc(DOM.modoFat[p.U_DocType] || '')} ${p.U_DocNum ? `nº ${p.U_DocNum}` : ''}</td><td class="num">${brl(p.U_Valor)}</td>
       <td>${badge(p.U_Status, DOM.statusFat)}</td></tr>`).join('') || '<tr><td colspan="4" class="empty">Nenhuma parcela gerada.</td></tr>'}</tbody></table></div>
-  <h3>Movimentações</h3><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Equipamento</th><th>Responsável</th><th>Usuário</th><th></th></tr></thead><tbody>
+  <h3>Movimentações</h3><div class="tbl"><table><thead><tr><th>Nº</th><th>Data</th><th>Tipo</th><th>Equipamento</th><th>Responsável</th><th>Usuário</th><th>SAP B1</th><th></th></tr></thead><tbody>
     ${h.movimentos.map((m) => `<tr><td>${m.DocNum}</td><td>${fmtD(m.U_Data)}</td><td>${esc(DOM.tipoMov[m.U_Tipo] || m.U_Tipo)}</td><td>${esc(m.U_Ativo)}${m.U_AtivoNovo ? ` → ${esc(m.U_AtivoNovo)}` : ''}</td>
-      <td>${esc(m.U_Respons)}</td><td>${esc(m.U_Usuario)}</td><td class="right"><button type="button" class="mini" data-termo="${m.DocEntry}">Termo</button></td></tr>`).join('')
-      || '<tr><td colspan="7" class="empty">Nenhuma movimentação.</td></tr>'}</tbody></table></div>
+      <td>${esc(m.U_Respons)}</td><td>${esc(m.U_Usuario)}</td><td>${m.U_DocNumB1 ? `${esc({ ENTREGA: 'Remessa', DEVOLUCAO: 'Retorno', TRANSF: 'Transf.' }[m.U_DocTipo] || String(m.U_DocTipo || '').replace(/ENTREGA/g, 'Remessa').replace(/DEVOLUCAO/g, 'Retorno'))} ${m.U_DocNumB1}` : '—'}</td><td class="right"><button type="button" class="mini" data-termo="${m.DocEntry}">Termo</button></td></tr>`).join('')
+      || '<tr><td colspan="8" class="empty">Nenhuma movimentação.</td></tr>'}</tbody></table></div>
   ${h.multas.length ? `<h3>Multas</h3><div class="tbl"><table><thead><tr><th>Data</th><th>Placa</th><th>AIT</th><th class="num">Valor</th><th>Status</th></tr></thead><tbody>
     ${h.multas.map((m) => `<tr><td>${fmtD(m.U_DtInfr)}</td><td>${esc(m.U_Placa)}</td><td>${esc(m.U_AIT)}</td><td class="num">${brl(m.U_Valor)}</td><td>${badge(m.U_Status, DOM.statusMulta)}</td></tr>`).join('')}</tbody></table></div>` : ''}`;
 }
@@ -212,7 +223,17 @@ function bind(root) {
       $('#dlItens', root).innerHTML = r.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
     }
   }, 300);
-  root.onchange = (ev) => {
+  root.onchange = async (ev) => {
+    if (ev.target.dataset.h === '_bp') {
+      lerFormulario(root);
+      aux.enderecos = E.U_CardCode ? await get(`/b1/addresses/${encodeURIComponent(E.U_CardCode)}`).catch(() => []) : [];
+      E.U_EndEntrega = '';
+      return draw(root);
+    }
+    if (ev.target.dataset.h === 'U_EndEntrega' && ev.target.value && !String($('[data-h=U_Obra]', root)?.value || '').trim()) {
+      const end = aux.enderecos.find((x) => x.id === ev.target.value);
+      if (end) $('[data-h=U_Obra]', root).value = end.nome.slice(0, 100);
+    }
     const k = ev.target.dataset.k;
     if (['U_Familia', 'U_Ativo', '_cob', 'U_Grupo'].includes(k)) {
       lerFormulario(root);

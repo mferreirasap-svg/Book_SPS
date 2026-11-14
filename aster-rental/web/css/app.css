@@ -189,3 +189,5 @@ canvas.sig{border:1px dashed #AEB8BE;border-radius:4px;width:100%;max-width:520p
   .chk tr{border-bottom:1px solid var(--line);padding:6px 0}
   .chk td{border:none;padding:3px 0;background:none!important}
 }
+.tabs-in{overflow-x:auto;max-width:100%}
+.tabs-in button{white-space:nowrap;flex:none}

@@ -123,6 +123,7 @@ async function detalhe(root, id, c) {
       <div><b>Contrato</b>${o.U_CtrEntry ? `<a href="#/contratos?id=${o.U_CtrEntry}">nº ${o.U_CtrEntry}</a>` : '—'}</div>
       <div><b>Chamado</b>${o.U_ChaEntry ? `<a href="#/chamados?id=${o.U_ChaEntry}">nº ${o.U_ChaEntry}</a>` : '—'}</div>
       <div><b>Início / fim</b>${o.U_CheckIn ? fmtDT(o.U_CheckIn) : '—'}${o.U_CheckOut ? ` → ${fmtDT(o.U_CheckOut)}` : ''}</div>
+      <div><b>Atividade no SAP B1</b>${o.U_ActCode ? `nº ${o.U_ActCode}` : '<span class="muted">criada ao agendar</span>'}</div>
       ${o.U_Plano ? `<div><b>Plano preventivo</b>${esc(o.U_Plano)}</div>` : ''}
       ${o.pesquisa ? `<div><b>Pesquisa de satisfação</b>${Number(o.pesquisa.U_Nota) >= 0 ? `nota <b style="display:inline;color:var(--ink);font-size:14px">${o.pesquisa.U_Nota}</b>` : 'aguardando resposta'}</div>` : ''}
     </div>

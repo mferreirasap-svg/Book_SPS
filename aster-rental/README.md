@@ -134,6 +134,25 @@ Integrações com o que já existia:
 
 Estruturas novas no B1 (versão 3): `SPSLCHA` (chamados e interações), `SPSLOS` (OS e itens), `@SPS_LTEC`, `@SPS_LPLN` e `@SPS_LPES`. Rode a instalação de novo em Administração › SAP B1.
 
+## Integração com o SAP B1 (telas nativas)
+
+Mapa completo, pré-requisitos e roteiro de homologação em `docs/integracao-b1/01-mapa-nativo.md`.
+Resumo: o B1 recebe o que tem tela própria, e o Áster guarda só as regras de locação.
+
+| Evento no Áster | Objeto nativo no B1 |
+|---|---|
+| Entrega / devolução / substituição | Entrega (NF de remessa) e Devolução ligada à entrega, com nº de série; ou Transferência de estoque |
+| Faturamento | Esboço, pedido ou NF com série, boleto (forma de pagamento), condição, vendedor, projeto e endereço de entrega do contrato |
+| Chamado | Chamada de serviço (Cartão de equipamento, relatórios de serviço) |
+| OS agendada | Atividade do técnico, ligada à chamada |
+| OS com cobrança | Esboço de NF de serviço |
+
+Tela **Configuração › Integração SAP B1**:
+- **Prontidão**: verifica, sem gravar nada, as estruturas, o de-para e os cadastros nativos, e cria o que falta.
+- **De-para**: listas vindas do B1.
+- **Monitor**: falha no B1 não desfaz a operação do Áster; o envio fica para reprocessar.
+- **Equipamentos do B1**: cria ativos a partir dos números de série.
+
 ## API (principais rotas)
 
 `/api/auth/*` · `/api/dashboard` · `/api/assets` · `/api/assets/availability` · `/api/families` · `/api/rules` ·
@@ -141,7 +160,8 @@ Estruturas novas no B1 (versão 3): `SPSLCHA` (chamados e interações), `SPSLOS
 `/api/fines` · `/api/billing` · `/api/billing/generate` · `/api/billing/installment/:code/release` · `/api/jobs/:id` · `/api/admin/*` ·
 `/api/tickets` · `/api/tickets/:id/interactions` · `/api/tickets/:id/order` · `/api/orders` · `/api/orders/:id/{schedule,start,quote,conclude,cancel}` ·
 `/api/preventive` · `/api/technicians` · `/api/plans` · `/api/surveys` · `/api/assets/:code/history` · `/api/aftersales/dashboard` ·
-`/api/public/survey/:code` (sem login)
+`/api/public/survey/:code` (sem login) ·
+`/api/b1/lists` · `/api/b1/addresses/:card` · `/api/integration/{structure,readiness,log,serials}` · `/api/integration/log/:code/retry` · `/api/integration/serials/import`
 
 ## Próximos passos
 

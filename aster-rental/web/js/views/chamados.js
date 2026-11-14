@@ -109,6 +109,7 @@ async function detalhe(root, id, c) {
       <div><b>Aberto em</b>${fmtDT(t.U_Abertura)}</div>
       <div><b>1ª resposta até ${fmtDT(t.U_PrazoResp)}</b>${t.U_DtResp ? fmtDT(t.U_DtResp) : 'aguardando'} ${slaBadge(t.slaResp)}</div>
       <div><b>Solução até ${fmtDT(t.U_PrazoSol)}</b>${t.U_DtSol ? fmtDT(t.U_DtSol) : 'em aberto'} ${slaBadge(t.slaSol)}</div>
+      <div><b>Chamada de serviço no SAP B1</b>${t.U_CallID ? `nº ${t.U_CallID}` : '<span class="muted">não enviada</span>'}</div>
       <div><b>Ordem de serviço</b>${t.os ? `<a href="#/os?id=${t.os.DocEntry}">OS ${t.os.DocNum}</a> ${badge(t.os.U_Status, DOM.statusOS)}${t.os.U_DtAgenda ? ` ${fmtD(t.os.U_DtAgenda)}` : ''}` : '—'}</div>
     </div>
     ${t.U_Descricao ? `<div class="msg info" style="white-space:pre-wrap">${esc(t.U_Descricao)}</div>` : ''}

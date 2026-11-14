@@ -6,13 +6,15 @@ import { createMovementService } from './movements.js';
 import { createBillingService } from './billing.js';
 import { createOperationsService } from './operations.js';
 import { createAfterSalesService } from './aftersales.js';
+import { createIntegrationService } from './integration.js';
 
 export function createServices({ sl, audit, jobs }) {
   const repos = createRepos(sl);
   const contracts = createContractService({ repos, audit });
   const movements = createMovementService({ repos, audit, contracts });
-  const billing = createBillingService({ repos, audit, jobs });
+  const integ = createIntegrationService({ repos, audit });
+  const billing = createBillingService({ repos, audit, jobs, integ });
   const operations = createOperationsService({ repos, audit, billing });
-  const aftersales = createAfterSalesService({ repos, audit });
-  return { repos, contracts, movements, billing, operations, aftersales };
+  const aftersales = createAfterSalesService({ repos, audit, integ });
+  return { repos, contracts, movements, billing, operations, aftersales, integ };
 }

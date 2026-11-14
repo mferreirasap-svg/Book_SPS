@@ -70,7 +70,7 @@ export default async function posvendaRoutes(app, { deps }) {
       return repo.get(req.params.code);
     });
   };
-  cadastro('/technicians', repos.technicians, 'tecnico', { U_Login: 50, U_Fone: 30, U_Email: 100, U_Especial: 100, U_Filial: 'n', U_Ativo: 'sn' });
+  cadastro('/technicians', repos.technicians, 'tecnico', { U_Login: 50, U_Fone: 30, U_Email: 100, U_Especial: 100, U_Filial: 'n', U_Ativo: 'sn', U_EmpID: 'n' });
   cadastro('/plans', repos.plans, 'plano', { U_Familia: 50, U_IntMed: 'n', U_IntDias: 'n', U_Aviso: 'n', U_Checklist: 4000, U_Ativo: 'sn' });
 
   /* ---- satisfação, histórico e painel ---- */

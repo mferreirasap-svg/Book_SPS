@@ -99,7 +99,7 @@ export function createRepos(sl) {
   const movements = {
     list: ({ ctr, ativo }, pg) =>
       paged(sl, SET.MOV, { filter: and(ctr && eq('U_CtrEntry', Number(ctr)), ativo && eq('U_Ativo', ativo)), orderby: 'DocEntry desc',
-        select: ['DocEntry', 'DocNum', 'U_Tipo', 'U_CtrEntry', 'U_CtrLine', 'U_CardName', 'U_Ativo', 'U_AtivoNovo', 'U_Data', 'U_Medidor', 'U_Respons', 'U_Usuario'] }, pg),
+        select: ['DocEntry', 'DocNum', 'U_Tipo', 'U_CtrEntry', 'U_CtrLine', 'U_CardName', 'U_Ativo', 'U_AtivoNovo', 'U_Data', 'U_Medidor', 'U_Respons', 'U_Usuario', 'U_DocTipo', 'U_DocNumB1'] }, pg),
     get: (id) => getOrNull(`${SET.MOV}(${Number(id)})`),
   };
 

@@ -12,10 +12,10 @@ export async function render(root, _p, c) {
     <button type="button" data-aba="pln" class="${f.aba === 'pln' ? 'on' : ''}">Planos preventivos</button></div>
   ${f.aba === 'tec' ? `<div class="row" style="margin-bottom:10px"><p class="sub" style="margin:0">Ligue o técnico ao usuário do Áster (perfil "Técnico de campo") para ele ver só as próprias OS.</p><span class="spacer"></span>
       ${ed ? '<button type="button" class="primary" data-novo="tec">+ Novo técnico</button>' : ''}</div>
-    <div class="tbl"><table><thead><tr><th>Código</th><th>Nome</th><th>Usuário do Áster</th><th>Especialidade</th><th>Telefone</th><th>Situação</th><th></th></tr></thead><tbody>
-    ${tecs.map((t) => `<tr><td>${esc(t.Code)}</td><td>${esc(t.Name)}</td><td>${esc(t.U_Login || '—')}</td><td>${esc(t.U_Especial)}</td><td>${esc(t.U_Fone)}</td>
+    <div class="tbl"><table><thead><tr><th>Código</th><th>Nome</th><th>Usuário do Áster</th><th>Especialidade</th><th>Telefone</th><th>Funcionário B1</th><th>Situação</th><th></th></tr></thead><tbody>
+    ${tecs.map((t) => `<tr><td>${esc(t.Code)}</td><td>${esc(t.Name)}</td><td>${esc(t.U_Login || '—')}</td><td>${esc(t.U_Especial)}</td><td>${esc(t.U_Fone)}</td><td>${Number(t.U_EmpID) ? esc(t.U_EmpID) : '<span class="muted">—</span>'}</td>
       <td>${t.U_Ativo === 'N' ? '<span class="badge b-BAI">Inativo</span>' : '<span class="badge b-ATV">Ativo</span>'}</td>
-      <td class="right">${ed ? `<button type="button" class="mini" data-ed="tec" data-code="${esc(t.Code)}">Editar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Nenhum técnico.</td></tr>'}</tbody></table></div>`
+      <td class="right">${ed ? `<button type="button" class="mini" data-ed="tec" data-code="${esc(t.Code)}">Editar</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhum técnico.</td></tr>'}</tbody></table></div>`
   : `<div class="row" style="margin-bottom:10px"><p class="sub" style="margin:0">Intervalo pelo medidor (horas ou km) e/ou por dias — vence o que chegar primeiro.</p><span class="spacer"></span>
       ${ed ? '<button type="button" class="primary" data-novo="pln">+ Novo plano</button>' : ''}</div>
     <div class="tbl"><table><thead><tr><th>Código</th><th>Plano</th><th>Família</th><th class="num">A cada (medidor)</th><th class="num">A cada (dias)</th><th class="num">Avisar antes</th><th>Itens do checklist</th><th></th></tr></thead><tbody>
@@ -58,7 +58,8 @@ function salvarCom(m, path, rec, body, reload, okMsg) {
   };
 }
 
-function formTec(t, reload) {
+async function formTec(t, reload) {
+  const fun = (await get('/b1/lists?k=funcionarios').catch(() => ({}))).funcionarios;
   const m = modal(`<h2>${t ? `Técnico ${esc(t.Code)}` : 'Novo técnico'}</h2><div class="grid">
     <div><label>Código</label><input id="tCode" value="${esc(t?.Code || '')}" ${t ? 'readonly' : ''} placeholder="T04"></div>
     <div><label>Nome</label><input id="tName" value="${esc(t?.Name || '')}"></div>
@@ -66,10 +67,13 @@ function formTec(t, reload) {
     <div><label>Telefone</label><input id="tFone" value="${esc(t?.U_Fone || '')}"></div>
     <div><label>E-mail</label><input id="tMail" value="${esc(t?.U_Email || '')}"></div>
     <div><label>Situação</label><select id="tAtivo"><option value="S">Ativo</option><option value="N" ${t?.U_Ativo === 'N' ? 'selected' : ''}>Inativo</option></select></div>
-    <div class="span2"><label>Especialidade</label><input id="tEsp" value="${esc(t?.U_Especial || '')}"></div></div><div id="fMsg"></div>
+    <div class="span2"><label>Especialidade</label><input id="tEsp" value="${esc(t?.U_Especial || '')}"></div>
+    <div class="span2"><label>Funcionário no SAP B1 (técnico da chamada de serviço e dono da atividade)</label>${Array.isArray(fun)
+      ? `<select id="tEmp"><option value="">(não vincular)</option>${fun.map((f) => `<option value="${esc(f.id)}" ${Number(t?.U_EmpID) === Number(f.id) ? 'selected' : ''}>${esc(f.nome)} (${esc(f.id)})</option>`).join('')}</select>`
+      : `<input id="tEmp" type="number" value="${esc(t?.U_EmpID || '')}" placeholder="código do funcionário">`}</div></div><div id="fMsg"></div>
     <div class="dlg-actions"><button type="button" data-x="0">Cancelar</button><button type="button" class="primary" data-x="1">Salvar</button></div>`);
   salvarCom(m, '/technicians', t, () => ({ Code: $('#tCode').value, Name: $('#tName').value, U_Login: $('#tLogin').value, U_Fone: $('#tFone').value,
-    U_Email: $('#tMail').value, U_Ativo: $('#tAtivo').value, U_Especial: $('#tEsp').value, U_Filial: 1 }), reload, 'Técnico salvo.');
+    U_Email: $('#tMail').value, U_Ativo: $('#tAtivo').value, U_Especial: $('#tEsp').value, U_Filial: 1, U_EmpID: $('#tEmp').value }), reload, 'Técnico salvo.');
 }
 
 function formPlano(p, fams, reload) {

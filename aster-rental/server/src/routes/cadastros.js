@@ -15,6 +15,7 @@ function assetFields(b) {
     U_Serie: str(b.U_Serie, 50), U_Placa: str(b.U_Placa, 10).toUpperCase(), U_Chassi: str(b.U_Chassi, 30), U_Renavam: str(b.U_Renavam, 20),
     U_Marca: str(b.U_Marca, 50), U_Modelo: str(b.U_Modelo, 50), U_Ano: str(b.U_Ano, 4), U_Medidor: num(b.U_Medidor), U_ValorMes: num(b.U_ValorMes),
     U_ValorDia: num(b.U_ValorDia), U_Filial: Number(b.U_Filial) || 0, U_Obs: str(b.U_Obs, 4000),
+    U_ItemBem: str(b.U_ItemBem, 50), U_VlrBem: num(b.U_VlrBem),
   };
   if (!o.Name) throw badRequest('Informe a descrição do ativo.');
   if (!DOM.tipoAtivo[o.U_Tipo]) throw badRequest('Tipo de ativo inválido.');

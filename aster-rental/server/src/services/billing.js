@@ -7,7 +7,7 @@ import { badRequest, conflict, notFound, hoje, compDe, compFmt, compRange, round
 
 const DOC_SET = { RAS: 'Drafts', PRE: 'Orders', FAT: 'Invoices' };
 
-export function createBillingService({ repos, audit, jobs }) {
+export function createBillingService({ repos, audit, jobs, integ }) {
   async function context(comp) {
     const [regras, cfg, leituras, foras, multas] = await Promise.all([
       repos.rules.map(), repos.settings.all(), repos.readings.list({ comp }), repos.offPeriods.list({}), repos.fines.list({ status: 'REP' }),
@@ -108,6 +108,7 @@ export function createBillingService({ repos, audit, jobs }) {
       Comments: `Locação - contrato ${c.DocNum} - competência ${compFmt(comp)}${c.U_Obra ? ` - ${c.U_Obra}` : ''}`.slice(0, 254),
       DocumentLines: linhas,
     };
+    if (integ) Object.assign(doc, integ.extrasDocumento(cfg, c));
     if (desconto > 0) doc.DiscountPercent = round2((desconto / (r.total + acrescimo)) * 100 * 100) / 100;
     if (Number(c.U_Filial)) doc.BPL_IDAssignedToInvoice = Number(c.U_Filial);
     if (tipo === 'RAS') doc.DocObjectCode = 'oInvoices';

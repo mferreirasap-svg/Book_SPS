@@ -2,8 +2,40 @@
 // Usada em desenvolvimento, demonstração e testes automatizados. Nunca em produção.
 import { B1Error } from './errors.js';
 
-const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'SPSLCHA', 'SPSLOS', 'Drafts', 'Orders', 'Invoices', 'Quotations']);
-const KEYS = { UserTablesMD: 'TableName', UserObjectsMD: 'Code', BusinessPartners: 'CardCode', Items: 'ItemCode', BusinessPlaces: 'BPLID' };
+const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'SPSLCHA', 'SPSLOS', 'Drafts', 'Orders', 'Invoices', 'Quotations', 'DeliveryNotes', 'Returns', 'StockTransfers']);
+const KEYS = {
+  UserTablesMD: 'TableName', UserObjectsMD: 'Code', BusinessPartners: 'CardCode', Items: 'ItemCode', BusinessPlaces: 'BPLID',
+  ServiceCalls: 'ServiceCallID', Activities: 'ActivityCode', EmployeesInfo: 'EmployeeID', Warehouses: 'WarehouseCode', NotaFiscalUsage: 'ID',
+  PaymentTermsTypes: 'GroupNumber', SalesPersons: 'SalesEmployeeCode', WizardPaymentMethods: 'PaymentMethodCode', SerialNumberDetails: 'DocEntry',
+  UserFieldsMD: 'FieldID', ServiceCallStatus: 'StatusId', ServiceCallTypes: 'CallTypeID', ServiceCallOrigins: 'OriginID', ServiceCallProblemTypes: 'ProblemTypeID',
+};
+// Objetos nativos com chave numérica gerada pelo B1.
+const AUTO_KEY = new Set(['ServiceCalls', 'Activities', 'UserFieldsMD']);
+const LINE_COLL = { DeliveryNotes: 'DocumentLines', Returns: 'DocumentLines', Drafts: 'DocumentLines', Orders: 'DocumentLines', Invoices: 'DocumentLines',
+  StockTransfers: 'StockTransferLines' };
+
+/** Regras mínimas que o B1 real aplica e que a integração precisa respeitar (item, nº de série, cliente, documento base). */
+function validarNativo(db, set, rec) {
+  const has = (s, k, v) => (db.sets[s] || []).some((r) => r[k] == v);
+  if (['DeliveryNotes', 'Returns', 'StockTransfers', 'Drafts', 'Orders', 'Invoices', 'ServiceCalls'].includes(set)) {
+    const card = rec.CardCode || rec.CustomerCode;
+    if (card && !has('BusinessPartners', 'CardCode', card)) fail(400, `Invalid BP code '${card}' (-10)`, -10);
+  }
+  for (const l of rec[LINE_COLL[set]] || []) {
+    if (l.BaseType === 15) {
+      const base = (db.sets.DeliveryNotes || []).find((d) => d.DocEntry === Number(l.BaseEntry));
+      if (!base) fail(400, `Documento base ${l.BaseEntry} não encontrado (-2028)`, -2028);
+      l.ItemCode ||= base.DocumentLines?.[Number(l.BaseLine) || 0]?.ItemCode;
+    }
+    if (l.ItemCode && !has('Items', 'ItemCode', l.ItemCode)) fail(400, `Invalid item code '${l.ItemCode}' (-10)`, -10);
+    for (const sn of l.SerialNumbers || []) {
+      const ok = (db.sets.SerialNumberDetails || []).some((x) => x.ItemCode === l.ItemCode && x.SerialNumber === sn.InternalSerialNumber);
+      if (!ok) fail(400, `Serial number '${sn.InternalSerialNumber}' not found for item '${l.ItemCode}' (-10)`, -10);
+    }
+    for (const w of [l.WarehouseCode, l.FromWarehouseCode]) if (w && !has('Warehouses', 'WarehouseCode', w)) fail(400, `Invalid warehouse '${w}' (-10)`, -10);
+  }
+  if (set === 'ServiceCalls' && rec.ItemCode && !has('Items', 'ItemCode', rec.ItemCode)) fail(400, `Invalid item code '${rec.ItemCode}' (-10)`, -10);
+}
 
 const clone = (o) => structuredClone(o);
 // Corpo de requisição passa por JSON, como na Service Layer real (campos undefined somem).
@@ -242,7 +274,11 @@ export class MockServiceLayer {
 
     if (method === 'POST') {
       const rec = viaJson(body || {});
-      if (DOC_SETS.has(set)) {
+      validarNativo(db, set, rec);
+      if (AUTO_KEY.has(set)) {
+        db.seq[set] = Math.max(db.seq[set] || 0, ...coll.map((r) => Number(r[kf]) || 0)) + 1;
+        rec[kf] = db.seq[set];
+      } else if (DOC_SETS.has(set)) {
         db.seq[set] = (db.seq[set] || 0) + 1;
         rec.DocEntry = db.seq[set];
         rec.DocNum = db.seq[set];

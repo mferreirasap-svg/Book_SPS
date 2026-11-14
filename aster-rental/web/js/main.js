@@ -18,6 +18,7 @@ import * as agenda from './views/agenda.js';
 import * as preventivas from './views/preventivas.js';
 import * as satisfacao from './views/satisfacao.js';
 import * as tecnicos from './views/tecnicos.js';
+import * as integracao from './views/integracao.js';
 
 const VIEWS = [
   { sec: 'Locação' },
@@ -39,6 +40,7 @@ const VIEWS = [
   { key: 'disponibilidade', title: 'Disponibilidade', perm: 'ativos.ver', mod: disponibilidade },
   { sec: 'Configuração' },
   { key: 'cadastros', title: 'Famílias e regras', perm: 'contratos.ver', mod: cadastros },
+  { key: 'integracao', title: 'Integração SAP B1', perm: ['admin.instalar', 'admin.parametros'], mod: integracao },
   { key: 'admin', title: 'Administração', perm: ['admin.usuarios', 'admin.parametros', 'admin.instalar', 'auditoria.ver'], mod: admin },
 ];
 

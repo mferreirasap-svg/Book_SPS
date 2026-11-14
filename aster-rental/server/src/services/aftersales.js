@@ -28,7 +28,12 @@ export function prazoSituacao(inicio, prazo, feito, agoraDt) {
   return total > 0 && difHoras(agoraDt, prazo) <= total * 0.25 ? 'vencendo' : 'no_prazo';
 }
 
-export function createAfterSalesService({ repos, audit }) {
+export function createAfterSalesService({ repos, audit, integ }) {
+  // Espelho nos objetos nativos do B1 (chamada de serviço e atividade). Falhas ficam no log de integração para reprocessar.
+  const espelhar = {
+    chamado: (req, id) => (integ && id ? integ.chamado(req, id) : null),
+    atividade: (req, id) => (integ && id ? integ.atividade(req, id) : null),
+  };
   const sl = repos.sl;
 
   async function cfg() {
@@ -121,6 +126,7 @@ export function createAfterSalesService({ repos, audit }) {
     };
     const r = await repos.tickets.create(rec);
     audit.record(req, { action: 'criar', entity: 'chamado', id: r.DocEntry, after: { ...rec, [CH1]: undefined } });
+    await espelhar.chamado(req, r.DocEntry);
     return getTicket(r.DocEntry);
   }
 
@@ -141,6 +147,7 @@ export function createAfterSalesService({ repos, audit }) {
     if (patch.U_Assunto === '') throw badRequest('Informe o assunto do chamado.');
     const { before, after } = await repos.tickets.update(id, patch, input.U_Versao);
     audit.record(req, { action: 'alterar', entity: 'chamado', id, before: { ...before, [CH1]: undefined }, after: patch });
+    await espelhar.chamado(req, after.DocEntry);
     return getTicket(after.DocEntry);
   }
 
@@ -169,6 +176,7 @@ export function createAfterSalesService({ repos, audit }) {
     await repos.tickets.update(id, patch, input.U_Versao);
     audit.record(req, { action: status ? `status:${status}` : 'interacao', entity: 'chamado', id, before: { U_Status: t.U_Status }, after: { U_Status: status || t.U_Status, texto } });
     if (status === 'RES' && !t.U_OsEntry) await surveyFor({ cha: { ...t, U_Status: 'RES' } });
+    if (status) await espelhar.chamado(req, id);
     return getTicket(id);
   }
 
@@ -258,6 +266,8 @@ export function createAfterSalesService({ repos, audit }) {
       }
     }
     audit.record(req, { action: 'criar', entity: 'os', id: os.DocEntry, after: { ...rec, [OS1]: undefined } });
+    await espelhar.chamado(req, rec.U_ChaEntry);
+    await espelhar.atividade(req, os.DocEntry);
     return { DocEntry: os.DocEntry, DocNum: os.DocNum };
   }
 
@@ -308,6 +318,8 @@ export function createAfterSalesService({ repos, audit }) {
       U_Duracao: Math.max(0, Number(input.duracao) || Number(os.U_Duracao) || 120), U_Status: 'AGE' };
     await repos.orders.update(id, patch, input.U_Versao);
     audit.record(req, { action: 'agendar', entity: 'os', id, before: { U_Tecnico: os.U_Tecnico, U_DtAgenda: os.U_DtAgenda }, after: patch });
+    await espelhar.atividade(req, id);
+    await espelhar.chamado(req, os.U_ChaEntry);
     return getOrder(req, id);
   }
 
@@ -465,11 +477,14 @@ export function createAfterSalesService({ repos, audit }) {
     const out = { DocNum: os.DocNum, valor, documento: null, avisoDocumento: '', pesquisa: null };
     if (valor > 0) {
       try {
+        const ctrOs = os.U_CtrEntry ? await repos.contracts.get(os.U_CtrEntry) : null;
         const doc = { CardCode: os.U_CardCode, DocDate: data, DocObjectCode: 'oInvoices', U_SPS_OsEntry: os.DocEntry, U_SPS_CtrEntry: os.U_CtrEntry || 0,
+          ...(integ ? integ.extrasDocumento(c0, ctrOs, { servico: true }) : {}),
           Comments: `Assistência técnica - OS ${os.DocNum} - ${os.U_Ativo}${os.U_CtrEntry ? ` - contrato ${os.U_CtrEntry}` : ''}`.slice(0, 254),
           DocumentLines: os[OS1].filter((i) => i.U_Cobrar === 'S').map((i) => ({ ItemCode: i.U_ItemCode || c0.ITEM_SERVICO, Quantity: Number(i.U_Qtd),
             UnitPrice: Number(i.U_Preco), FreeText: str(i.U_Descr, 100) })) };
-        if (Number(c0.USAGE)) doc.DocumentLines.forEach((l) => (l.Usage = Number(c0.USAGE)));
+        const uso = integ ? integ.usoLinha(c0, true) : Number(c0.USAGE);
+        if (uso) doc.DocumentLines.forEach((l) => (l.Usage = uso));
         if (Number(os.U_Filial)) doc.BPL_IDAssignedToInvoice = Number(os.U_Filial);
         const d = await sl.request('POST', 'Drafts', doc);
         await repos.orders.update(id, { U_DocType: 'RAS', U_DocEntry: d.DocEntry, U_DocNum: d.DocNum });
@@ -479,6 +494,8 @@ export function createAfterSalesService({ repos, audit }) {
       }
     }
     if (c0.PESQ_AUTO === 'S') out.pesquisa = await surveyFor({ os: { ...os, U_Status: 'CON' } });
+    await espelhar.atividade(req, id);
+    await espelhar.chamado(req, os.U_ChaEntry);
     return out;
   }
 
@@ -492,6 +509,7 @@ export function createAfterSalesService({ repos, audit }) {
     await fecharParada(os, hoje(), ops);
     await sl.batch(ops);
     audit.record(req, { action: 'cancelar', entity: 'os', id, after: { motivo } });
+    await espelhar.atividade(req, id);
     return getOrder(req, id);
   }
 
