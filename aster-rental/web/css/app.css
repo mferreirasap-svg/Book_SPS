@@ -191,3 +191,4 @@ canvas.sig{border:1px dashed #AEB8BE;border-radius:4px;width:100%;max-width:520p
 }
 .tabs-in{overflow-x:auto;max-width:100%}
 .tabs-in button{white-space:nowrap;flex:none}
+td input.num-br{text-align:right}

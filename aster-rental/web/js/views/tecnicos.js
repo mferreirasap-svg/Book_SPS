@@ -81,7 +81,7 @@ function formPlano(p, fams, reload) {
     <div><label>Código</label><input id="pCode" value="${esc(p?.Code || '')}" ${p ? 'readonly' : ''} placeholder="PRE-RETRO-500"></div>
     <div><label>Nome</label><input id="pName" value="${esc(p?.Name || '')}"></div>
     <div><label>Família</label><select id="pFam">${fams.map((x) => `<option value="${esc(x.Code)}" ${p?.U_Familia === x.Code ? 'selected' : ''}>${esc(x.Name)}</option>`).join('')}</select></div>
-    <div><label>A cada (horas ou km)</label><input type="number" min="0" id="pMed" value="${esc(p?.U_IntMed ?? 250)}"></div>
+    <div><label>A cada (horas ou km)</label><input type="number" min="0" data-num="0" id="pMed" value="${esc(p?.U_IntMed ?? 250)}"></div>
     <div><label>A cada (dias)</label><input type="number" min="0" id="pDias" value="${esc(p?.U_IntDias ?? 180)}"></div>
     <div><label>Avisar com (% do intervalo)</label><input type="number" min="0" max="50" id="pAviso" value="${esc(p?.U_Aviso ?? 10)}"></div>
     <div><label>Situação</label><select id="pAtivo"><option value="S">Ativo</option><option value="N" ${p?.U_Ativo === 'N' ? 'selected' : ''}>Inativo</option></select></div>

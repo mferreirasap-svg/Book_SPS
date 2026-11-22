@@ -2,6 +2,7 @@
 import { $, esc, ico, toast, msg, acao, modal, closeModal } from './util.js';
 import { get, post, put, setUnauthorized, isDemo } from './api.js';
 import { S } from './state.js';
+import { iniciarNumerosBR } from './numeros.js';
 import * as painel from './views/painel.js';
 import * as ativos from './views/ativos.js';
 import * as disponibilidade from './views/disponibilidade.js';
@@ -19,6 +20,8 @@ import * as preventivas from './views/preventivas.js';
 import * as satisfacao from './views/satisfacao.js';
 import * as tecnicos from './views/tecnicos.js';
 import * as integracao from './views/integracao.js';
+
+iniciarNumerosBR();
 
 const VIEWS = [
   { sec: 'Locação' },

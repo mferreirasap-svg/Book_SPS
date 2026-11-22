@@ -147,7 +147,7 @@ async function detalhe(root, id, c) {
   ${F.itens.map((i, n) => `<tr><td><select data-i="${n}" data-k="tipo" ${ro}>${options(DOM.tipoItemOS, i.tipo)}</select></td>
     <td><input data-i="${n}" data-k="itemCode" value="${esc(i.itemCode)}" class="w110" list="osItens" ${ro}></td>
     <td><input data-i="${n}" data-k="descr" value="${esc(i.descr)}" ${ro}></td>
-    <td><input type="number" min="0" step="0.01" data-i="${n}" data-k="qtd" value="${esc(i.qtd)}" class="w80" ${ro}></td>
+    <td><input type="number" min="0" step="0.01" data-min="0" data-i="${n}" data-k="qtd" value="${esc(i.qtd)}" class="w80" ${ro}></td>
     <td><input type="number" min="0" step="0.01" data-i="${n}" data-k="preco" value="${esc(i.preco)}" class="w110" ${ro}></td>
     <td class="num">${brl((Number(i.qtd) || 0) * (Number(i.preco) || 0))}</td>
     <td><select data-i="${n}" data-k="cobrar" ${ro}>${options({ N: 'Não', S: 'Sim' }, i.cobrar)}</select></td>
