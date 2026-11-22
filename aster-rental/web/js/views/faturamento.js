@@ -32,7 +32,7 @@ export async function render(root, _p, c) {
       <td>${r.parcela ? `${badge(r.parcela.status, DOM.statusFat)}${r.parcela.docNum ? ` <span class="sub">nº ${r.parcela.docNum}</span>` : ''}` : ''}</td>
       <td class="right" style="white-space:nowrap"><button type="button" class="mini" data-det="${r.DocEntry}">${d ? 'Ocultar' : 'Detalhar'}</button>
         ${podeSel(r) ? `<button type="button" class="mini" data-um="${r.DocEntry}">Gerar…</button>` : ''}
-        ${r.parcela && ['OK', 'ERR'].includes(r.parcela.status) && c.can('faturamento.liberar') ? `<button type="button" class="mini danger" data-lib="${esc(r.parcela.Code)}">Liberar refaturamento</button>` : ''}</td></tr>
+        ${r.parcela && ['OK', 'ERR'].includes(r.parcela.status) && c.can('faturamento.liberar') ? `<button type="button" class="mini danger" data-lib="${esc(r.parcela.Code)}" title="Liberar refaturamento (depois de cancelar o documento no SAP B1)">Refaturar</button>` : ''}</td></tr>
       ${d ? `<tr><td></td><td colspan="8">${d.avisos.map((a) => `<div class="msg warn">${esc(a)}</div>`).join('')}${r.parcela?.erro ? `<div class="msg err">${esc(r.parcela.erro)}</div>` : ''}
         <table><thead><tr><th>Item</th><th>Descrição e memória de cálculo</th><th class="num">Qtd</th><th class="num">Preço</th><th class="num">Total</th></tr></thead><tbody>
         ${d.linhas.map((l) => `<tr><td>${esc(l.ItemCode || '—')}</td><td class="wrap">${esc(l.desc)}<ul class="memo">${(l.memoria || []).map((m) => `<li>${esc(m)}</li>`).join('')}</ul></td>

@@ -189,7 +189,7 @@ async function detalhe(root, id, c) {
   root.oninput = debounce(async (ev) => {
     if (ev.target.dataset.k !== 'itemCode' || ev.target.value.length < 2) return;
     const r = await get(`/lookup/items${qs({ q: ev.target.value })}`).catch(() => []);
-    $('#osItens').innerHTML = r.map((i) => `<option value="${esc(i.ItemCode)}">${esc(i.ItemName)}</option>`).join('');
+    ($('#osItens') || {}).innerHTML = r.map((i) => `<option value="${esc(i.ItemCode)}">${esc(i.ItemName)}</option>`).join('');
   }, 300);
   root.onchange = async (ev) => {
     const e = ev.target;

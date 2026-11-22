@@ -170,3 +170,19 @@ test('trazer equipamentos a partir dos nºs de série do B1', async () => {
   assert.equal(a.U_Familia, 'GERADOR');
   assert.equal((await admin.get('/api/integration/serials')).body.length, 1);
 });
+
+test('base de apresentação: monta tudo pelas regras do sistema, com um único erro proposital no monitor', async () => {
+  const { montarApresentacao } = await import('../src/b1/apresentacao.js');
+  const { demoSeed } = await import('../src/b1/seed.js');
+  const sl = new MockServiceLayer({ seed: demoSeed });
+  await montarApresentacao(sl);
+  const s = sl.db.sets;
+  assert.equal(s.SPSLCTR.length, 9);
+  assert.deepEqual([...new Set(s.SPSLCTR.map((c) => c.U_Status))].sort(), ['ATV', 'ENC', 'RAS', 'SUS']);
+  assert.ok(s.U_SPS_LFAT.length >= 8 && s.U_SPS_LFAT.every((p) => p.U_Status === 'OK'));
+  const erros = s.U_SPS_LINT.filter((l) => l.U_Status === 'ERR');
+  assert.equal(erros.length, 1);
+  assert.match(erros[0].U_Erro, /VEI-0007/);
+  assert.ok(s.SPSLCHA.every((t) => t.U_CallID), 'todos os chamados espelhados no B1');
+  assert.ok(s.U_SPS_LPES.filter((p) => p.U_Nota >= 0).length >= 10);
+});

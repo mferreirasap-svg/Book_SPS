@@ -10,7 +10,8 @@ let demo = null;
 
 async function detectar() {
   if (modo) return modo;
-  try {
+  // Arquivo aberto direto do disco (pacote de apresentação): não há servidor para consultar.
+  if (location.protocol !== 'file:') try {
     const r = await fetch('/api/health', { headers: { Accept: 'application/json' } });
     const j = await r.json();
     if (r.ok && j?.ok) modo = 'servidor';

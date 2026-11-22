@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roteiro da apresentação — Áster Rental</title>
+<style>
+  :root { --ink:#2b3a44; --muted:#6b7780; --line:#dde2e5; --side:#4d6878; --accent:#4a9cc3; --arrow:#f5a623; --ok:#2e8b6e; --okbg:#e3f4ee; --warnbg:#fdf1dc; --warn:#8a5a00; --bg:#f3f5f6; }
+  * { box-sizing: border-box }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 Roboto, "Segoe UI", Arial, sans-serif }
+  header { background: var(--side); color: #fff; padding: 22px 16px }
+  header .in, main { max-width: 900px; margin: 0 auto }
+  header h1 { margin: 0; font-size: 24px; font-weight: 600 }
+  header p { margin: 6px 0 0; opacity: .85 }
+  main { padding: 18px 16px 60px }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; margin-bottom: 14px }
+  h2 { margin: 0 0 4px; font-size: 18px; color: var(--side); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
+  h2 .t { font-size: 12.5px; color: var(--muted); font-weight: 400 }
+  h2 .n { color: var(--arrow) }
+  .msg { background: #eef6fa; border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 3px; margin: 10px 0 }
+  .dica { background: var(--warnbg); border-left: 4px solid var(--arrow); color: var(--warn); padding: 8px 12px; border-radius: 3px; margin: 10px 0 }
+  ol, ul { padding-left: 22px; margin: 8px 0 } li { margin: 4px 0 }
+  b.tela { background: #ecf0f3; border-radius: 3px; padding: 0 6px; font-weight: 500; white-space: nowrap }
+  code { background: #ecf0f3; border-radius: 3px; padding: 0 5px; font-size: 13.5px }
+  table { width: 100%; border-collapse: collapse; font-size: 14px } th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+  th { color: var(--muted); font-weight: 500 }
+  .tbl { overflow-x: auto }
+  .check li { list-style: none; margin-left: -18px } .check li::before { content: "☐ "; color: var(--accent) }
+  @media print { body { background: #fff } section { break-inside: avoid; border: none; padding: 8px 0 } header { color: #000; background: none; padding: 0 } }
+</style>
+</head>
+<body>
+<header><div class="in"><h1>Áster Rental — roteiro da apresentação</h1>
+<p>Locação de máquinas e veículos integrada ao SAP Business One · cerca de 30 minutos · usuário <b>admin</b>, senha <b>Demo2026senha</b></p></div></header>
+<main>
+
+<section>
+  <h2>Antes da reunião <span class="t">10 minutos antes</span></h2>
+  <ul class="check">
+    <li>Abrir o sistema: Windows, dois cliques em <code>Abrir Aster Rental.cmd</code> (vai abrir <code>http://localhost:8080</code>). Deixar a janela preta aberta.</li>
+    <li>Entrar com <b>admin</b> / <b>Demo2026senha</b>.</li>
+    <li>Se você ensaiou antes: <b class="tela">Administração › SAP B1 › Restaurar dados de demonstração</b> para voltar ao começo (as datas ficam relativas ao dia de hoje).</li>
+    <li>Navegador em tela cheia (F11) e zoom em 100% ou 110%.</li>
+    <li>Deixar este roteiro aberto em outra janela ou impresso.</li>
+  </ul>
+  <div class="dica">Tudo roda no seu computador, sem internet e sem SAP. O selo <b>DEMONSTRAÇÃO</b> no canto indica que o B1 é simulado: os documentos “gerados no B1” ficam numa base de teste, com as mesmas regras do B1 real (item, nº de série, cliente e documento base).</div>
+</section>
+
+<section>
+  <h2><span class="n">1</span> Abertura — o painel <span class="t">2 min</span></h2>
+  <div class="msg">“Numa tela, a locadora vê a frota, o que tem a faturar no mês e como está o pós-venda.”</div>
+  <ol>
+    <li><b class="tela">Painel</b>: ativos em operação, ocupação da frota, a faturar no mês (com parcelas atrasadas), multas em aberto.</li>
+    <li>Bloco <b>Pós-venda</b>: chamados abertos com SLA estourado, equipamento parado, OS do dia, preventivas vencidas e NPS.</li>
+    <li>Disponibilidade por família: clicar numa família abre a disponibilidade dela.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">2</span> Contrato de locação <span class="t">4 min</span></h2>
+  <div class="msg">“O contrato guarda as regras que o B1 não tem: franquia de horas/km, excedente, diária, pró-rata, cobrança agrupada. O resto vem do cadastro do B1.”</div>
+  <ol>
+    <li><b class="tela">Contratos</b> › nº <b>4 — Mineração Serra Azul</b>.</li>
+    <li>Mostrar os itens: escavadeira com franquia de 200 h e excedente; picape com franquia de 3.000 km.</li>
+    <li>Mostrar os campos do B1: <b>endereço de entrega</b> (obra cadastrada no parceiro), vendedor, condição de pagamento, filial.</li>
+    <li>Descer até <b>Parcelas</b> (três meses faturados) e <b>Movimentações</b>: coluna <b>SAP B1</b> com o número da NF de remessa.</li>
+    <li>Voltar e abrir o nº <b>9 — Construtora Horizonte</b> (proposta em rascunho) › <b>Ativar</b>.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">3</span> Entrega do equipamento <span class="t">3 min</span></h2>
+  <div class="msg">“Na entrega, o pátio faz o checklist e colhe a assinatura no tablet, e a NF de remessa já nasce no B1 com o nº de série do equipamento.”</div>
+  <ol>
+    <li>Ainda no contrato 9, linha da retroescavadeira <b>EQP-0012</b> › <b>Entregar</b>.</li>
+    <li>Informar o horímetro (ex.: <code>1320</code>), marcar o checklist, responsável do cliente e assinar com o mouse.</li>
+    <li><b>Registrar entrega</b>: o aviso mostra “SAP B1: NF de remessa nº …”. Imprimir o termo (pré-visualização).</li>
+  </ol>
+  <div class="dica">A segunda linha do contrato 9 é uma <b>família</b> (plataforma) sem equipamento definido: o equipamento é escolhido na hora da entrega, entre os disponíveis.</div>
+</section>
+
+<section>
+  <h2><span class="n">4</span> Leituras e multas <span class="t">2 min</span></h2>
+  <ol>
+    <li><b class="tela">Leituras</b>: horímetro/hodômetro do mês, com importação por planilha.</li>
+    <li><b class="tela">Multas</b>: a multa é ligada sozinha ao contrato e ao condutor que estava com o veículo na data; “A repassar” entra no próximo faturamento.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">5</span> Faturamento <span class="t">4 min</span></h2>
+  <div class="msg">“O faturamento calcula a parcela de cada contrato e cria o documento no B1. A NF-e e o boleto continuam no B1, como o cliente já faz hoje.”</div>
+  <ol>
+    <li><b class="tela">Faturamento</b> (mês atual): situação de cada contrato — gerada, vence em breve, atrasada.</li>
+    <li><b>Detalhar</b> o contrato <b>4</b>: memória de cálculo com mensalidade, excedente de horas/km e a multa repassada.</li>
+    <li>Marcar os pendentes › <b>Gerar selecionados</b>: roda em segundo plano e mostra o documento criado no B1 para cada contrato (rascunho de NF, pedido ou NF direta, conforme o contrato).</li>
+    <li>Mudar a competência para o <b>mês anterior</b>: o contrato <b>5 — Agro Vale Verde</b> aparece atrasado.</li>
+  </ol>
+  <div class="dica">O documento vai para o B1 com série, utilização (CFOP), forma de pagamento do boleto, condição, vendedor, projeto e endereço de entrega. Não há como faturar a mesma competência duas vezes.</div>
+</section>
+
+<section>
+  <h2><span class="n">6</span> Pós-venda <span class="t">6 min</span></h2>
+  <div class="msg">“Equipamento parado é dinheiro perdido para o cliente e para a locadora. O chamado tem prazo, vira OS na agenda do técnico, e o tempo parado é descontado da mensalidade automaticamente.”</div>
+  <ol>
+    <li><b class="tela">Chamados</b>: chamado <b>1</b> — gerador <b>PARADO</b> na obra, prioridade urgente, prazos de SLA. Mostrar a conversa com o cliente e o nº da <b>chamada de serviço no B1</b>.</li>
+    <li>Abrir a <b>OS 3</b> (link no chamado) › <b>Iniciar atendimento</b>.</li>
+    <li>Marcar o checklist, <b>+ Peça ou serviço</b>: “Bateria 150 Ah”, preço <code>980</code>, cobrar <b>Sim</b> (mau uso) › <b>Enviar orçamento</b> › <b>Registrar aprovação do cliente</b>.</li>
+    <li>Escrever o laudo, o responsável, assinar › <b>Concluir OS</b>: fecha a parada (desconto na mensalidade), resolve o chamado, cria o <b>esboço de NF de serviço no B1</b> e envia a pesquisa de satisfação.</li>
+    <li><b class="tela">Agenda da equipe</b>: semana por técnico (a OS 8 de amanhã aparece também como atividade no calendário do B1).</li>
+    <li><b class="tela">Preventivas</b>: vencidas pelo horímetro › <b>Gerar OS</b> com o checklist do plano.</li>
+    <li><b class="tela">Satisfação (NPS)</b>: NPS geral e por técnico › <b>Responder como cliente</b> para mostrar a tela que o cliente recebe.</li>
+    <li><b class="tela">Ativos</b> › <b>Histórico</b> do <b>EQP-0004</b>: contratos, chamados, OS e leituras do equipamento numa linha do tempo.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">7</span> Integração com o SAP B1 <span class="t">5 min</span></h2>
+  <div class="msg">“O Áster usa as telas que o B1 já tem: entrega e devolução com nº de série, nota fiscal, chamada de serviço, atividade, filiais, depósitos, utilizações. Só cria tabela própria para o que o B1 não tem.”</div>
+  <ol>
+    <li><b class="tela">Integração SAP B1 › Prontidão</b>: checklist para ir a produção. Há <b>duas pendências de propósito</b>: um caminhão sem item do bem e um envio com erro.</li>
+    <li><b class="tela">Monitor de integração</b>: a entrega do <b>VEI-0007</b> está “Com erro” — a locação aconteceu no Áster, só o documento no B1 ficou pendente.</li>
+    <li>Corrigir ao vivo: <b class="tela">Ativos</b> › <b>VEI-0007</b> › <b>Editar</b> › “Item do bem no B1” = <code>BEM-CAM</code> › Salvar.</li>
+    <li>Voltar ao <b>Monitor</b> › <b>Reprocessar</b>: vira “Integrado”. Na <b>Prontidão</b>, as pendências somem.</li>
+    <li><b>De-para com o B1</b>: as listas vêm dos cadastros nativos (filiais, depósitos, utilizações, boleto, tipos de chamada).</li>
+    <li><b>Equipamentos do B1</b>: nºs de série cadastrados no B1 que ainda não são ativos › escolher a família › <b>Trazer selecionados</b>.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="n">8</span> Fechamento <span class="t">2 min</span></h2>
+  <div class="tbl"><table>
+    <tr><th>Fica no SAP B1 (telas nativas)</th><th>Fica no Áster Rental</th></tr>
+    <tr><td>Clientes, endereços, itens, nºs de série, NF de remessa/retorno, nota fiscal e boleto, chamada de serviço, atividade do técnico, contabilidade</td>
+        <td>Contrato com franquia e excedente, disponibilidade, leituras, cálculo das parcelas, multas, checklist com assinatura, OS de campo, SLA, preventivas e NPS</td></tr>
+  </table></div>
+  <p><b>Próximos passos sugeridos:</b> homologação na base de teste do cliente (roteiro em <code>docs/integracao-b1</code>), validação fiscal da NF de remessa, portal do cliente para abrir chamados por QR Code e app do técnico offline.</p>
+</section>
+
+<section>
+  <h2>Perguntas prováveis</h2>
+  <div class="tbl"><table>
+    <tr><th>Pergunta</th><th>Resposta</th></tr>
+    <tr><td>Precisa de outro banco de dados?</td><td>Não. Contratos, OS e regras ficam em tabelas do próprio SAP B1, criadas pela Service Layer. Fora do B1 só ficam usuários, sessões e auditoria do Áster.</td></tr>
+    <tr><td>E se o B1 estiver fora do ar?</td><td>A operação no Áster é registrada e o envio ao B1 fica no Monitor para reprocessar.</td></tr>
+    <tr><td>Quem emite a NF-e e o boleto?</td><td>O B1, com o add-on fiscal e o banco que o cliente já usa. O Áster cria o documento com tudo preenchido.</td></tr>
+    <tr><td>Funciona no celular/tablet?</td><td>Sim: as telas se ajustam; checklist, fotos e assinatura foram feitos para o tablet do pátio e do técnico.</td></tr>
+    <tr><td>Controle de acesso?</td><td>Perfis (administrador, gestor, comercial, faturamento, pátio, atendimento, técnico), filtro por filial e auditoria de cada alteração.</td></tr>
+    <tr><td>Máquinas e veículos juntos?</td><td>Sim: horímetro ou hodômetro, placa, Renavam, condutor e multas para veículos.</td></tr>
+  </table></div>
+</section>
+
+<section>
+  <h2>Se algo der errado</h2>
+  <ul>
+    <li>A janela preta fechou ou o endereço não abre: dois cliques em <code>Aster Rental.html</code> — é o mesmo sistema, abrindo direto no navegador.</li>
+    <li>Dados bagunçados no ensaio: <b class="tela">Administração › SAP B1 › Restaurar dados de demonstração</b>.</li>
+    <li>Tela não atualizou: botão <b>Atualizar</b> no rodapé.</li>
+  </ul>
+</section>
+</main>
+</body>
+</html>

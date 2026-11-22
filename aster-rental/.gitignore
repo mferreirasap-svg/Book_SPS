@@ -4,3 +4,5 @@ data/
 *.db-*
 .env
 dist-demo
+dist-apresentacao
+Aster-Rental-apresentacao.zip

@@ -48,6 +48,8 @@ export const config = {
     timeoutMs: int(env.B1_TIMEOUT_MS, 60000),
     // Em demonstração, os dados de exemplo ficam salvos em data/ para não sumirem ao reiniciar.
     mockFile: env.B1_MOCK_FILE || (production ? '' : 'data/demo-b1.json'),
+    // Dados do modo simulado: "apresentacao" (contratos, faturamento e pós-venda com histórico) ou "basico".
+    dados: env.DEMO_DADOS === 'basico' ? 'basico' : 'apresentacao',
   },
 };
 

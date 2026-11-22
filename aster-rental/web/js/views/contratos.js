@@ -21,7 +21,7 @@ export async function render(root, params, c) {
     ${c.can('contratos.editar') ? '<button class="primary" type="button" data-a="novo">+ Novo contrato</button>' : ''}</div>
   <div class="tbl"><table><thead><tr><th>Nº</th><th>Cliente</th><th>Obra / local</th><th>Início</th><th>Fim</th><th class="num">Itens</th><th>Documento</th><th>Status</th></tr></thead><tbody>
   ${r.items.map((x) => `<tr class="click" data-id="${x.DocEntry}"><td>${SETA}<b>${x.DocNum}</b></td><td>${esc(x.U_CardName)}</td><td>${esc(x.U_Obra)}</td>
-    <td>${fmtD(x.U_DtInicio)}</td><td>${fmtD(x.U_DtFim)}</td><td class="num">${(x[LN] || []).filter((l) => l.U_StatusL !== 'DEV').length}</td>
+    <td>${fmtD(x.U_DtInicio)}</td><td>${fmtD(x.U_DtFim)}</td><td class="num">${(x[LN] || []).filter((l) => l.U_StatusL !== 'DEV').length || (x[LN] || []).length}</td>
     <td>${esc(DOM.modoFat[x.U_ModoFat] || '')}</td><td>${badge(x.U_Status, DOM.statusContrato)}</td></tr>`).join('')
     || '<tr><td colspan="8" class="empty">Nenhum contrato.</td></tr>'}</tbody></table></div>${pager(r)}</div>`;
   const reload = () => render(root, {}, ctx);
@@ -216,11 +216,11 @@ function bind(root) {
     const t = ev.target;
     if (t.dataset.h === '_bp') {
       const r = await get(`/lookup/partners${qs({ q: t.value })}`).catch(() => []);
-      $('#dlBP', root).innerHTML = r.map((p) => `<option value="${esc(p.CardCode)} — ${esc(p.CardName)}">${esc(p.FederalTaxID || '')}</option>`).join('');
+      ($('#dlBP', root) || {}).innerHTML = r.map((p) => `<option value="${esc(p.CardCode)} — ${esc(p.CardName)}">${esc(p.FederalTaxID || '')}</option>`).join('');
     }
     if (t.dataset.k === 'U_ItemCode') {
       const r = await get(`/lookup/items${qs({ q: t.value })}`).catch(() => []);
-      $('#dlItens', root).innerHTML = r.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
+      ($('#dlItens', root) || {}).innerHTML = r.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
     }
   }, 300);
   root.onchange = async (ev) => {

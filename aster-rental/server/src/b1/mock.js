@@ -178,6 +178,7 @@ export class MockServiceLayer {
       saved = null;
     }
     this.db = saved || (seed ? seed() : { sets: {}, seq: {} });
+    this.carregado = Boolean(saved); // false = base nova (a apresentação ainda não foi montada)
     if (saved && seed) this.upgrade(seed());
   }
 

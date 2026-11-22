@@ -4,6 +4,7 @@
 // Caminhos relativos à publicação: js/demo/ → ../../server/src/
 import { MockServiceLayer } from '../../server/src/b1/mock.js';
 import { demoSeed } from '../../server/src/b1/seed.js';
+import { montarApresentacao } from '../../server/src/b1/apresentacao.js';
 import { createServices } from '../../server/src/services/index.js';
 import { PROFILES, permsOf } from '../../server/src/auth/permissions.js';
 import { HttpError, badRequest, forbidden, uid } from '../../server/src/lib/util.js';
@@ -218,7 +219,9 @@ export async function createDemoBackend() {
   const jobs = createJobs();
   const idemMap = new Map();
   const idem = { get: (k, u) => idemMap.get(`${u}|${k}`), save: (k, u, status, response) => idemMap.set(`${u}|${k}`, { status, response }) };
-  const deps = { cfg, auth, audit, jobs, sl, idem, ...createServices({ sl, audit, jobs }) };
+  const montarDemo = () => montarApresentacao(sl);
+  if (!sl.carregado) await montarDemo();
+  const deps = { cfg, auth, audit, jobs, sl, idem, montarDemo, ...createServices({ sl, audit, jobs }) };
 
   const { app, routes } = createRouter();
   for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes, integracaoRoutes]) await r(app, { deps });

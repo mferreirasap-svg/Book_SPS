@@ -74,6 +74,7 @@ export default async function adminRoutes(app, { deps }) {
   app.post('/admin/demo-reset', { preHandler: can('admin.instalar') }, async (req) => {
     if (cfg.b1.mode !== 'mock' || typeof sl.reset !== 'function') throw badRequest('Disponível só no modo de demonstração.');
     sl.reset();
+    if (deps.montarDemo) await deps.montarDemo();
     audit.record(req, { action: 'restaurar_demo', entity: 'b1' });
     return { ok: true };
   });

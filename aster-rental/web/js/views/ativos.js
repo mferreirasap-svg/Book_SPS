@@ -96,7 +96,8 @@ function form(a, reload) {
   m.oninput = debounce(async (ev) => {
     if (!['U_ItemCode', 'U_ItemBem'].includes(ev.target.dataset.af)) return;
     const its = await get(`/lookup/items${qs({ q: ev.target.value })}`).catch(() => []);
-    $(ev.target.dataset.af === 'U_ItemBem' ? '#dlBens' : '#dlItens', m).innerHTML = its.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join('');
+    const dl = $(ev.target.dataset.af === 'U_ItemBem' ? '#dlBens' : '#dlItens', m);
+    if (dl) dl.innerHTML = its.map((x) => `<option value="${esc(x.ItemCode)}">${esc(x.ItemName)}</option>`).join(''); // a janela pode ter sido fechada
   });
   m.onclick = async (ev) => {
     const b = ev.target.closest('[data-x]');

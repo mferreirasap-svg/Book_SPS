@@ -16,11 +16,12 @@ export async function render(root, params, c) {
     <div><label>SLA</label><select data-f="sla"><option value="">Todos</option><option value="violado" ${f.sla === 'violado' ? 'selected' : ''}>Estourado</option></select></div>
     <div style="flex:1" class="search"><label>Buscar</label>${SEARCH}<input data-f="q" value="${esc(f.q)}" placeholder="cliente, assunto, equipamento, contato"></div>
     ${c.can('chamados.editar') ? '<button class="primary" type="button" data-a="novo">+ Novo chamado</button>' : ''}</div>
-  <div class="tbl"><table><thead><tr><th>Nº</th><th>Aberto em</th><th>Cliente</th><th>Assunto</th><th>Equipamento</th><th>Prioridade</th><th>Status</th><th>1ª resposta</th><th>Solução</th><th>Prazo</th></tr></thead><tbody>
+  <div class="tbl"><table><thead><tr><th>Nº</th><th>Aberto em</th><th>Cliente</th><th>Assunto</th><th>Equipamento</th><th>Prioridade</th><th>Status</th><th>SLA</th><th>Solução até</th></tr></thead><tbody>
   ${r.items.map((t) => `<tr class="click" data-id="${t.DocEntry}"><td>${SETA}${t.DocNum}</td><td>${fmtDT(t.U_Abertura)}</td><td>${esc(t.U_CardName)}</td>
     <td>${t.U_Parado === 'S' ? '<span class="badge p-URG">PARADO</span> ' : ''}${esc(t.U_Assunto)}</td><td>${esc(t.U_Ativo)}</td><td>${badge(t.U_Prior, DOM.prioridade, 'p-')}</td>
-    <td>${badge(t.U_Status, DOM.statusCha)}</td><td>${slaBadge(t.slaResp)}</td><td>${slaBadge(t.slaSol)}</td><td>${fmtDT(t.U_PrazoSol)}</td></tr>`).join('')
-    || '<tr><td colspan="10" class="empty">Nenhum chamado.</td></tr>'}</tbody></table></div>${pager(r)}
+    <td>${badge(t.U_Status, DOM.statusCha)}</td><td title="1ª resposta: ${esc(DOM.sla[t.slaResp] || '—')} · solução: ${esc(DOM.sla[t.slaSol] || '—')}">${slaBadge([t.slaResp, t.slaSol].includes('violado') ? 'violado' : [t.slaResp, t.slaSol].includes('vencendo') ? 'vencendo' : t.slaSol || t.slaResp)}</td>
+    <td>${fmtDT(t.U_PrazoSol)}</td></tr>`).join('')
+    || '<tr><td colspan="9" class="empty">Nenhum chamado.</td></tr>'}</tbody></table></div>${pager(r)}
   <p class="sub">Prazos de SLA por prioridade em Administração › Parâmetros. Chamado de equipamento parado entra no mínimo como prioridade alta.</p></div>`;
 
   const reload = () => render(root, {}, c);
@@ -71,7 +72,7 @@ async function novo(c, pre = {}) {
     if (ev.target.id !== 'chCli' || ev.target.value.length < 2) return;
     const r = await get(`/lookup/partners${qs({ q: ev.target.value.split(' — ')[0] })}`).catch(() => []);
     r.forEach((p) => lista.set(`${p.CardCode} — ${p.CardName}`, p));
-    $('#chCliL').innerHTML = r.map((p) => `<option value="${esc(`${p.CardCode} — ${p.CardName}`)}">`).join('');
+    ($('#chCliL') || {}).innerHTML = r.map((p) => `<option value="${esc(`${p.CardCode} — ${p.CardName}`)}">`).join('');
   }, 300);
   m.onchange = (ev) => {
     if (ev.target.id === 'chTipo' && ev.target.value === 'PAR') $('#chPar').checked = true;

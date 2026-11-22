@@ -120,7 +120,7 @@ async function depara(box) {
   box.oninput = async (ev) => {
     if (ev.target.getAttribute('list') !== 'dlItensB1' || ev.target.value.length < 2) return;
     const r = await get(`/lookup/items${qs({ q: ev.target.value })}`).catch(() => []);
-    $('#dlItensB1', box).innerHTML = r.map((i) => `<option value="${esc(i.ItemCode)}">${esc(i.ItemName)}</option>`).join('');
+    ($('#dlItensB1', box) || {}).innerHTML = r.map((i) => `<option value="${esc(i.ItemCode)}">${esc(i.ItemName)}</option>`).join('');
   };
   box.onclick = async (ev) => {
     if (!ev.target.closest('[data-a=salvar]')) return;
@@ -141,7 +141,7 @@ async function monitor(box, f) {
   const rows = await get(`/integration/log${qs({ status: f.status })}`);
   box.innerHTML = `<div class="toolbar"><div><label>Situação</label><select id="mnSt"><option value="">Todas</option>${Object.entries(STATUS_INT).map(([k, t]) => `<option value="${k}" ${f.status === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
     <p class="sub" style="flex:1;margin:0">Cada envio ao SAP B1 fica registrado. Uma falha no B1 não desfaz a operação no Áster: corrija a causa (cadastro, de-para) e reprocesse.</p></div>
-  <div class="tbl"><table><thead><tr><th>Data</th><th>Integração</th><th>Registro no Áster</th><th>Objeto no B1</th><th>Situação</th><th class="num">Nº no B1</th><th>Erro</th><th class="num">Tentativas</th><th></th></tr></thead><tbody>
+  <div class="tbl"><table><thead><tr><th>Data</th><th>Integração</th><th>Registro no Áster</th><th>Objeto no B1</th><th>Situação</th><th class="num">Nº no B1</th><th>Erro</th><th class="num">Envios</th><th></th></tr></thead><tbody>
   ${rows.map((r) => `<tr><td>${fmtDT(r.U_Data)}</td><td>${esc(TIPO_INT[r.U_Tipo] || r.U_Tipo)}</td>
     <td>${r.U_Tipo === 'remessa' ? `movimentação ${esc(r.U_Ref)}` : r.U_Tipo === 'chamado' ? `<a href="#/chamados?id=${esc(r.U_Ref)}">chamado ${esc(r.U_Ref)}</a>` : `<a href="#/os?id=${esc(r.U_Ref)}">OS ${esc(r.U_Ref)}</a>`}</td>
     <td>${esc(OBJ_NOME[r.U_Objeto] || r.U_Objeto)}</td><td><span class="badge ${r.U_Status === 'OK' ? 'b-OK' : r.U_Status === 'ERR' ? 's-violado' : 'b-RAS'}">${esc(STATUS_INT[r.U_Status] || r.U_Status)}</span></td>

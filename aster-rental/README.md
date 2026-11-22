@@ -58,6 +58,23 @@ Os dados de exemplo ficam salvos em `data/`; para começar do zero, apague essa 
 
 Para desenvolver com recarga automática: `npm install` e `npm run dev`.
 
+## Pacote de apresentação (localhost, sem instalar nada)
+
+`npm run pacote` gera `Aster-Rental-apresentacao.zip`, com:
+- `Aster Rental.html`: o sistema inteiro num arquivo, que roda sem internet.
+- `Abrir Aster Rental.cmd`: no Windows, abre em http://localhost:8080 pelo PowerShell que já vem no sistema.
+- O atalho para Mac.
+- O roteiro da apresentação.
+
+No modo simulado, a base nova recebe dados de apresentação (`server/src/b1/apresentacao.js`), montados pelas próprias regras do sistema:
+- contratos em várias situações;
+- entregas e devoluções com documentos no B1;
+- faturamento de meses anteriores;
+- chamados, OS e pesquisas com histórico;
+- um erro de integração proposital, para mostrar o reprocessamento.
+
+`DEMO_DADOS=basico` usa só a base mínima. Administração › SAP B1 › Restaurar dados de demonstração volta ao início.
+
 ## Demonstração online (sem instalar nada)
 
 Link: https://claude.ai/artifact/CFpHB5EPyuaWBds43PEYcy (usuário `admin`, senha `Demo2026senha`).

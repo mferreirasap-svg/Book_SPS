@@ -12,7 +12,8 @@
     "dev": "node --watch server/src/start.js",
     "test": "node --disable-warning=ExperimentalWarning --test --test-concurrency=1 \"server/test/**/*.test.js\"",
     "install-b1": "node --disable-warning=ExperimentalWarning server/src/cli/install-b1.js",
-    "build-demo": "node scripts/build-demo.mjs"
+    "build-demo": "node scripts/build-demo.mjs",
+    "pacote": "node scripts/build-pacote.mjs"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.3",
@@ -22,5 +23,8 @@
     "bcryptjs": "^3.0.3",
     "fastify": "^5.12.5",
     "undici": "^7.30.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.2"
   }
 }
