@@ -103,3 +103,11 @@ export function imprimirOS(o, { empresa = '' } = {}) {
       <div>${o.U_Assinatura && /^data:image\/png;base64,/.test(o.U_Assinatura) ? `<img src="${o.U_Assinatura}" style="max-height:70px;display:block;margin:-80px auto 4px">` : ''}
       ${esc(o.U_Respons || 'Responsável do cliente')}${o.U_DocResp ? ` — ${esc(o.U_DocResp)}` : ''}</div></div>`);
 }
+
+/** Etiquetas QR para colar nos equipamentos (3 por linha numa folha A4). */
+export function imprimirEtiquetas(lista, { empresa = '' } = {}) {
+  imprimir('Etiquetas QR', `<style>.etq{display:inline-block;width:31%;margin:1%;border:1px dashed #999;padding:8px;text-align:center;vertical-align:top;break-inside:avoid}
+    .etq svg{width:150px;height:150px}.etq b{display:block;font-size:15px}.etq small{display:block;color:#444}</style>
+    ${(lista || []).map((e) => `<div class="etq"><small>${esc(empresa)}</small>${e.svg}<b>${esc(e.ativo)}</b><small>${esc(e.nome)}${e.placa ? ` · ${esc(e.placa)}` : ''}</small>
+      <small><b style="font-size:12px;display:inline">Problema com o equipamento?</b> Aponte a câmera do celular e abra o chamado.</small></div>`).join('')}`);
+}

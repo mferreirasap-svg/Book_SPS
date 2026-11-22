@@ -25,6 +25,7 @@ export const PERMISSIONS = {
   'os.todas': 'Ver e executar OS de todos os técnicos',
   'planos.editar': 'Editar técnicos e planos preventivos',
   'pesquisa.ver': 'Consultar pesquisas de satisfação',
+  'portal.gerir': 'Gerenciar acessos ao portal do cliente e etiquetas QR',
   'admin.usuarios': 'Administrar usuários',
   'admin.parametros': 'Alterar parâmetros',
   'admin.instalar': 'Instalar estruturas no SAP B1',
@@ -43,7 +44,7 @@ export const PROFILES = {
     'chamados.ver', 'os.ver', 'os.executar', 'os.todas'] },
   operacao: { name: 'Operação de campo', perms: ['painel.ver', 'ativos.ver', 'contratos.ver', 'leituras.ver', 'mov.registrar', 'leituras.registrar'] },
   atendimento: { name: 'Atendimento / pós-venda', perms: ['painel.ver', 'ativos.ver', 'contratos.ver', 'chamados.ver', 'chamados.editar', 'os.ver', 'os.editar',
-    'os.todas', 'pesquisa.ver'] },
+    'os.todas', 'pesquisa.ver', 'portal.gerir'] },
   tecnico: { name: 'Técnico de campo', perms: ['painel.ver', 'ativos.ver', 'chamados.ver', 'os.ver', 'os.executar', 'leituras.ver'] },
 };
 

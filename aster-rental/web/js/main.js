@@ -20,6 +20,8 @@ import * as preventivas from './views/preventivas.js';
 import * as satisfacao from './views/satisfacao.js';
 import * as tecnicos from './views/tecnicos.js';
 import * as integracao from './views/integracao.js';
+import * as portalcli from './views/portalcli.js';
+import { abrirPortal } from './portal.js';
 
 iniciarNumerosBR();
 
@@ -37,6 +39,7 @@ const VIEWS = [
   { key: 'agenda', title: 'Agenda da equipe', perm: 'os.ver', mod: agenda },
   { key: 'preventivas', title: 'Preventivas', perm: 'os.ver', mod: preventivas },
   { key: 'satisfacao', title: 'Satisfação (NPS)', perm: 'pesquisa.ver', mod: satisfacao },
+  { key: 'portalcli', title: 'Portal do cliente', perm: 'portal.gerir', mod: portalcli },
   { key: 'tecnicos', title: 'Técnicos e planos', perm: ['planos.editar', 'os.editar'], mod: tecnicos },
   { sec: 'Frota' },
   { key: 'ativos', title: 'Ativos', perm: 'ativos.ver', mod: ativos },
@@ -68,23 +71,48 @@ export function go(key, params = {}) {
   else location.hash = h;
 }
 
-function renderMenu(active) {
-  let html = '';
-  let pendingSec = null;
-  for (const v of VIEWS) {
-    if (v.sec) {
-      pendingSec = v.sec;
-      continue;
-    }
-    if (!can(v.perm)) continue;
-    if (pendingSec) {
-      html += `<div class="sec">${esc(pendingSec)}</div>`;
-      pendingSec = null;
-    }
-    html += `<a href="#/${v.key}" class="item ${active === v.key ? 'on' : ''}">${ico(v.key === 'disponibilidade' ? 'disponibilidade' : v.key)}<span>${esc(v.title)}</span></a>`;
+// Grupos do menu que o usuário recolheu (lembrados neste navegador). O grupo da tela aberta sempre aparece aberto.
+const MENU_CHAVE = 'aster-menu-fechados';
+const menuFechados = (() => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(MENU_CHAVE) || '[]'));
+  } catch {
+    return new Set();
   }
-  $('#menu').innerHTML = html;
+})();
+const salvarMenu = () => {
+  try {
+    localStorage.setItem(MENU_CHAVE, JSON.stringify([...menuFechados]));
+  } catch {
+    /* sem armazenamento: vale só nesta visita */
+  }
+};
+
+function renderMenu(active) {
+  const grupos = [];
+  for (const v of VIEWS) {
+    if (v.sec) grupos.push({ sec: v.sec, itens: [] });
+    else if (can(v.perm)) grupos[grupos.length - 1].itens.push(v);
+  }
+  const atual = grupos.find((g) => g.itens.some((v) => v.key === active));
+  if (atual && menuFechados.delete(atual.sec)) salvarMenu();
+  $('#menu').innerHTML = grupos.filter((g) => g.itens.length).map((g) => {
+    const aberto = !menuFechados.has(g.sec);
+    return `<button type="button" class="sec" data-sec="${esc(g.sec)}" aria-expanded="${aberto}">${esc(g.sec)}<span class="chev">▾</span></button>
+      <div class="grp-itens" ${aberto ? '' : 'hidden'}>${g.itens.map((v) => `<a href="#/${v.key}" class="item ${active === v.key ? 'on' : ''}">${ico(v.key)}<span>${esc(v.title)}</span></a>`).join('')}</div>`;
+  }).join('');
 }
+
+$('#menu').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-sec]');
+  if (!b) return;
+  const aberto = b.getAttribute('aria-expanded') === 'true';
+  b.setAttribute('aria-expanded', String(!aberto));
+  b.nextElementSibling.hidden = aberto;
+  if (aberto) menuFechados.add(b.dataset.sec);
+  else menuFechados.delete(b.dataset.sec);
+  salvarMenu();
+});
 
 export function setTitle(t) {
   $('#pageTitle').textContent = t;
@@ -206,7 +234,11 @@ window.addEventListener('unhandledrejection', (e) => {
 
 // Link da pesquisa de satisfação (#/pesquisa/<código>): página pública, sem login.
 const pesq = /^#\/pesquisa\/([a-z0-9-]{8,40})$/.exec(location.hash);
-if (pesq) {
+// Portal do cliente (#portal) e etiqueta QR do equipamento (#qr-<código>): também sem o login interno.
+const qr = /^#qr-([a-z0-9]{8,40})$/.exec(location.hash);
+if (location.hash === '#portal' || qr) {
+  abrirPortal(qr ? { qr: qr[1] } : {});
+} else if (pesq) {
   $('#login').hidden = true;
   $('#app').hidden = true;
   const w = document.createElement('div');

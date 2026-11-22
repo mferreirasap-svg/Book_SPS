@@ -74,11 +74,16 @@ Adaptações em telas existentes:
 | `@SPS_LPES` | UDT | Pesquisas de satisfação (token, nota, comentário) |
 | `OINV.U_SPS_OsEntry` | UDF | OS que originou o documento de venda |
 
+## 5b. Portal do cliente (já no protótipo)
+
+* Acesso do contato do cliente (e-mail + código): chamados, conversa, fotos, aprovação de orçamento e equipamentos locados com a próxima preventiva.
+* Etiqueta QR no equipamento: chamado sem login, com equipamento, cliente e obra preenchidos.
+* Gestão pela locadora em Pós-venda › Portal do cliente (acessos, novo código, desativar, imprimir etiquetas).
+
 ## 6. Próximo projeto (fora do protótipo)
 
 | Item | Observação |
 |---|---|
-| Portal do cliente | Abrir e acompanhar chamados, ver OS e aprovar orçamento pelo link; abertura por QR Code colado no equipamento |
 | App do técnico offline | PWA com fila local, fotos em tamanho real (SAP B1 Attachments2), GPS no check-in |
 | Canais | E-mail de entrada vira chamado; WhatsApp (ponto fraco citado da referência) |
 | SLA em horário comercial | Hoje o prazo corre em horas corridas; calendário e feriados por filial |

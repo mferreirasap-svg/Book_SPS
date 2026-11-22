@@ -192,3 +192,30 @@ canvas.sig{border:1px dashed #AEB8BE;border-radius:4px;width:100%;max-width:520p
 .tabs-in{overflow-x:auto;max-width:100%}
 .tabs-in button{white-space:nowrap;flex:none}
 td input.num-br{text-align:right}
+.side-menu button.sec{display:flex;align-items:center;width:100%;background:none;border:none;border-radius:0;color:#fff;font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;opacity:.75;padding:14px 18px 6px;cursor:pointer;text-align:left}
+.side-menu button.sec:hover{opacity:1;background:rgba(255,255,255,.05)}
+.side-menu button.sec .chev{margin-left:auto;font-size:13px;transition:transform .15s}
+.side-menu button.sec[aria-expanded="false"] .chev{transform:rotate(-90deg)}
+.side-menu button.sec:focus-visible{outline:2px solid var(--arrow);outline-offset:-2px}
+
+/* ---- portal do cliente ---- */
+#portalApp{min-height:100vh;background:var(--bg)}
+.pt-demo{background:var(--arrow);color:#3A2A00;padding:8px 16px;font-size:13.5px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pt-demo button{background:#fff}
+.pt-top{display:flex;align-items:center;gap:12px;background:var(--top);color:#fff;padding:10px 16px}
+.pt-top img{height:34px;background:#fff;border-radius:6px;padding:2px 6px}
+.pt-top .spacer{flex:1}.pt-top button{background:transparent;color:#fff;border-color:rgba(255,255,255,.7)}
+.pt-main{max-width:760px;margin:0 auto;padding:16px}
+.pt-login{max-width:420px;margin:30px auto}
+.pt-ola{margin:0 0 10px}
+.pt-lista{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.pt-item{display:flex;flex-direction:column;gap:3px;text-align:left;width:100%;background:#fff;border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:4px;padding:10px 12px;color:var(--ink);font-size:14px}
+button.pt-item:hover{background:#EEF6FA}
+.pt-opcoes{display:flex;gap:14px;flex-wrap:wrap}
+.pt-conversa{display:flex;flex-direction:column;gap:8px}
+.pt-msg{background:#F1F4F6;border-radius:8px;padding:8px 12px;max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere}
+.pt-msg.eu{background:var(--bluebg);align-self:flex-end}
+.pt-codigo{font:700 28px/1.2 ui-monospace,Consolas,monospace;letter-spacing:.15em;text-align:center;background:var(--bg);border-radius:6px;padding:12px;margin:10px 0}
+.qr-grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.qr-etq{display:flex;flex-direction:column;align-items:center;gap:4px;border:1px dashed #AEB8BE;border-radius:6px;padding:10px;text-align:center;background:#fff}
+.qr-etq svg{width:130px;height:130px}.qr-etq span{font-size:12.5px;color:var(--muted)}

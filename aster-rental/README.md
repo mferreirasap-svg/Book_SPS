@@ -151,6 +151,32 @@ Integrações com o que já existia:
 
 Estruturas novas no B1 (versão 3): `SPSLCHA` (chamados e interações), `SPSLOS` (OS e itens), `@SPS_LTEC`, `@SPS_LPLN` e `@SPS_LPES`. Rode a instalação de novo em Administração › SAP B1.
 
+## Portal do cliente
+
+**Locadora:** menu **Pós-venda › Portal do cliente**.
+- Cria o acesso do contato do cliente: e-mail + código de 8 caracteres, mostrado uma única vez.
+- Gera e imprime as etiquetas QR dos equipamentos.
+- O botão "Ver o portal como o cliente" abre a visão do cliente.
+
+**Cliente:** endereço `#portal`.
+- Vê os próprios chamados e conversa com a locadora. As notas internas nunca aparecem para ele.
+- Abre chamado com fotos.
+- Aprova ou recusa orçamentos.
+- Vê os equipamentos locados, com a próxima preventiva.
+
+**Etiqueta QR:** endereço `#qr-<código>`. Quem está na obra abre o chamado sem login, com equipamento, cliente e obra já preenchidos.
+
+**Segurança:**
+- Só o resumo SHA-256 do código e da sessão fica gravado (UDT `@SPS_LPOR`).
+- Bloqueio de 15 minutos depois de 5 tentativas erradas.
+- Sessão com prazo (parâmetro `PORTAL_HORAS`).
+- Desativar o acesso derruba a sessão aberta.
+- Cada cliente só vê os dados do próprio CardCode.
+
+**Demonstração:** `marcos@serraazul.example` / `SERRA2026`.
+
+Preventivas: botão "Gerar OS de todas as vencidas". Com o parâmetro `PREV_AUTO = S`, a leitura que vence uma preventiva já abre a OS.
+
 ## Integração com o SAP B1 (telas nativas)
 
 Mapa completo, pré-requisitos e roteiro de homologação em `docs/integracao-b1/01-mapa-nativo.md`.
@@ -178,7 +204,8 @@ Tela **Configuração › Integração SAP B1**:
 `/api/tickets` · `/api/tickets/:id/interactions` · `/api/tickets/:id/order` · `/api/orders` · `/api/orders/:id/{schedule,start,quote,conclude,cancel}` ·
 `/api/preventive` · `/api/technicians` · `/api/plans` · `/api/surveys` · `/api/assets/:code/history` · `/api/aftersales/dashboard` ·
 `/api/public/survey/:code` (sem login) ·
-`/api/b1/lists` · `/api/b1/addresses/:card` · `/api/integration/{structure,readiness,log,serials}` · `/api/integration/log/:code/retry` · `/api/integration/serials/import`
+`/api/b1/lists` · `/api/b1/addresses/:card` · `/api/integration/{structure,readiness,log,serials}` · `/api/integration/log/:code/retry` · `/api/integration/serials/import` ·
+`/api/portal/accesses` · `/api/portal/qr-labels` · `/api/public/portal/*` e `/api/public/qr/:tk` (portal do cliente, sem login interno) · `/api/preventive/overdue`
 
 ## Próximos passos
 

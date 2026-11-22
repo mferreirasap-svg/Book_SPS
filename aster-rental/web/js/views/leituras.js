@@ -42,8 +42,8 @@ export async function render(root, _p, c) {
       const p = pend[i];
       if ($(`#lt${i}`).value === '') return toast('Informe a leitura atual.', 'err');
       await acao(async () => {
-        await post('/readings', { ativo: p.U_Ativo, leitura: $(`#lt${i}`).value, abatimento: $(`#ab${i}`).value, data: $(`#dt${i}`).value, comp: f.comp });
-        toast('Leitura registrada.');
+        const r = await post('/readings', { ativo: p.U_Ativo, leitura: $(`#lt${i}`).value, abatimento: $(`#ab${i}`).value, data: $(`#dt${i}`).value, comp: f.comp });
+        toast(r.preventivas?.length ? `Leitura registrada. A preventiva venceu: OS ${r.preventivas.map((x) => x.DocNum).join(', ')} aberta para agendar.` : 'Leitura registrada.');
         render(root, {}, c);
       });
     }

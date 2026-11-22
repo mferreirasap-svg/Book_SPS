@@ -1,7 +1,7 @@
 // Estruturas do Áster Rental no SAP B1: tabelas (UDT), campos (UDF) e objetos (UDO).
 // O instalador cria tudo pela Service Layer. Ao mudar algo aqui, incremente SCHEMA_VERSION.
 
-export const SCHEMA_VERSION = 4;
+export const SCHEMA_VERSION = 5;
 
 export const SET = {
   ATV: 'SPSLATV',
@@ -20,6 +20,7 @@ export const SET = {
   PLN: 'U_SPS_LPLN',
   PES: 'U_SPS_LPES',
   INT: 'U_SPS_LINT',
+  POR: 'U_SPS_LPOR',
 };
 export const LN = 'SPS_LCT1Collection'; // itens do contrato
 export const GR = 'SPS_LCT2Collection'; // grupos de cobrança agrupada
@@ -76,6 +77,7 @@ export const SCHEMA = {
     { TableName: 'SPS_LPLN', TableDescription: 'Pós-venda - Planos preventivos', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LPES', TableDescription: 'Pós-venda - Pesquisas', TableType: 'bott_NoObject' },
     { TableName: 'SPS_LINT', TableDescription: 'Áster - Log de integração', TableType: 'bott_NoObject' },
+    { TableName: 'SPS_LPOR', TableDescription: 'Pós-venda - Acessos ao portal', TableType: 'bott_NoObject' },
   ],
   fields: {
     '@SPS_LATV': [
@@ -88,6 +90,7 @@ export const SCHEMA = {
       F('ValorDia', 'P', 'Valor diária'), F('Filial', 'N', 'Filial (BPLId)'), F('CtrAtual', 'N', 'Contrato atual'),
       F('Obs', 'T', 'Observações'), F('Versao', 'N', 'Versão do registro'),
       F('ItemBem', 'A', 'Item do bem no B1 (nº série)', { size: 50 }), F('VlrBem', 'P', 'Valor do bem (NF de remessa)'),
+      F('QR', 'A', 'Código da etiqueta QR', { size: 40 }),
     ],
     '@SPS_LFAM': [F('Tipo', 'A', 'Tipo do ativo', { size: 3, vv: DOM.tipoAtivo }), F('Caract', 'A', 'Características', { size: 254 })],
     '@SPS_LREG': [
@@ -161,7 +164,7 @@ export const SCHEMA = {
       F('Abertura', 'A', 'Aberto em (data e hora)', { size: 16 }), F('PrazoResp', 'A', 'Prazo 1ª resposta', { size: 16 }),
       F('PrazoSol', 'A', 'Prazo de solução', { size: 16 }), F('DtResp', 'A', '1ª resposta em', { size: 16 }), F('DtSol', 'A', 'Resolvido em', { size: 16 }),
       F('Respons', 'A', 'Responsável', { size: 50 }), F('OsEntry', 'N', 'OS gerada'), F('Filial', 'N', 'Filial (BPLId)'), F('Versao', 'N', 'Versão do registro'),
-      F('CallID', 'N', 'Chamada de serviço (B1)'),
+      F('CallID', 'N', 'Chamada de serviço (B1)'), F('Fotos', 'T', 'Fotos enviadas (JSON)'),
     ],
     '@SPS_LCH1': [F('Data', 'A', 'Data e hora', { size: 16 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Texto', 'T', 'Texto'),
       F('Publico', 'A', 'Visível ao cliente', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' })],
@@ -204,6 +207,12 @@ export const SCHEMA = {
       F('Tipo', 'A', 'Integração', { size: 20 }), F('Ref', 'A', 'Registro no Áster', { size: 30 }), F('Objeto', 'A', 'Objeto do B1', { size: 40 }),
       F('Status', 'A', 'Status', { size: 3, vv: DOM.statusInt }), F('DocEntry', 'N', 'Chave no B1'), F('DocNum', 'N', 'Número no B1'),
       F('Erro', 'A', 'Erro', { size: 254 }), F('Data', 'A', 'Data e hora', { size: 16 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Tentativas', 'N', 'Tentativas'),
+    ],
+    '@SPS_LPOR': [
+      F('CardCode', 'A', 'Cliente', { size: 15 }), F('CardName', 'A', 'Nome do cliente', { size: 100 }), F('Nome', 'A', 'Contato', { size: 100 }),
+      F('Email', 'A', 'E-mail', { size: 100 }), F('Fone', 'A', 'Telefone', { size: 30 }), F('Codigo', 'A', 'Código de acesso (resumo)', { size: 64 }),
+      F('Sessao', 'A', 'Sessão (resumo)', { size: 64 }), F('SessaoExp', 'A', 'Sessão válida até', { size: 16 }), F('UltAcesso', 'A', 'Último acesso', { size: 16 }),
+      F('Falhas', 'N', 'Tentativas erradas'), F('Bloqueio', 'A', 'Bloqueado até', { size: 16 }), F('Ativo', 'A', 'Ativo', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'S' }),
     ],
     // Campos de usuário em objetos nativos. Os de OINV valem para todos os documentos de marketing (pedido, entrega, devolução, NF, esboço).
     OINV: [F('SPS_CtrEntry', 'N', 'Contrato de locação'), F('SPS_Comp', 'A', 'Competência da locação', { size: 6 }), F('SPS_OsEntry', 'N', 'Ordem de serviço'),
@@ -284,5 +293,9 @@ export const CFG_DEFAULTS = {
   PV_CALL_PROBLEMA: '',
   PV_ATIVIDADE: 'N',
   PV_ATV_TIPO: '',
+  // preventiva: "S" gera a OS sozinha quando o equipamento passa do intervalo (sem técnico; o coordenador agenda)
+  PREV_AUTO: 'N',
+  // portal do cliente: horas de validade da sessão
+  PORTAL_HORAS: '12',
   SCHEMA_VERSION: '0',
 };

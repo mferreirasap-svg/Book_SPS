@@ -15,6 +15,7 @@ import faturamentoRoutes from '../../server/src/routes/faturamento.js';
 import adminRoutes from '../../server/src/routes/admin.js';
 import posvendaRoutes from '../../server/src/routes/posvenda.js';
 import integracaoRoutes from '../../server/src/routes/integracao.js';
+import portalRoutes from '../../server/src/routes/portal.js';
 
 const DEMO_PASSWORD = 'Demo2026senha';
 const K = { b1: 'aster-rental-demo-b1', users: 'aster-rental-demo-users', audit: 'aster-rental-demo-audit', session: 'aster-rental-demo-sessions', token: 'aster-rental-demo-token' };
@@ -224,7 +225,7 @@ export async function createDemoBackend() {
   const deps = { cfg, auth, audit, jobs, sl, idem, montarDemo, ...createServices({ sl, audit, jobs }) };
 
   const { app, routes } = createRouter();
-  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes, integracaoRoutes]) await r(app, { deps });
+  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes, integracaoRoutes, portalRoutes]) await r(app, { deps });
   app.get('/health', async () => ({ ok: true, b1Mode: 'mock', version: 'demo' }));
   const PUBLIC = new Set(['/auth/login', '/health']);
   let token = ls.get(K.token);

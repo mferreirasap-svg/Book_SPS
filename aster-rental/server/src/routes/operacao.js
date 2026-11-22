@@ -94,8 +94,20 @@ export default async function operacaoRoutes(app, { deps }) {
     const assets = Object.fromEntries((await repos.assets.all({ branches: req.user.branches })).map((a) => [a.Code, a]));
     return out.map((x) => ({ ...x, U_Tipo: assets[x.U_Ativo]?.U_Tipo, U_Medidor: assets[x.U_Ativo]?.U_Medidor }));
   });
-  app.post('/readings', { preHandler: can('leituras.registrar') }, async (req) => operations.registerReading(req, req.body || {}));
-  app.post('/readings/import', { preHandler: can('leituras.registrar') }, async (req) => operations.importReadings(req, req.body?.csv, req.body?.comp));
+  // Com PREV_AUTO = S, a leitura que vence uma preventiva já abre a OS (sem técnico; o coordenador agenda).
+  const prevAuto = async (req, ativo) => {
+    if ((await repos.settings.all()).PREV_AUTO !== 'S') return [];
+    return (await aftersales.preventivasVencidas(req, { ativo })).filter((x) => x.ok);
+  };
+  app.post('/readings', { preHandler: can('leituras.registrar') }, async (req) => {
+    const r = await operations.registerReading(req, req.body || {});
+    return { ...r, preventivas: await prevAuto(req, r.ativo) };
+  });
+  app.post('/readings/import', { preHandler: can('leituras.registrar') }, async (req) => {
+    const r = await operations.importReadings(req, req.body?.csv, req.body?.comp);
+    await prevAuto(req);
+    return r;
+  });
 
   /* ---- multas ---- */
   app.get('/fines', { preHandler: can('multas.ver') }, async (req) => repos.fines.list({ status: req.query.status, q: req.query.q }));

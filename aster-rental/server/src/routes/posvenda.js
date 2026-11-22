@@ -34,6 +34,7 @@ export default async function posvendaRoutes(app, { deps }) {
   /* ---- preventivas ---- */
   app.get('/preventive', { preHandler: can('os.ver') }, async (req) => A.preventive({ branches: req.user.branches }));
   app.post('/preventive/order', { preHandler: can('os.editar') }, async (req) => A.preventiveOrder(req, req.body || {}));
+  app.post('/preventive/overdue', { preHandler: can('os.editar') }, async (req) => A.preventivasVencidas(req, {}));
 
   /* ---- técnicos e planos ---- */
   app.get('/technicians', { preHandler: can('os.ver', 'chamados.ver', 'planos.editar') }, async () => repos.technicians.all());

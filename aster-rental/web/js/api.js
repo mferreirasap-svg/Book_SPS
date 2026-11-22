@@ -48,7 +48,7 @@ export async function api(method, path, body, headers = {}) {
       j = null;
     }
   }
-  if (status === 401 && path !== '/auth/login') onUnauthorized();
+  if (status === 401 && path !== '/auth/login' && !path.startsWith('/public/')) onUnauthorized(); // o portal do cliente trata a própria sessão
   if (status >= 400) {
     const e = new Error(j?.error || `Erro ${status}`);
     e.status = status;

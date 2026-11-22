@@ -257,5 +257,21 @@ export async function montarApresentacao(sl) {
       U_CardName: ['Construtora Horizonte Ltda', 'Mineração Serra Azul S.A.', 'Transportes Rota Sul Ltda', 'Agro Vale Verde Ltda'][i % 4], U_Email: '', U_Tecnico: tec,
       U_Enviada: D(dias), U_Nota: nota, U_Comentario: com, U_Respondida: `${D(dias + 1)}T10:30` });
   }
+  /* ---------- portal do cliente ---------- */
+  // Acesso de demonstração com código conhecido (na vida real o código é aleatório e enviado ao contato do cliente).
+  await S.portal.criarAcesso(req, { cardCode: 'C0002', nome: 'Marcos Reis', email: 'marcos@serraazul.example', fone: '(31) 99876-1122' }, 'SERRA2026');
+  await S.portal.criarAcesso(req, { cardCode: 'C0004', nome: 'José Carlos Lima', email: 'jose@valeverde.example', fone: '(38) 99654-3321' });
+  for (const a of await repos.assets.all()) if (a.U_Status !== 'BAI') await S.portal.tokenQR(req, a.Code);
+  // Orçamento esperando o cliente aprovar pelo portal: para-brisa da picape trincado por pedra na mina.
+  const tf = await S.aftersales.createTicket(req, { cardCode: 'C0002', tipo: 'MAN', prior: 'MED', origem: 'TEL', ativo: 'VEI-0005', contato: 'Marcos Reis',
+    assunto: 'Para-brisa da picape trincado', descricao: 'Pedra lançada por caminhão na estrada da mina trincou o para-brisa.' });
+  const of = await S.aftersales.orderFromTicket(req, tf.DocEntry, { tipo: 'COR', tecnico: 'T02', data: D(2), hora: '09:00' });
+  const osf = await S.aftersales.getOrder(req, of.DocEntry);
+  await S.aftersales.saveOrder(req, of.DocEntry, { U_Versao: osf.U_Versao, laudo: 'Vistoria por foto: troca do para-brisa necessária. Dano externo, não coberto pelo contrato.',
+    itens: [{ tipo: 'PEC', itemCode: 'PEC-0210', descr: 'Para-brisa Hilux (original)', qtd: 1, preco: 1890, cobrar: 'S' },
+      { tipo: 'SRV', itemCode: 'SLOC800', descr: 'Mão de obra de instalação', qtd: 1.5, preco: 180, cobrar: 'S' }] });
+  await S.aftersales.quoteOrder(req, of.DocEntry, { acao: 'enviar' });
+  await S.aftersales.interact(req, tf.DocEntry, { texto: 'Enviamos o orçamento da troca do para-brisa. Pode aprovar pelo portal.', publico: true, status: 'AGC' });
+  await envelhecer(tf.DocEntry, addHoras(`${h}T08:00`, -28), 3, null);
   return { ok: true };
 }

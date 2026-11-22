@@ -1,5 +1,5 @@
 // Manutenção preventiva: vencidas e próximas pelo horímetro/hodômetro e pelo calendário, com geração da OS.
-import { $, esc, num, fmtD, UN, DOM, badge, toast, modal, closeModal, msg, hoje } from '../util.js';
+import { $, esc, num, fmtD, UN, DOM, badge, toast, modal, closeModal, msg, hoje, confirmar, acao } from '../util.js';
 import { get, post } from '../api.js';
 import { filtro } from '../state.js';
 
@@ -19,7 +19,7 @@ export async function render(root, _p, c) {
     <div class="kpi alerta"><div class="l">Vencidas</div><div class="v">${cont.vencida}</div></div>
     <div class="kpi atencao"><div class="l">Próximas</div><div class="v">${cont.proxima}</div></div>
     <div class="kpi ok"><div class="l">Em dia</div><div class="v">${cont.ok}</div></div></div>
-  <div class="card"><div class="toolbar"><div><label>Mostrar</label><select id="pvSt">
+  <div class="card"><div class="toolbar">${cont.vencida && c.can('os.editar') ? '<button type="button" class="primary" data-a="todas" style="order:9;margin-left:auto">Gerar OS de todas as vencidas</button>' : ''}<div><label>Mostrar</label><select id="pvSt">
     <option value="pendentes" ${f.status === 'pendentes' ? 'selected' : ''}>Vencidas e próximas</option><option value="vencida" ${f.status === 'vencida' ? 'selected' : ''}>Vencidas</option>
     <option value="proxima" ${f.status === 'proxima' ? 'selected' : ''}>Próximas</option><option value="" ${f.status === '' ? 'selected' : ''}>Todas</option></select></div></div>
   <p class="sub">Calculado com a leitura atual do equipamento (as leituras mensais e as movimentações atualizam) e a última preventiva concluída do plano. Planos por família em Pós-venda › Técnicos e planos.</p>
@@ -46,6 +46,14 @@ export async function render(root, _p, c) {
     }
   };
   root.onclick = async (ev) => {
+    if (ev.target.closest('[data-a=todas]')) {
+      if (!(await confirmar({ titulo: 'Gerar OS das preventivas vencidas', texto: 'Abre uma OS para cada preventiva vencida que ainda não tem OS. As OS ficam sem agenda, na fila do coordenador.', ok: 'Gerar' }))) return;
+      return acao(async () => {
+        const r = await post('/preventive/overdue', {});
+        toast(`${r.filter((x) => x.ok).length} OS de preventiva aberta(s). Agende na Agenda da equipe.`);
+        render(root, {}, c);
+      });
+    }
     const b = ev.target.closest('[data-gerar]');
     if (!b) return;
     const tecs = (await get('/technicians')).filter((t) => t.U_Ativo !== 'N');

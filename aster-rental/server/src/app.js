@@ -23,6 +23,7 @@ import faturamentoRoutes from './routes/faturamento.js';
 import adminRoutes from './routes/admin.js';
 import posvendaRoutes from './routes/posvenda.js';
 import integracaoRoutes from './routes/integracao.js';
+import portalRoutes from './routes/portal.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = join(here, '..', '..', 'web');
@@ -116,6 +117,7 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   await app.register(adminRoutes, { prefix: '/api', deps });
   await app.register(posvendaRoutes, { prefix: '/api', deps });
   await app.register(integracaoRoutes, { prefix: '/api', deps });
+  await app.register(portalRoutes, { prefix: '/api', deps });
 
   app.get('/api/health', async () => ({ ok: true, b1Mode: cfg.b1.mode, version: process.env.npm_package_version || '0.1.0' }));
 

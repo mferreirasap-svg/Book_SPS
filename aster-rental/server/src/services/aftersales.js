@@ -113,6 +113,7 @@ export function createAfterSalesService({ repos, audit, integ }) {
     const parado = tipo === 'PAR' || sn(input.parado) === 'S' ? 'S' : 'N';
     if (parado === 'S' && PRIOR_ORDEM.indexOf(prior) < PRIOR_ORDEM.indexOf('ALT')) prior = 'ALT';
     const { at, c } = await vinculo({ cardCode, ctr: input.ctr, ativo: str(input.ativo, 50) });
+    const fotos = validarFotos(input.fotos, 3);
     const c0 = await cfg();
     const sla = slaHoras(c0, prior);
     const ab = agora();
@@ -121,8 +122,8 @@ export function createAfterSalesService({ repos, audit, integ }) {
       U_Email: str(input.email || bp.EmailAddress, 100), U_CtrEntry: c ? c.DocEntry : 0, U_Ativo: at ? at.Code : '', U_Tipo: tipo,
       U_Origem: DOM.origemCha[input.origem] ? input.origem : 'TEL', U_Prior: prior, U_Status: 'ABE', U_Assunto: assunto,
       U_Descricao: str(input.descricao, 4000), U_Parado: parado, U_Abertura: ab, U_PrazoResp: addHoras(ab, sla.resp), U_PrazoSol: addHoras(ab, sla.sol),
-      U_DtResp: '', U_DtSol: '', U_Respons: str(input.respons, 50) || req.user?.login || '', U_OsEntry: 0, U_Filial: Number(c?.U_Filial || at?.U_Filial) || 1,
-      [CH1]: [],
+      U_DtResp: '', U_DtSol: '', U_Respons: str(input.respons, 50) || (req.user?.portal ? '' : req.user?.login || ''), U_OsEntry: 0,
+      U_Filial: Number(c?.U_Filial || at?.U_Filial) || 1, U_Fotos: JSON.stringify(fotos), [CH1]: [],
     };
     const r = await repos.tickets.create(rec);
     audit.record(req, { action: 'criar', entity: 'chamado', id: r.DocEntry, after: { ...rec, [CH1]: undefined } });
@@ -177,6 +178,21 @@ export function createAfterSalesService({ repos, audit, integ }) {
     audit.record(req, { action: status ? `status:${status}` : 'interacao', entity: 'chamado', id, before: { U_Status: t.U_Status }, after: { U_Status: status || t.U_Status, texto } });
     if (status === 'RES' && !t.U_OsEntry) await surveyFor({ cha: { ...t, U_Status: 'RES' } });
     if (status) await espelhar.chamado(req, id);
+    return getTicket(id);
+  }
+
+  /** Mensagem escrita pelo cliente (portal). Não conta como resposta da locadora; reabre o chamado se ele estava aguardando o cliente ou resolvido. */
+  async function mensagemCliente(req, id, texto) {
+    const t = await repos.tickets.get(id);
+    if (!t) throw notFound('Chamado');
+    if (['FEC', 'CAN'].includes(t.U_Status)) throw badRequest('Este chamado já foi encerrado. Abra um novo chamado.');
+    const msg = str(texto, 4000);
+    if (!msg) throw badRequest('Escreva a mensagem.');
+    const patch = { [CH1]: [{ U_Data: agora(), U_Usuario: `cliente: ${str(req.user.name, 40)}`, U_Texto: msg, U_Publico: 'S' }] };
+    if (['AGC', 'RES'].includes(t.U_Status)) Object.assign(patch, { U_Status: 'AND', ...(t.U_Status === 'RES' ? { U_DtSol: '' } : {}) });
+    await repos.tickets.update(id, patch);
+    audit.record(req, { action: 'mensagem_cliente', entity: 'chamado', id, after: { texto: msg } });
+    if (patch.U_Status) await espelhar.chamado(req, id);
     return getTicket(id);
   }
 
@@ -334,6 +350,16 @@ export function createAfterSalesService({ repos, audit, integ }) {
   }
 
   /** Lê e valida os dados de execução (laudo, checklist, peças, fotos, assinatura). */
+  function validarFotos(fotos, max = 4) {
+    if (fotos == null) return [];
+    if (!Array.isArray(fotos) || fotos.length > max) throw badRequest(`Envie no máximo ${max} fotos.`);
+    return fotos.map((f) => {
+      if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(f?.src || '')) throw badRequest('Foto em formato inválido.');
+      if (f.src.length > 400000) throw badRequest('Foto muito grande. Reduza a resolução.');
+      return { src: f.src, legenda: str(f.legenda, 100) };
+    });
+  }
+
   function dadosExecucao(input) {
     const patch = {};
     if (input.laudo != null) patch.U_Laudo = str(input.laudo, 8000);
@@ -555,6 +581,20 @@ export function createAfterSalesService({ repos, audit, integ }) {
     return createOrder(req, { tipo: 'PRE', ativo, plano, tecnico, data, hora, descricao: `Manutenção preventiva — ${p.Name}.` });
   }
 
+  /** Gera a OS de todas as preventivas vencidas que ainda não têm OS aberta (sem técnico: o coordenador agenda). */
+  async function preventivasVencidas(req, { ativo } = {}) {
+    const lista = (await preventive({ branches: req.user?.branches })).filter((p) => p.status === 'vencida' && !p.aberta && (!ativo || p.ativo === ativo));
+    const out = [];
+    for (const p of lista) {
+      try {
+        out.push({ ok: true, ativo: p.ativo, plano: p.planoNome, ...(await preventiveOrder(req, { ativo: p.ativo, plano: p.plano })) });
+      } catch (e) {
+        out.push({ ok: false, ativo: p.ativo, plano: p.planoNome, message: e.message });
+      }
+    }
+    return out;
+  }
+
   /* ================= pesquisa de satisfação ================= */
 
   async function surveyFor({ os, cha }) {
@@ -673,6 +713,6 @@ export function createAfterSalesService({ repos, audit, integ }) {
   return {
     listTickets, getTicket, createTicket, updateTicket, interact, orderFromTicket,
     listOrders, getOrder, createOrder, orderFromReturn, scheduleOrder, startOrder, saveOrder, quoteOrder, concludeOrder, cancelOrder,
-    preventive, preventiveOrder, publicSurvey, answerSurvey, surveys, assetHistory, dashboard, tecnicoDo,
+    preventive, preventiveOrder, preventivasVencidas, mensagemCliente, publicSurvey, answerSurvey, surveys, assetHistory, dashboard, tecnicoDo,
   };
 }

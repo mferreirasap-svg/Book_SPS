@@ -41,7 +41,7 @@
 <header><div class="in"><h1>Áster Rental — roteiro de fala</h1>
 <p>O que dizer, tela a tela · cerca de 30 minutos · entrar com <b>admin</b> / <b>Demo2026senha</b></p></div></header>
 <nav><div class="in"><a href="#antes">Antes</a><a href="#abertura">Abertura</a><a href="#s1">1 Painel</a><a href="#s2">2 Contrato</a><a href="#s3">3 Entrega</a><a href="#s4">4 Leituras e multas</a>
-<a href="#s5">5 Faturamento</a><a href="#s6">6 Pós-venda</a><a href="#s7">7 SAP B1</a><a href="#s8">8 Fechamento</a><a href="#qa">Perguntas</a><a href="#socorro">Se der errado</a></div></nav>
+<a href="#s5">5 Faturamento</a><a href="#s6">6 Pós-venda</a><a href="#s6b">6b Portal do cliente</a><a href="#s7">7 SAP B1</a><a href="#s8">8 Fechamento</a><a href="#qa">Perguntas</a><a href="#socorro">Se der errado</a></div></nav>
 <main>
 <div class="legenda"><span><b style="color:var(--arrow)">▌</b> o que falar (leia em voz alta, do seu jeito)</span><span>🖱 onde clicar</span><span>💡 lembrete só para você</span></div>
 
@@ -131,12 +131,34 @@
   <p class="fala">Ao concluir, numa tacada só: a parada é encerrada, o chamado é resolvido, a <b>nota da peça é criada no SAP</b> e o cliente recebe uma <b>pesquisa de satisfação</b>.</p>
   <div class="clique">Menu <b>Agenda da equipe</b>.</div>
   <p class="fala">Aqui o coordenador vê a <b>semana de cada técnico</b>. E essas visitas também aparecem no <b>calendário do SAP</b>.</p>
-  <div class="clique">Menu <b>Preventivas</b> › <b>Gerar OS</b> em uma vencida › <b>Gerar OS</b>.</div>
-  <p class="fala">E para não esperar quebrar: a <b>manutenção preventiva</b> é calculada pelas <b>horas de uso de verdade</b> de cada máquina. Venceu, eu gero a ordem de serviço com o checklist do fabricante.</p>
+  <div class="clique">Menu <b>Preventivas</b>.</div>
+  <p class="fala">E para não esperar quebrar: a <b>manutenção preventiva</b> é calculada pelas <b>horas de uso de verdade</b> de cada máquina, que vêm das leituras do dia a dia. Vermelho é vencida, amarelo está chegando. O aviso também aparece no painel.</p>
+  <div class="clique">Botão <b>Gerar OS de todas as vencidas</b> › <b>Gerar</b>.</div>
+  <p class="fala">Com um clique eu abro a ordem de serviço de todas as vencidas, já com o checklist do fabricante, e o coordenador só agenda. E se a locadora preferir, o sistema <b>abre a OS sozinho</b> no momento em que a leitura passa do limite — é um parâmetro.</p>
   <div class="clique">Menu <b>Satisfação (NPS)</b> › <b>Responder como cliente</b> › nota <b>9</b> › <b>Enviar</b> › <b>Fechar</b>.</div>
   <p class="fala">Esta é a tela que o cliente recebe. E aqui o gestor acompanha a nota de <b>cada técnico</b>. Se um cliente dá nota baixa, o sistema <b>abre um chamado de reclamação sozinho</b>, para alguém ligar de volta.</p>
   <div class="clique">Menu <b>Ativos</b> › <b>Histórico</b> do <b>EQP-0004</b>.</div>
   <p class="fala">E a <b>vida inteira do equipamento</b> numa tela: contratos, entregas, chamados, manutenções e leituras. Ajuda a decidir quando vale a pena vender ou trocar a máquina.</p>
+  <div class="ponte">E do lado do cliente? Ele não precisa ligar para abrir chamado.</div>
+</section>
+
+<section id="s6b">
+  <h2><span class="n">6b</span> Portal do cliente <span class="t">4 min</span></h2>
+  <div class="clique">Menu <b>Portal do cliente</b> › aba <b>Etiquetas QR dos equipamentos</b> › marcar <b>EQP-0006</b> › <b>Gerar etiquetas dos selecionados</b>.</div>
+  <p class="fala">Cada equipamento recebe uma <b>etiqueta com QR Code</b>, colada na máquina. Eu imprimo daqui mesmo.</p>
+  <div class="clique">Na etiqueta do EQP-0006, botão <b>Testar</b>.</div>
+  <p class="fala">Na obra, o operador aponta a câmera do celular para a etiqueta e cai nesta tela. <b>Sem login, sem aplicativo</b>: o equipamento, o cliente e a obra já vêm preenchidos. Ele diz o que aconteceu, tira uma <b>foto</b> e envia.</p>
+  <div class="clique">Nome, telefone, marcar <b>Equipamento parado</b>, descrever › <b>Enviar chamado</b>.</div>
+  <p class="fala">Pronto: ele recebe o <b>número do protocolo</b> e o prazo de retorno. Na locadora, o chamado já entrou na fila, com prioridade e prazo.</p>
+  <div class="clique"><b>‹ Voltar ao sistema da locadora</b> › botão <b>Ver o portal como o cliente</b> › e-mail <code>marcos@serraazul.example</code>, código <code>SERRA2026</code> › <b>Entrar</b>.</div>
+  <p class="fala">E o gestor do cliente tem o <b>portal</b>: entra com o e-mail e um código que a locadora envia. Ele vê só os dados da empresa dele.</p>
+  <p class="fala">Aqui estão os <b>chamados</b> dele, com a situação de cada um — inclusive o que acabou de ser aberto pela etiqueta.</p>
+  <div class="clique">Aba <b>Orçamentos (1)</b>.</div>
+  <p class="fala">Lembram da peça cobrada por mau uso? Aqui o cliente <b>aprova o orçamento</b> pelo portal, e fica registrado quem aprovou. Acabou o “ninguém autorizou essa cobrança”.</p>
+  <div class="clique"><b>Aprovar orçamento</b> › aba <b>Meus equipamentos</b>.</div>
+  <p class="fala">E ele vê <b>tudo o que está locado</b>, por obra, e até quando vem a próxima manutenção preventiva.</p>
+  <div class="nota">A conversa do portal mostra só as respostas ao cliente. As notas internas da equipe nunca aparecem para ele.</div>
+  <div class="clique"><b>‹ Voltar ao sistema da locadora</b>.</div>
   <div class="ponte">Falei várias vezes “isso vai para o SAP”. Deixa eu mostrar como fica essa integração.</div>
 </section>
 
@@ -159,9 +181,9 @@
 
 <section id="s8">
   <h2><span class="n">8</span> Fechamento <span class="t">2 min</span></h2>
-  <p class="fala">Resumindo: o <b>SAP continua sendo o sistema da empresa</b> — clientes, notas, boletos, estoque e contabilidade. O <b>Áster Rental</b> cuida da locação de ponta a ponta: contrato com franquia, entrega com checklist e assinatura, faturamento calculado e explicado, e um pós-venda que controla prazo, técnico e satisfação.</p>
+  <p class="fala">Resumindo: o <b>SAP continua sendo o sistema da empresa</b> — clientes, notas, boletos, estoque e contabilidade. O <b>Áster Rental</b> cuida da locação de ponta a ponta: contrato com franquia, entrega com checklist e assinatura, faturamento calculado e explicado, um pós-venda que controla prazo, técnico e satisfação, e um <b>portal</b> para o cliente abrir chamado e aprovar orçamento sozinho.</p>
   <p class="fala">Funciona no <b>computador, no tablet e no celular</b>, para <b>máquinas e veículos</b>.</p>
-  <p class="fala">Como próximos passos, eu sugiro: validar com vocês as regras de contrato e de faturamento; fazer uma <b>homologação na base de teste do SAP</b> de vocês; e validar com o contador a nota de remessa. Depois disso, a gente pode evoluir para o <b>portal do cliente</b>, onde ele abre chamado pelo QR Code colado na máquina, e para o <b>aplicativo do técnico funcionando sem internet</b>.</p>
+  <p class="fala">Como próximos passos, eu sugiro: validar com vocês as regras de contrato e de faturamento; fazer uma <b>homologação na base de teste do SAP</b> de vocês; e validar com o contador a nota de remessa. Depois disso, a gente pode evoluir para o <b>aplicativo do técnico funcionando sem internet</b> e para os avisos por e-mail e WhatsApp.</p>
   <p class="fala">O que vocês acharam? Ficou alguma dúvida?</p>
 </section>
 
@@ -177,6 +199,10 @@
   <p class="a">Sim. As telas se ajustam, e o checklist, as fotos e a assinatura foram pensados para o pessoal do pátio e para o técnico na obra.</p>
   <p class="q">Quem pode ver e fazer o quê?</p>
   <p class="a">Tem perfis — administrador, gestor, comercial, faturamento, pátio, atendimento e técnico — com filtro por filial. E toda alteração fica registrada: quem fez, quando e o que mudou.</p>
+  <p class="q">O cliente precisa instalar algum aplicativo?</p>
+  <p class="a">Não. A etiqueta QR abre direto no navegador do celular, sem login. O portal também é uma página: o gestor do cliente entra com o e-mail e um código que a locadora envia.</p>
+  <p class="q">E se o código de acesso vazar?</p>
+  <p class="a">A locadora gera um novo código ou desativa o acesso na hora, e a sessão aberta cai. Depois de cinco tentativas erradas o acesso fica bloqueado por 15 minutos.</p>
   <p class="q">Serve para veículos também?</p>
   <p class="a">Sim: hodômetro, placa, Renavam, condutor e o repasse de multas.</p>
   <p class="q">Quanto tempo para implantar?</p>

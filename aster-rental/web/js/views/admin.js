@@ -88,6 +88,8 @@ async function parametros(box) {
     <div><label>SLA urgente</label><input data-p="SLA_URG" value="${esc(p.SLA_URG)}"></div><div><label>SLA alta</label><input data-p="SLA_ALT" value="${esc(p.SLA_ALT)}"></div>
     <div><label>SLA média</label><input data-p="SLA_MED" value="${esc(p.SLA_MED)}"></div><div><label>SLA baixa</label><input data-p="SLA_BAI" value="${esc(p.SLA_BAI)}"></div>
     <div><label>Item de serviço padrão (SAP B1)</label><input data-p="ITEM_SERVICO" value="${esc(p.ITEM_SERVICO)}"></div>
+    <div><label>Preventiva vencida</label><select data-p="PREV_AUTO"><option value="N">Avisar no painel e na tela Preventivas</option><option value="S" ${p.PREV_AUTO === 'S' ? 'selected' : ''}>Abrir a OS automaticamente</option></select></div>
+    <div><label>Portal do cliente: sessão válida por (horas)</label><input data-p="PORTAL_HORAS" type="number" min="1" max="72" value="${esc(p.PORTAL_HORAS)}"></div>
     <div><label>Pesquisa de satisfação automática</label><select data-p="PESQ_AUTO"><option value="S">Enviar ao concluir a OS</option><option value="N" ${p.PESQ_AUTO === 'N' ? 'selected' : ''}>Não enviar</option></select></div>
     <div class="span2"><label>Checklist de OS corretiva (um item por linha)</label><textarea data-p="CHK_OS_COR" rows="5">${esc(p.CHK_OS_COR)}</textarea></div>
     <div class="span2"><label>Checklist de entrega técnica</label><textarea data-p="CHK_OS_INS" rows="4">${esc(p.CHK_OS_INS)}</textarea></div>

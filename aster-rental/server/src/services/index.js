@@ -7,6 +7,7 @@ import { createBillingService } from './billing.js';
 import { createOperationsService } from './operations.js';
 import { createAfterSalesService } from './aftersales.js';
 import { createIntegrationService } from './integration.js';
+import { createPortalService } from './portal.js';
 
 export function createServices({ sl, audit, jobs }) {
   const repos = createRepos(sl);
@@ -16,5 +17,6 @@ export function createServices({ sl, audit, jobs }) {
   const billing = createBillingService({ repos, audit, jobs, integ });
   const operations = createOperationsService({ repos, audit, billing });
   const aftersales = createAfterSalesService({ repos, audit, integ });
-  return { repos, contracts, movements, billing, operations, aftersales, integ };
+  const portal = createPortalService({ repos, audit, aftersales });
+  return { repos, contracts, movements, billing, operations, aftersales, integ, portal };
 }

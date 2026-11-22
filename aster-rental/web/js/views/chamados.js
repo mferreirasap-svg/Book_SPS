@@ -6,6 +6,13 @@ import { filtro } from '../state.js';
 const CH1 = 'SPS_LCH1Collection';
 const FLUXO = { ABE: ['AND', 'AGC', 'RES', 'CAN'], AND: ['AGC', 'RES', 'CAN'], AGC: ['AND', 'RES', 'CAN'], RES: ['FEC', 'AND'] };
 const slaBadge = (s) => (s ? badge(s, DOM.sla, 's-') : '');
+const fotosCha = (t) => {
+  try {
+    return JSON.parse(t.U_Fotos || '[]');
+  } catch {
+    return [];
+  }
+};
 
 export async function render(root, params, c) {
   if (params.id) return detalhe(root, params.id, c);
@@ -114,10 +121,11 @@ async function detalhe(root, id, c) {
       <div><b>Ordem de serviço</b>${t.os ? `<a href="#/os?id=${t.os.DocEntry}">OS ${t.os.DocNum}</a> ${badge(t.os.U_Status, DOM.statusOS)}${t.os.U_DtAgenda ? ` ${fmtD(t.os.U_DtAgenda)}` : ''}` : '—'}</div>
     </div>
     ${t.U_Descricao ? `<div class="msg info" style="white-space:pre-wrap">${esc(t.U_Descricao)}</div>` : ''}
+    ${fotosCha(t).length ? `<div class="fotos" style="margin-top:8px">${fotosCha(t).map((f) => `<figure><img src="${f.src}" alt="${esc(f.legenda || 'foto enviada pelo cliente')}"><figcaption>${esc(f.legenda || 'enviada pelo cliente')}</figcaption></figure>`).join('')}</div>` : ''}
     <div class="row" style="margin-top:10px">${ed && c.can('os.editar') && (!t.os || ['CON', 'CAN'].includes(t.os.U_Status)) ? '<button type="button" class="primary" data-a="os">Abrir ordem de serviço</button>' : ''}
       ${ed ? '<button type="button" data-a="editar">Editar prioridade e contato</button>' : ''}</div></div>
   <div class="card"><h2>Atendimento</h2>
-    <ul class="timeline">${(t[CH1] || []).map((i) => `<li class="${i.U_Publico === 'S' ? 'pub' : ''}"><div class="meta">${fmtDT(i.U_Data)} · ${esc(i.U_Usuario)} · ${i.U_Publico === 'S' ? 'resposta ao cliente' : 'nota interna'}</div>
+    <ul class="timeline">${(t[CH1] || []).map((i) => `<li class="${String(i.U_Usuario).startsWith('cliente:') ? 't-chamado' : i.U_Publico === 'S' ? 'pub' : ''}"><div class="meta">${fmtDT(i.U_Data)} · ${esc(i.U_Usuario)} · ${String(i.U_Usuario).startsWith('cliente:') ? 'mensagem do cliente (portal)' : i.U_Publico === 'S' ? 'resposta ao cliente' : 'nota interna (o cliente não vê)'}</div>
       <div class="txt">${esc(i.U_Texto)}</div></li>`).join('') || '<li><div class="meta">Sem interações ainda.</div></li>'}</ul>
     ${ed || (t.U_Status === 'RES' && c.can('chamados.editar')) ? `<div class="grid" style="margin-top:10px">
       <div class="span2"><label>Mensagem</label><textarea id="itTxt" rows="3" placeholder="Escreva a resposta ao cliente ou uma nota interna"></textarea></div>
