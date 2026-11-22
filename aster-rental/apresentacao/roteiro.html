@@ -3,159 +3,195 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Roteiro da apresentação — Áster Rental</title>
+<title>Roteiro de fala — Áster Rental</title>
 <style>
-  :root { --ink:#2b3a44; --muted:#6b7780; --line:#dde2e5; --side:#4d6878; --accent:#4a9cc3; --arrow:#f5a623; --ok:#2e8b6e; --okbg:#e3f4ee; --warnbg:#fdf1dc; --warn:#8a5a00; --bg:#f3f5f6; }
+  :root { --ink:#24323b; --muted:#6b7780; --line:#dde2e5; --side:#4d6878; --accent:#3a87ad; --arrow:#f5a623; --clickbg:#eef6fa; --notebg:#fdf1dc; --note:#7a5200; --bg:#f3f5f6 }
   * { box-sizing: border-box }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 Roboto, "Segoe UI", Arial, sans-serif }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 Roboto, "Segoe UI", Arial, sans-serif }
   header { background: var(--side); color: #fff; padding: 22px 16px }
-  header .in, main { max-width: 900px; margin: 0 auto }
-  header h1 { margin: 0; font-size: 24px; font-weight: 600 }
-  header p { margin: 6px 0 0; opacity: .85 }
-  main { padding: 18px 16px 60px }
-  section { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 16px 20px; margin-bottom: 14px }
-  h2 { margin: 0 0 4px; font-size: 18px; color: var(--side); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
-  h2 .t { font-size: 12.5px; color: var(--muted); font-weight: 400 }
-  h2 .n { color: var(--arrow) }
-  .msg { background: #eef6fa; border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 3px; margin: 10px 0 }
-  .dica { background: var(--warnbg); border-left: 4px solid var(--arrow); color: var(--warn); padding: 8px 12px; border-radius: 3px; margin: 10px 0 }
-  ol, ul { padding-left: 22px; margin: 8px 0 } li { margin: 4px 0 }
-  b.tela { background: #ecf0f3; border-radius: 3px; padding: 0 6px; font-weight: 500; white-space: nowrap }
-  code { background: #ecf0f3; border-radius: 3px; padding: 0 5px; font-size: 13.5px }
-  table { width: 100%; border-collapse: collapse; font-size: 14px } th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
-  th { color: var(--muted); font-weight: 500 }
-  .tbl { overflow-x: auto }
-  .check li { list-style: none; margin-left: -18px } .check li::before { content: "☐ "; color: var(--accent) }
-  @media print { body { background: #fff } section { break-inside: avoid; border: none; padding: 8px 0 } header { color: #000; background: none; padding: 0 } }
+  header .in, main, nav .in { max-width: 860px; margin: 0 auto }
+  header h1 { margin: 0; font-size: 26px; font-weight: 600 }
+  header p { margin: 6px 0 0; opacity: .9; font-size: 15px }
+  nav { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 2; padding: 8px 16px }
+  nav .in { display: flex; gap: 6px; flex-wrap: wrap; font-size: 14px }
+  nav a { color: var(--accent); text-decoration: none; padding: 3px 9px; border: 1px solid #cfe3ee; border-radius: 14px; background: #fff }
+  main { padding: 18px 16px 80px }
+  .legenda { display: flex; gap: 14px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-bottom: 14px }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 18px 22px; margin-bottom: 16px; scroll-margin-top: 60px }
+  h2 { margin: 0 0 12px; font-size: 21px; color: var(--side); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap }
+  h2 .n { color: var(--arrow); font-weight: 700 }
+  h2 .t { font-size: 14px; color: var(--muted); font-weight: 400; margin-left: auto }
+  .fala { font-size: 19px; line-height: 1.65; margin: 10px 0; padding-left: 14px; border-left: 4px solid var(--arrow) }
+  .fala b { color: #0f3a52 }
+  .clique { background: var(--clickbg); border-radius: 4px; padding: 7px 12px; margin: 10px 0; font-size: 15.5px }
+  .clique::before { content: "🖱 "; }
+  .clique b { color: var(--accent) }
+  .nota { background: var(--notebg); color: var(--note); border-radius: 4px; padding: 7px 12px; margin: 10px 0; font-size: 14.5px }
+  .nota::before { content: "💡 "; }
+  .ponte { color: var(--muted); font-style: italic; margin-top: 14px; font-size: 16px }
+  .ponte::before { content: "→ Transição: "; font-style: normal; font-weight: 600 }
+  .qa p { margin: 6px 0 } .qa .q { font-weight: 600; margin-top: 14px } .qa .a { font-size: 17.5px; padding-left: 14px; border-left: 4px solid var(--arrow) }
+  ul.check { padding-left: 4px; list-style: none } ul.check li { margin: 6px 0 } ul.check li::before { content: "☐ "; color: var(--accent) }
+  code { background: #ecf0f3; border-radius: 3px; padding: 0 5px; font-size: 15px }
+  @media print { nav { display: none } body { background: #fff; font-size: 15px } .fala { font-size: 16px } section { break-inside: avoid; border: none; padding: 6px 0 } header { color: #000; background: none; padding: 0 } }
+  @media (max-width: 600px) { .fala { font-size: 17.5px } h2 .t { margin-left: 0 } }
 </style>
 </head>
 <body>
-<header><div class="in"><h1>Áster Rental — roteiro da apresentação</h1>
-<p>Locação de máquinas e veículos integrada ao SAP Business One · cerca de 30 minutos · usuário <b>admin</b>, senha <b>Demo2026senha</b></p></div></header>
+<header><div class="in"><h1>Áster Rental — roteiro de fala</h1>
+<p>O que dizer, tela a tela · cerca de 30 minutos · entrar com <b>admin</b> / <b>Demo2026senha</b></p></div></header>
+<nav><div class="in"><a href="#antes">Antes</a><a href="#abertura">Abertura</a><a href="#s1">1 Painel</a><a href="#s2">2 Contrato</a><a href="#s3">3 Entrega</a><a href="#s4">4 Leituras e multas</a>
+<a href="#s5">5 Faturamento</a><a href="#s6">6 Pós-venda</a><a href="#s7">7 SAP B1</a><a href="#s8">8 Fechamento</a><a href="#qa">Perguntas</a><a href="#socorro">Se der errado</a></div></nav>
 <main>
+<div class="legenda"><span><b style="color:var(--arrow)">▌</b> o que falar (leia em voz alta, do seu jeito)</span><span>🖱 onde clicar</span><span>💡 lembrete só para você</span></div>
 
-<section>
-  <h2>Antes da reunião <span class="t">10 minutos antes</span></h2>
+<section id="antes">
+  <h2>Antes de começar <span class="t">10 min antes</span></h2>
   <ul class="check">
-    <li>Abrir o sistema: Windows, dois cliques em <code>Abrir Aster Rental.cmd</code> (vai abrir <code>http://localhost:8080</code>). Deixar a janela preta aberta.</li>
+    <li>Dois cliques em <code>Abrir Aster Rental.cmd</code> e deixar a janela preta aberta (ou abrir <code>Aster Rental.html</code>).</li>
     <li>Entrar com <b>admin</b> / <b>Demo2026senha</b>.</li>
-    <li>Se você ensaiou antes: <b class="tela">Administração › SAP B1 › Restaurar dados de demonstração</b> para voltar ao começo (as datas ficam relativas ao dia de hoje).</li>
-    <li>Navegador em tela cheia (F11) e zoom em 100% ou 110%.</li>
-    <li>Deixar este roteiro aberto em outra janela ou impresso.</li>
+    <li>Se ensaiou antes: <b>Administração › SAP B1 › Restaurar dados de demonstração</b>.</li>
+    <li>Navegador em tela cheia (F11). Este roteiro aberto no celular, em outra tela ou impresso.</li>
   </ul>
-  <div class="dica">Tudo roda no seu computador, sem internet e sem SAP. O selo <b>DEMONSTRAÇÃO</b> no canto indica que o B1 é simulado: os documentos “gerados no B1” ficam numa base de teste, com as mesmas regras do B1 real (item, nº de série, cliente e documento base).</div>
 </section>
 
-<section>
-  <h2><span class="n">1</span> Abertura — o painel <span class="t">2 min</span></h2>
-  <div class="msg">“Numa tela, a locadora vê a frota, o que tem a faturar no mês e como está o pós-venda.”</div>
-  <ol>
-    <li><b class="tela">Painel</b>: ativos em operação, ocupação da frota, a faturar no mês (com parcelas atrasadas), multas em aberto.</li>
-    <li>Bloco <b>Pós-venda</b>: chamados abertos com SLA estourado, equipamento parado, OS do dia, preventivas vencidas e NPS.</li>
-    <li>Disponibilidade por família: clicar numa família abre a disponibilidade dela.</li>
-  </ol>
+<section id="abertura">
+  <h2>Abertura <span class="t">1 min</span></h2>
+  <p class="fala">Bom dia a todos, obrigada pelo tempo. Hoje eu quero mostrar o <b>Áster Rental</b>, a solução da SPS para locação de <b>máquinas, equipamentos e veículos</b>, que trabalha junto com o <b>SAP Business One</b>.</p>
+  <p class="fala">A ideia é simples: o <b>SAP continua sendo o coração</b> da empresa — cliente, nota fiscal, boleto, estoque e contabilidade. O Áster cuida do que é <b>específico da locação</b> e que o SAP não faz sozinho: o contrato com franquia e excedente, a entrega e a devolução do equipamento, o cálculo da mensalidade e o pós-venda.</p>
+  <p class="fala">Vou seguir o caminho de um equipamento: do contrato à entrega, ao faturamento e à assistência técnica. No final mostro como tudo isso conversa com o SAP.</p>
+  <div class="nota">Este é um protótipo funcionando com dados de demonstração. Se perguntarem, diga que o selo “Demonstração” no canto indica que o SAP aqui é simulado, com as mesmas regras do SAP real.</div>
 </section>
 
-<section>
+<section id="s1">
+  <h2><span class="n">1</span> Painel <span class="t">2 min</span></h2>
+  <div class="clique">Já abre no <b>Painel</b>.</div>
+  <p class="fala">Esta é a primeira tela do gestor. Em um olhar ele vê a <b>frota</b>: quantos equipamentos estão em operação, a <b>taxa de ocupação</b> e o que está em manutenção.</p>
+  <p class="fala">Aqui ao lado, <b>quanto tem para faturar no mês</b> e quantas parcelas estão <b>atrasadas</b>. Locadora que esquece de faturar perde dinheiro — o sistema avisa antes.</p>
+  <p class="fala">E no bloco de <b>pós-venda</b>: chamados abertos, quais estão com o <b>prazo estourado</b>, equipamento <b>parado</b> no cliente e a nota de satisfação dos clientes, o <b>NPS</b>.</p>
+  <div class="ponte">Mas tudo começa no contrato. Vamos ver um.</div>
+</section>
+
+<section id="s2">
   <h2><span class="n">2</span> Contrato de locação <span class="t">4 min</span></h2>
-  <div class="msg">“O contrato guarda as regras que o B1 não tem: franquia de horas/km, excedente, diária, pró-rata, cobrança agrupada. O resto vem do cadastro do B1.”</div>
-  <ol>
-    <li><b class="tela">Contratos</b> › nº <b>4 — Mineração Serra Azul</b>.</li>
-    <li>Mostrar os itens: escavadeira com franquia de 200 h e excedente; picape com franquia de 3.000 km.</li>
-    <li>Mostrar os campos do B1: <b>endereço de entrega</b> (obra cadastrada no parceiro), vendedor, condição de pagamento, filial.</li>
-    <li>Descer até <b>Parcelas</b> (três meses faturados) e <b>Movimentações</b>: coluna <b>SAP B1</b> com o número da NF de remessa.</li>
-    <li>Voltar e abrir o nº <b>9 — Construtora Horizonte</b> (proposta em rascunho) › <b>Ativar</b>.</li>
-  </ol>
+  <div class="clique">Menu <b>Contratos</b> › clicar no contrato <b>4 — Mineração Serra Azul</b>.</div>
+  <p class="fala">Este é um contrato real de locação. O cliente, o endereço da obra, o vendedor e a condição de pagamento <b>vêm do cadastro do SAP</b> — ninguém digita duas vezes.</p>
+  <p class="fala">Agora o que o SAP não tem: veja a escavadeira. Ela tem uma mensalidade com <b>franquia de 200 horas</b>. Passou disso, cobra o <b>excedente por hora</b>. A picape tem <b>franquia de quilômetros</b>. Isso é o dia a dia da locadora e hoje costuma ficar em planilha.</p>
+  <div class="clique">Descer até <b>Parcelas</b> e <b>Movimentações</b>.</div>
+  <p class="fala">Aqui embaixo está a <b>história do contrato</b>: as parcelas já faturadas e cada entrega, com o número da <b>nota de remessa</b> que foi gerada no SAP.</p>
+  <div class="clique">Menu <b>Contratos</b> › contrato <b>9 — Construtora Horizonte</b> (rascunho) › botão <b>Ativar</b> › <b>Confirmar</b>.</div>
+  <p class="fala">Este outro é uma <b>proposta</b> que o cliente acabou de aprovar. Eu ativo o contrato… e ele já está pronto para a entrega.</p>
+  <div class="ponte">Então vamos entregar o equipamento.</div>
 </section>
 
-<section>
+<section id="s3">
   <h2><span class="n">3</span> Entrega do equipamento <span class="t">3 min</span></h2>
-  <div class="msg">“Na entrega, o pátio faz o checklist e colhe a assinatura no tablet, e a NF de remessa já nasce no B1 com o nº de série do equipamento.”</div>
-  <ol>
-    <li>Ainda no contrato 9, linha da retroescavadeira <b>EQP-0012</b> › <b>Entregar</b>.</li>
-    <li>Informar o horímetro (ex.: <code>1320</code>), marcar o checklist, responsável do cliente e assinar com o mouse.</li>
-    <li><b>Registrar entrega</b>: o aviso mostra “SAP B1: NF de remessa nº …”. Imprimir o termo (pré-visualização).</li>
-  </ol>
-  <div class="dica">A segunda linha do contrato 9 é uma <b>família</b> (plataforma) sem equipamento definido: o equipamento é escolhido na hora da entrega, entre os disponíveis.</div>
+  <div class="clique">No contrato 9, na linha da retroescavadeira <b>EQP-0012</b>, botão <b>Entregar</b>.</div>
+  <p class="fala">Esta é a tela que o pessoal do <b>pátio</b> usa, no tablet ou no celular. Ele anota o <b>horímetro</b> do equipamento…</p>
+  <div class="clique">Horímetro <code>1320</code> · marcar <b>OK</b> no checklist · responsável do cliente · assinar com o mouse.</div>
+  <p class="fala">…faz o <b>checklist</b> de saída e o responsável da obra <b>assina na tela</b>. Isso acaba com a discussão de “a máquina já saiu riscada”: está registrado, com data, hora e assinatura.</p>
+  <div class="clique"><b>Registrar entrega</b> › aparece o aviso com o número da NF › <b>Imprimir</b> o termo.</div>
+  <p class="fala">Pronto. Repare no aviso: a <b>nota fiscal de remessa já foi criada no SAP</b>, com o número de série do equipamento. E aqui está o termo de entrega para imprimir ou mandar em PDF.</p>
+  <div class="nota">Se perguntarem da segunda linha do contrato (plataforma): é uma família sem equipamento definido; escolhe-se qual plataforma vai na hora da entrega, entre as disponíveis.</div>
+  <div class="ponte">Com o equipamento no cliente, entra o controle de uso.</div>
 </section>
 
-<section>
+<section id="s4">
   <h2><span class="n">4</span> Leituras e multas <span class="t">2 min</span></h2>
-  <ol>
-    <li><b class="tela">Leituras</b>: horímetro/hodômetro do mês, com importação por planilha.</li>
-    <li><b class="tela">Multas</b>: a multa é ligada sozinha ao contrato e ao condutor que estava com o veículo na data; “A repassar” entra no próximo faturamento.</li>
-  </ol>
+  <div class="clique">Menu <b>Leituras</b>.</div>
+  <p class="fala">Todo mês entra a leitura de horímetro e hodômetro de cada equipamento — digitada ou <b>importada de planilha</b>. É isso que calcula o excedente da franquia.</p>
+  <div class="clique">Menu <b>Multas</b>.</div>
+  <p class="fala">Para veículos, a multa de trânsito: eu informo a placa e a data, e o sistema descobre <b>sozinho</b> qual contrato e qual <b>condutor</b> estava com o carro naquele dia. Marcando “a repassar”, ela entra na próxima fatura do cliente.</p>
+  <div class="ponte">E chegamos na parte que mais dá trabalho hoje: o faturamento.</div>
 </section>
 
-<section>
+<section id="s5">
   <h2><span class="n">5</span> Faturamento <span class="t">4 min</span></h2>
-  <div class="msg">“O faturamento calcula a parcela de cada contrato e cria o documento no B1. A NF-e e o boleto continuam no B1, como o cliente já faz hoje.”</div>
-  <ol>
-    <li><b class="tela">Faturamento</b> (mês atual): situação de cada contrato — gerada, vence em breve, atrasada.</li>
-    <li><b>Detalhar</b> o contrato <b>4</b>: memória de cálculo com mensalidade, excedente de horas/km e a multa repassada.</li>
-    <li>Marcar os pendentes › <b>Gerar selecionados</b>: roda em segundo plano e mostra o documento criado no B1 para cada contrato (rascunho de NF, pedido ou NF direta, conforme o contrato).</li>
-    <li>Mudar a competência para o <b>mês anterior</b>: o contrato <b>5 — Agro Vale Verde</b> aparece atrasado.</li>
-  </ol>
-  <div class="dica">O documento vai para o B1 com série, utilização (CFOP), forma de pagamento do boleto, condição, vendedor, projeto e endereço de entrega. Não há como faturar a mesma competência duas vezes.</div>
+  <div class="clique">Menu <b>Faturamento</b>.</div>
+  <p class="fala">Aqui estão todos os contratos que precisam ser faturados neste mês, com a situação de cada um: <b>já gerado</b>, <b>vencendo</b> ou <b>atrasado</b>.</p>
+  <div class="clique">No contrato <b>4</b>, botão <b>Detalhar</b>.</div>
+  <p class="fala">E o mais importante: a <b>memória de cálculo</b>. O cliente liga perguntando “por que veio esse valor?” e a resposta está aqui: a mensalidade, os dias no cliente, o <b>excedente de horas</b>, e até a <b>multa de trânsito repassada</b>. Tudo explicado, linha a linha.</p>
+  <div class="clique">Marcar os pendentes › <b>Gerar selecionados</b> › <b>Confirmar</b>.</div>
+  <p class="fala">Agora eu gero todos de uma vez. O sistema cria os documentos <b>direto no SAP</b> — rascunho de nota, pedido ou nota fiscal, conforme o contrato — já com a forma de pagamento do <b>boleto</b>, a condição, o vendedor e o endereço da obra. A <b>nota fiscal eletrônica e o boleto continuam saindo do SAP</b>, do jeito que vocês já fazem hoje.</p>
+  <div class="clique">Trocar a <b>competência</b> para o mês anterior.</div>
+  <p class="fala">E se alguém esqueceu de faturar um mês, aparece aqui: o contrato da Agro Vale Verde ficou <b>atrasado</b>. E o sistema <b>não deixa faturar o mesmo mês duas vezes</b>.</p>
+  <div class="ponte">Agora, o que acontece quando o equipamento quebra na obra do cliente?</div>
 </section>
 
-<section>
+<section id="s6">
   <h2><span class="n">6</span> Pós-venda <span class="t">6 min</span></h2>
-  <div class="msg">“Equipamento parado é dinheiro perdido para o cliente e para a locadora. O chamado tem prazo, vira OS na agenda do técnico, e o tempo parado é descontado da mensalidade automaticamente.”</div>
-  <ol>
-    <li><b class="tela">Chamados</b>: chamado <b>1</b> — gerador <b>PARADO</b> na obra, prioridade urgente, prazos de SLA. Mostrar a conversa com o cliente e o nº da <b>chamada de serviço no B1</b>.</li>
-    <li>Abrir a <b>OS 3</b> (link no chamado) › <b>Iniciar atendimento</b>.</li>
-    <li>Marcar o checklist, <b>+ Peça ou serviço</b>: “Bateria 150 Ah”, preço <code>980</code>, cobrar <b>Sim</b> (mau uso) › <b>Enviar orçamento</b> › <b>Registrar aprovação do cliente</b>.</li>
-    <li>Escrever o laudo, o responsável, assinar › <b>Concluir OS</b>: fecha a parada (desconto na mensalidade), resolve o chamado, cria o <b>esboço de NF de serviço no B1</b> e envia a pesquisa de satisfação.</li>
-    <li><b class="tela">Agenda da equipe</b>: semana por técnico (a OS 8 de amanhã aparece também como atividade no calendário do B1).</li>
-    <li><b class="tela">Preventivas</b>: vencidas pelo horímetro › <b>Gerar OS</b> com o checklist do plano.</li>
-    <li><b class="tela">Satisfação (NPS)</b>: NPS geral e por técnico › <b>Responder como cliente</b> para mostrar a tela que o cliente recebe.</li>
-    <li><b class="tela">Ativos</b> › <b>Histórico</b> do <b>EQP-0004</b>: contratos, chamados, OS e leituras do equipamento numa linha do tempo.</li>
-  </ol>
+  <div class="clique">Menu <b>Chamados</b> › chamado <b>1 — Gerador parado na obra</b>.</div>
+  <p class="fala">O cliente ligou: o <b>gerador está parado</b> e a obra está sem energia. O chamado já entra como <b>urgente</b>, com <b>prazo para responder e para resolver</b>. Aqui está a conversa com o cliente, e este chamado também já existe no <b>SAP, como chamada de serviço</b>.</p>
+  <p class="fala">E um detalhe que faz diferença: enquanto o equipamento está parado, esses dias são <b>descontados da mensalidade automaticamente</b>. O cliente não precisa reclamar na fatura.</p>
+  <div class="clique">Clicar no link da <b>OS 3</b> › <b>Iniciar atendimento</b>.</div>
+  <p class="fala">O chamado virou uma <b>ordem de serviço</b> para o técnico. Ele chega na obra e inicia o atendimento pelo celular…</p>
+  <div class="clique">Marcar o checklist · <b>+ Peça ou serviço</b>: “Bateria 150 Ah”, preço <code>980</code>, cobrar <b>Sim</b> · <b>Enviar orçamento</b> · <b>Registrar aprovação do cliente</b>.</div>
+  <p class="fala">…faz o checklist e descobre que a bateria foi descarregada por <b>mau uso</b>. Então a peça vai ser <b>cobrada do cliente</b>: ele manda o orçamento e registra quem aprovou na obra, antes de trocar.</p>
+  <div class="clique">Escrever o laudo · responsável · assinar · <b>Concluir OS</b> › <b>Confirmar</b>.</div>
+  <p class="fala">Ao concluir, numa tacada só: a parada é encerrada, o chamado é resolvido, a <b>nota da peça é criada no SAP</b> e o cliente recebe uma <b>pesquisa de satisfação</b>.</p>
+  <div class="clique">Menu <b>Agenda da equipe</b>.</div>
+  <p class="fala">Aqui o coordenador vê a <b>semana de cada técnico</b>. E essas visitas também aparecem no <b>calendário do SAP</b>.</p>
+  <div class="clique">Menu <b>Preventivas</b> › <b>Gerar OS</b> em uma vencida › <b>Gerar OS</b>.</div>
+  <p class="fala">E para não esperar quebrar: a <b>manutenção preventiva</b> é calculada pelas <b>horas de uso de verdade</b> de cada máquina. Venceu, eu gero a ordem de serviço com o checklist do fabricante.</p>
+  <div class="clique">Menu <b>Satisfação (NPS)</b> › <b>Responder como cliente</b> › nota <b>9</b> › <b>Enviar</b> › <b>Fechar</b>.</div>
+  <p class="fala">Esta é a tela que o cliente recebe. E aqui o gestor acompanha a nota de <b>cada técnico</b>. Se um cliente dá nota baixa, o sistema <b>abre um chamado de reclamação sozinho</b>, para alguém ligar de volta.</p>
+  <div class="clique">Menu <b>Ativos</b> › <b>Histórico</b> do <b>EQP-0004</b>.</div>
+  <p class="fala">E a <b>vida inteira do equipamento</b> numa tela: contratos, entregas, chamados, manutenções e leituras. Ajuda a decidir quando vale a pena vender ou trocar a máquina.</p>
+  <div class="ponte">Falei várias vezes “isso vai para o SAP”. Deixa eu mostrar como fica essa integração.</div>
 </section>
 
-<section>
-  <h2><span class="n">7</span> Integração com o SAP B1 <span class="t">5 min</span></h2>
-  <div class="msg">“O Áster usa as telas que o B1 já tem: entrega e devolução com nº de série, nota fiscal, chamada de serviço, atividade, filiais, depósitos, utilizações. Só cria tabela própria para o que o B1 não tem.”</div>
-  <ol>
-    <li><b class="tela">Integração SAP B1 › Prontidão</b>: checklist para ir a produção. Há <b>duas pendências de propósito</b>: um caminhão sem item do bem e um envio com erro.</li>
-    <li><b class="tela">Monitor de integração</b>: a entrega do <b>VEI-0007</b> está “Com erro” — a locação aconteceu no Áster, só o documento no B1 ficou pendente.</li>
-    <li>Corrigir ao vivo: <b class="tela">Ativos</b> › <b>VEI-0007</b> › <b>Editar</b> › “Item do bem no B1” = <code>BEM-CAM</code> › Salvar.</li>
-    <li>Voltar ao <b>Monitor</b> › <b>Reprocessar</b>: vira “Integrado”. Na <b>Prontidão</b>, as pendências somem.</li>
-    <li><b>De-para com o B1</b>: as listas vêm dos cadastros nativos (filiais, depósitos, utilizações, boleto, tipos de chamada).</li>
-    <li><b>Equipamentos do B1</b>: nºs de série cadastrados no B1 que ainda não são ativos › escolher a família › <b>Trazer selecionados</b>.</li>
-  </ol>
+<section id="s7">
+  <h2><span class="n">7</span> Integração com o SAP Business One <span class="t">5 min</span></h2>
+  <div class="clique">Menu <b>Integração SAP B1</b> (aba Prontidão).</div>
+  <p class="fala">O Áster foi feito para usar as <b>telas que o SAP já tem</b>: entrega e devolução com número de série, nota fiscal, chamada de serviço, agenda, filiais, depósitos. Ele só cria tabela própria para o que o SAP não tem. E tudo pela <b>Service Layer</b>, a forma oficial da SAP — nada de mexer direto no banco.</p>
+  <p class="fala">Esta tela é um <b>checklist para ir para produção</b>. Ela confere tudo o que precisa estar configurado no SAP. Repare que tem <b>duas pendências</b>.</p>
+  <div class="clique">Aba <b>Monitor de integração</b>.</div>
+  <p class="fala">Aqui está o motivo: a entrega de um caminhão <b>não foi para o SAP</b>, porque falta o cadastro do item no SAP. Mas veja: a locação <b>não parou</b>. O caminhão foi entregue e está registrado; só o documento do SAP ficou pendente. Nada se perde.</p>
+  <div class="clique">Menu <b>Ativos</b> › <b>VEI-0007</b> › <b>Editar</b> › “Item do bem no B1” = <code>BEM-CAM</code> › <b>Salvar</b>.</div>
+  <p class="fala">Eu corrijo o cadastro…</p>
+  <div class="clique"><b>Integração SAP B1</b> › <b>Monitor</b> › <b>Reprocessar</b> › aba <b>Prontidão</b>.</div>
+  <p class="fala">…reprocesso, e pronto: a nota foi para o SAP. E a prontidão ficou <b>cem por cento</b>.</p>
+  <div class="clique">Aba <b>De-para com o B1</b>.</div>
+  <p class="fala">Na implantação, a gente só liga o Áster aos cadastros do SAP: filial, depósito, o tipo de nota, o boleto… e essas listas <b>vêm do próprio SAP</b>.</p>
+  <div class="clique">Aba <b>Equipamentos do B1</b> › marcar um › <b>Trazer selecionados</b>.</div>
+  <p class="fala">E para começar a usar não precisa cadastrar a frota de novo: o sistema <b>puxa os equipamentos que já existem no SAP</b>.</p>
 </section>
 
-<section>
+<section id="s8">
   <h2><span class="n">8</span> Fechamento <span class="t">2 min</span></h2>
-  <div class="tbl"><table>
-    <tr><th>Fica no SAP B1 (telas nativas)</th><th>Fica no Áster Rental</th></tr>
-    <tr><td>Clientes, endereços, itens, nºs de série, NF de remessa/retorno, nota fiscal e boleto, chamada de serviço, atividade do técnico, contabilidade</td>
-        <td>Contrato com franquia e excedente, disponibilidade, leituras, cálculo das parcelas, multas, checklist com assinatura, OS de campo, SLA, preventivas e NPS</td></tr>
-  </table></div>
-  <p><b>Próximos passos sugeridos:</b> homologação na base de teste do cliente (roteiro em <code>docs/integracao-b1</code>), validação fiscal da NF de remessa, portal do cliente para abrir chamados por QR Code e app do técnico offline.</p>
+  <p class="fala">Resumindo: o <b>SAP continua sendo o sistema da empresa</b> — clientes, notas, boletos, estoque e contabilidade. O <b>Áster Rental</b> cuida da locação de ponta a ponta: contrato com franquia, entrega com checklist e assinatura, faturamento calculado e explicado, e um pós-venda que controla prazo, técnico e satisfação.</p>
+  <p class="fala">Funciona no <b>computador, no tablet e no celular</b>, para <b>máquinas e veículos</b>.</p>
+  <p class="fala">Como próximos passos, eu sugiro: validar com vocês as regras de contrato e de faturamento; fazer uma <b>homologação na base de teste do SAP</b> de vocês; e validar com o contador a nota de remessa. Depois disso, a gente pode evoluir para o <b>portal do cliente</b>, onde ele abre chamado pelo QR Code colado na máquina, e para o <b>aplicativo do técnico funcionando sem internet</b>.</p>
+  <p class="fala">O que vocês acharam? Ficou alguma dúvida?</p>
 </section>
 
-<section>
-  <h2>Perguntas prováveis</h2>
-  <div class="tbl"><table>
-    <tr><th>Pergunta</th><th>Resposta</th></tr>
-    <tr><td>Precisa de outro banco de dados?</td><td>Não. Contratos, OS e regras ficam em tabelas do próprio SAP B1, criadas pela Service Layer. Fora do B1 só ficam usuários, sessões e auditoria do Áster.</td></tr>
-    <tr><td>E se o B1 estiver fora do ar?</td><td>A operação no Áster é registrada e o envio ao B1 fica no Monitor para reprocessar.</td></tr>
-    <tr><td>Quem emite a NF-e e o boleto?</td><td>O B1, com o add-on fiscal e o banco que o cliente já usa. O Áster cria o documento com tudo preenchido.</td></tr>
-    <tr><td>Funciona no celular/tablet?</td><td>Sim: as telas se ajustam; checklist, fotos e assinatura foram feitos para o tablet do pátio e do técnico.</td></tr>
-    <tr><td>Controle de acesso?</td><td>Perfis (administrador, gestor, comercial, faturamento, pátio, atendimento, técnico), filtro por filial e auditoria de cada alteração.</td></tr>
-    <tr><td>Máquinas e veículos juntos?</td><td>Sim: horímetro ou hodômetro, placa, Renavam, condutor e multas para veículos.</td></tr>
-  </table></div>
+<section id="qa" class="qa">
+  <h2>Perguntas que podem aparecer</h2>
+  <p class="q">Precisa de outro banco de dados?</p>
+  <p class="a">Não. Os contratos e as ordens de serviço ficam em tabelas dentro do próprio SAP, criadas pelo caminho oficial. Fora do SAP ficam só os usuários e o registro de quem fez o quê.</p>
+  <p class="q">E se o SAP estiver fora do ar?</p>
+  <p class="a">A operação continua no Áster. O que precisava ir para o SAP fica no monitor e é reenviado quando ele voltar — como vocês viram com o caminhão.</p>
+  <p class="q">Quem emite a nota fiscal eletrônica e o boleto?</p>
+  <p class="a">O próprio SAP, com o add-on fiscal e o banco que vocês já usam. O Áster entrega o documento pronto, preenchido.</p>
+  <p class="q">Funciona no celular e no tablet?</p>
+  <p class="a">Sim. As telas se ajustam, e o checklist, as fotos e a assinatura foram pensados para o pessoal do pátio e para o técnico na obra.</p>
+  <p class="q">Quem pode ver e fazer o quê?</p>
+  <p class="a">Tem perfis — administrador, gestor, comercial, faturamento, pátio, atendimento e técnico — com filtro por filial. E toda alteração fica registrada: quem fez, quando e o que mudou.</p>
+  <p class="q">Serve para veículos também?</p>
+  <p class="a">Sim: hodômetro, placa, Renavam, condutor e o repasse de multas.</p>
+  <p class="q">Quanto tempo para implantar?</p>
+  <p class="a">Depende das regras de contrato e da configuração do SAP de vocês. O primeiro passo é uma homologação na base de teste; depois disso a gente fecha um cronograma.</p>
+  <div class="nota">Sobre prazo e preço: não comprometa números na reunião. Anote as regras específicas deles (tipos de contrato, reajuste, cobrança) para a proposta.</div>
 </section>
 
-<section>
+<section id="socorro">
   <h2>Se algo der errado</h2>
+  <p class="fala">“Deixa eu só atualizar aqui.”</p>
   <ul>
-    <li>A janela preta fechou ou o endereço não abre: dois cliques em <code>Aster Rental.html</code> — é o mesmo sistema, abrindo direto no navegador.</li>
-    <li>Dados bagunçados no ensaio: <b class="tela">Administração › SAP B1 › Restaurar dados de demonstração</b>.</li>
-    <li>Tela não atualizou: botão <b>Atualizar</b> no rodapé.</li>
+    <li>Tela parada: botão <b>Atualizar</b> no rodapé.</li>
+    <li>A janela preta fechou ou o endereço não abre: dois cliques em <code>Aster Rental.html</code> — é o mesmo sistema.</li>
+    <li>Dados bagunçados: <b>Administração › SAP B1 › Restaurar dados de demonstração</b> (leva poucos segundos).</li>
+    <li>Pularam uma etapa? Siga em frente: cada parte funciona sozinha.</li>
   </ul>
 </section>
 </main>
