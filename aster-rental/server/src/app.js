@@ -14,7 +14,7 @@ import { createAudit } from './lib/audit.js';
 import { createJobs } from './lib/jobs.js';
 import { HttpError, forbidden } from './lib/util.js';
 import { createB1Client } from './b1/index.js';
-import { montarApresentacao } from './b1/apresentacao.js';
+import { montarApresentacao, garantirApresentacao } from './b1/apresentacao.js';
 import { createServices } from './services/index.js';
 import authRoutes from './routes/auth.js';
 import cadastroRoutes from './routes/cadastros.js';
@@ -51,7 +51,7 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   };
   // Modo simulado: base nova recebe os dados de apresentação (contratos, faturamento e pós-venda com histórico).
   const montarDemo = !b1Client && cfg.b1.mode !== 'servicelayer' && cfg.b1.dados !== 'basico' ? () => montarApresentacao(sl) : null;
-  if (montarDemo && !sl.carregado) await montarDemo();
+  if (montarDemo) await garantirApresentacao(sl); // base nova ou de versão anterior: monta os dados de apresentação
   const deps = { cfg, db, auth, audit, jobs, sl, idem, montarDemo, ...services };
   app.decorate('deps', deps);
 

@@ -8,6 +8,18 @@ import { hoje, addDias, compDe, addHoras } from '../lib/util.js';
 
 const req = { user: { login: 'implantacao', name: 'Implantação', perms: Object.keys(PERMISSIONS), branches: [] }, id: 'apresentacao', ip: '' };
 
+// Aumente a cada mudança nos dados de apresentação: a base guardada de uma versão anterior é recriada ao abrir.
+export const VERSAO_APRESENTACAO = '3';
+
+/** Base guardada é de outra versão (ou não é de apresentação)? Então volta à semente e monta de novo. */
+export async function garantirApresentacao(sl) {
+  const marca = (sl.db.sets.U_SPS_LCFG || []).find((r) => r.Code === 'APRESENTACAO')?.U_Valor;
+  if (sl.carregado && marca === VERSAO_APRESENTACAO) return false;
+  if (sl.carregado) sl.reset();
+  await montarApresentacao(sl);
+  return true;
+}
+
 export async function montarApresentacao(sl) {
   const S = createServices({ sl, audit: { record() {} }, jobs: null });
   const { repos } = S;
@@ -273,5 +285,8 @@ export async function montarApresentacao(sl) {
   await S.aftersales.quoteOrder(req, of.DocEntry, { acao: 'enviar' });
   await S.aftersales.interact(req, tf.DocEntry, { texto: 'Enviamos o orçamento da troca do para-brisa. Pode aprovar pelo portal.', publico: true, status: 'AGC' });
   await envelhecer(tf.DocEntry, addHoras(`${h}T08:00`, -28), 3, null);
+  const marca = { Code: 'APRESENTACAO', Name: 'APRESENTACAO', U_Valor: VERSAO_APRESENTACAO };
+  if ((sl.db.sets.U_SPS_LCFG || []).some((r) => r.Code === 'APRESENTACAO')) await sl.request('PATCH', `${SET.CFG}('APRESENTACAO')`, { U_Valor: VERSAO_APRESENTACAO });
+  else await sl.request('POST', SET.CFG, marca);
   return { ok: true };
 }

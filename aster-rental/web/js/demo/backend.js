@@ -4,7 +4,7 @@
 // Caminhos relativos à publicação: js/demo/ → ../../server/src/
 import { MockServiceLayer } from '../../server/src/b1/mock.js';
 import { demoSeed } from '../../server/src/b1/seed.js';
-import { montarApresentacao } from '../../server/src/b1/apresentacao.js';
+import { montarApresentacao, garantirApresentacao } from '../../server/src/b1/apresentacao.js';
 import { createServices } from '../../server/src/services/index.js';
 import { PROFILES, permsOf } from '../../server/src/auth/permissions.js';
 import { HttpError, badRequest, forbidden, uid } from '../../server/src/lib/util.js';
@@ -221,7 +221,7 @@ export async function createDemoBackend() {
   const idemMap = new Map();
   const idem = { get: (k, u) => idemMap.get(`${u}|${k}`), save: (k, u, status, response) => idemMap.set(`${u}|${k}`, { status, response }) };
   const montarDemo = () => montarApresentacao(sl);
-  if (!sl.carregado) await montarDemo();
+  await garantirApresentacao(sl); // dados guardados de um pacote anterior são recriados
   const deps = { cfg, auth, audit, jobs, sl, idem, montarDemo, ...createServices({ sl, audit, jobs }) };
 
   const { app, routes } = createRouter();

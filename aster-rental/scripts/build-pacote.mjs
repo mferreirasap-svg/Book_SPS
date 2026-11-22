@@ -130,7 +130,11 @@ Como abrir (escolha um):
 Entrar: usuário admin, senha Demo2026senha.
 
 Os dados de demonstração são montados na primeira vez que o sistema abre e ficam guardados no navegador.
+Se você ensaiou com um pacote anterior, os dados são recriados automaticamente ao abrir este pacote.
 Para voltar ao começo antes da reunião: Administração > SAP B1 > "Restaurar dados de demonstração".
+
+Dica: descompacte o zip numa pasta (ex.: Área de Trabalho) antes de abrir. Abrir de dentro do zip funciona,
+mas o Windows usa uma pasta temporária e o atalho do localhost pode não achar o arquivo.
 
 Roteiro passo a passo: "Roteiro da apresentacao.html".
 `));
