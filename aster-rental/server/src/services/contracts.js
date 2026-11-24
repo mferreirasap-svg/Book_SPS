@@ -3,9 +3,12 @@
 import { LN, GR, DOM } from '../b1/schema.js';
 import { badRequest, conflict, forbidden, notFound, d10, hoje } from '../lib/util.js';
 
-const EDITABLE_LINE = ['U_Familia', 'U_Ativo', 'U_AtvDesc', 'U_ItemCode', 'U_Regra', 'U_Grupo', 'U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced', 'U_Condutor', 'U_Local'];
-const NUM_LINE = new Set(['U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced']);
-const VALUE_FIELDS = ['U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced', 'U_Regra'];
+const EDITABLE_LINE = ['U_Familia', 'U_Ativo', 'U_AtvDesc', 'U_ItemCode', 'U_Regra', 'U_Grupo', 'U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced', 'U_Condutor', 'U_Local',
+  'U_TipoLinha', 'U_Maquina', 'U_Operador', 'U_UnidCobr', 'U_Jornada', 'U_VlrExtra'];
+const NUM_LINE = new Set(['U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced', 'U_Jornada', 'U_VlrExtra']);
+const VALUE_FIELDS = ['U_Valor', 'U_Diaria', 'U_Franquia', 'U_VlrExced', 'U_Regra', 'U_VlrExtra', 'U_UnidCobr'];
+// Linha de mão de obra (operador): não tem entrega/devolução; status próprio "MO".
+const statusNovo = (l) => (l.U_TipoLinha === 'MO' ? 'MO' : 'PEN');
 const str = (v, max) => String(v ?? '').trim().slice(0, max);
 const nonNeg = (v, label) => {
   const n = Number(v || 0);
@@ -38,6 +41,7 @@ export function createContractService({ repos, audit }) {
       U_ModoFat: input.U_ModoFat || 'RAS',
       U_Email: str(input.U_Email, 100),
       U_Obs: str(input.U_Obs, 4000),
+      U_Conferir: ['S', 'N'].includes(input.U_Conferir) ? input.U_Conferir : '',
       U_EndEntrega: str(input.U_EndEntrega, 50),
       U_SlpCode: Number(input.U_SlpCode) || 0,
       U_CondPgto: input.U_CondPgto === '' || input.U_CondPgto == null ? 0 : Number(input.U_CondPgto) || 0,
@@ -84,7 +88,23 @@ export function createContractService({ repos, audit }) {
     }
     const alloc = await allocations(exceptId);
     const vistos = new Set();
+    const cfgMo = c[LN].some((x) => x.U_TipoLinha === 'MO') ? await repos.settings.all() : {};
     for (const l of c[LN]) {
+      if (l.U_TipoLinha === 'MO') {
+        const ref = `Mão de obra${l.U_Operador ? ` (${l.U_Operador})` : ''}`;
+        if (!DOM.unidCobr[l.U_UnidCobr]) throw badRequest(`${ref}: escolha a unidade de cobrança (hora, diária ou mensal).`);
+        if (l.U_Maquina && !c[LN].some((x) => x.U_TipoLinha !== 'MO' && (x.U_Ativo === l.U_Maquina || x.U_Familia === l.U_Maquina))) {
+          throw badRequest(`${ref}: a máquina ${l.U_Maquina} não está neste contrato.`);
+        }
+        if (l.U_Operador && !(await repos.operators.get(l.U_Operador))) throw badRequest(`${ref}: operador não cadastrado.`);
+        if (l.U_UnidCobr === 'H' && l.U_Jornada > 24) throw badRequest(`${ref}: jornada acima de 24 horas por dia.`);
+        l.U_ItemCode ||= cfgMo.ITEM_MO || '';
+        l.U_Ativo = '';
+        l.U_Grupo = '';
+        if (ativar && !(l.U_Valor > 0)) throw badRequest(`${ref}: informe o valor da mão de obra.`);
+        if (ativar && !l.U_ItemCode) throw badRequest(`${ref}: informe o item de faturamento (serviço).`);
+        continue;
+      }
       const ref = l.U_Ativo || l.U_Familia || 'item';
       if (!l.U_Ativo && !l.U_Familia) throw badRequest('Cada item precisa de um ativo ou de uma família.');
       if (l.U_Grupo && !grupos.has(l.U_Grupo)) throw badRequest(`${ref}: grupo ${l.U_Grupo} não existe no contrato.`);
@@ -112,7 +132,7 @@ export function createContractService({ repos, audit }) {
 
   return {
     async create(req, input) {
-      const c = { ...normalizeHeader(input), U_Status: 'RAS', [LN]: normalizeLines(input[LN]).map((l) => ({ ...l, U_StatusL: 'PEN' })), [GR]: normalizeGroups(input[GR]) };
+      const c = { ...normalizeHeader(input), U_Status: 'RAS', [LN]: normalizeLines(input[LN]).map((l) => ({ ...l, U_StatusL: statusNovo(l) })), [GR]: normalizeGroups(input[GR]) };
       c[LN].forEach((l) => delete l.LineId);
       c[GR].forEach((g) => delete g.LineId);
       await validate(c);
@@ -133,18 +153,18 @@ export function createContractService({ repos, audit }) {
       for (const l of incoming) {
         const old = l.LineId ? byId.get(l.LineId) : null;
         if (l.LineId && !old) throw badRequest(`Item ${l.LineId} não pertence ao contrato.`);
-        if (old && old.U_StatusL !== 'PEN') {
+        if (old && old.U_StatusL !== 'PEN' && old.U_StatusL !== 'MO') {
           // Item já entregue: ativo, datas e status são da movimentação; valores só com permissão de ativação.
           const mudouValor = VALUE_FIELDS.some((k) => String(old[k] ?? '') !== String(l[k] ?? ''));
           if (mudouValor && cur.U_Status !== 'RAS' && !req.user.perms.includes('contratos.ativar')) throw forbidden('Alterar valores de um contrato ativo exige permissão de ativação.');
           lines.push({ ...old, ...l, U_Ativo: old.U_Ativo, U_Familia: old.U_Familia, U_DtSaida: old.U_DtSaida, U_DtDevol: old.U_DtDevol, U_StatusL: old.U_StatusL });
         } else {
-          lines.push({ ...(old || {}), ...l, U_StatusL: 'PEN', U_DtSaida: null, U_DtDevol: null });
+          lines.push({ ...(old || {}), ...l, U_StatusL: statusNovo(l), U_DtSaida: null, U_DtDevol: null });
         }
         byId.delete(l.LineId);
       }
       for (const removed of byId.values()) {
-        if (removed.U_StatusL !== 'PEN') throw badRequest(`O item ${removed.U_Ativo} já foi entregue e não pode ser removido; registre a devolução.`);
+        if (!['PEN', 'MO'].includes(removed.U_StatusL)) throw badRequest(`O item ${removed.U_Ativo} já foi entregue e não pode ser removido; registre a devolução.`);
       }
       const c = { ...cur, ...header, [LN]: lines, [GR]: normalizeGroups(input[GR]) };
       await validate(c, { exceptId: id });

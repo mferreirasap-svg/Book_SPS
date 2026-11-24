@@ -60,6 +60,19 @@ const MIGRATIONS = [
      response TEXT NOT NULL,
      created_at TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+  // v6: posições do celular dos técnicos. Ficam fora do SAP (volume alto) e são apagadas após GEO_RETENCAO_DIAS (LGPD).
+  `CREATE TABLE posicoes (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     at TEXT NOT NULL,
+     login TEXT NOT NULL,
+     tecnico TEXT,
+     lat REAL NOT NULL,
+     lon REAL NOT NULL,
+     precisao REAL,
+     os INTEGER,
+     origem TEXT
+   );
+   CREATE INDEX posicoes_tecnico ON posicoes(tecnico, at);`,
 ];
 
 export function openDb(file) {

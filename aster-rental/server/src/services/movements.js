@@ -3,6 +3,7 @@
 import { SET, LN } from '../b1/schema.js';
 import { key } from '../b1/odata.js';
 import { badRequest, conflict, notFound, d10, addDias, maxD, compDe, uid } from '../lib/util.js';
+import { validarFotos } from '../lib/fotos.js';
 
 const TIPOS = ['ENT', 'DEV', 'SUB', 'MAN', 'RET'];
 
@@ -48,7 +49,7 @@ export function createMovementService({ repos, audit, contracts }) {
       U_Data: data, U_Medidor: leitura ?? medAtual, U_MedidorN: 0, U_Combust: String(input.combustivel || '').slice(0, 10),
       U_Checklist: JSON.stringify(input.checklist || {}), U_Avarias: String(input.avarias || '').slice(0, 4000),
       U_Respons: String(input.responsavel || '').slice(0, 100), U_DocResp: String(input.documento || '').slice(0, 30),
-      U_DestAtivo: '', U_Assinatura: input.assinatura || '', U_Usuario: req.user.login,
+      U_DestAtivo: '', U_Assinatura: input.assinatura || '', U_Usuario: req.user.login, U_Fotos: JSON.stringify(validarFotos(input.fotos, 6)),
     };
     const leituraFinal = (code) => {
       if (leitura != null && leitura > medAtual) {
@@ -92,6 +93,7 @@ export function createMovementService({ repos, audit, contracts }) {
       leituraFinal(`${c.DocEntry}-${l.LineId}-${uid()}`);
       const linhas = [{ LineId: l.LineId, U_StatusL: 'DEV', U_DtDevol: data }];
       if (novo) {
+        for (const mo of c[LN].filter((x) => x.U_TipoLinha === 'MO' && x.U_Maquina === at.Code)) linhas.push({ LineId: mo.LineId, U_Maquina: novo.Code });
         linhas.push({ U_Familia: l.U_Familia, U_Ativo: novo.Code, U_AtvDesc: novo.Name, U_ItemCode: l.U_ItemCode || novo.U_ItemCode || '', U_Regra: l.U_Regra,
           U_Grupo: l.U_Grupo, U_Valor: l.U_Valor, U_Diaria: l.U_Diaria, U_Franquia: l.U_Franquia, U_VlrExced: l.U_VlrExced, U_DtSaida: data, U_DtDevol: null,
           U_Condutor: l.U_Condutor, U_Local: l.U_Local, U_StatusL: 'LOC' });

@@ -2,9 +2,9 @@
 // e vê os equipamentos locados. Pelo QR Code colado no equipamento, qualquer pessoa na obra abre um chamado sem login.
 // Acesso: e-mail + código gerado pela locadora (só o resumo SHA-256 fica gravado). Sessão com prazo, uma por contato.
 import { SET, LN, CH1, OS1, DOM, CFG_DEFAULTS } from '../b1/schema.js';
-import { key } from '../b1/odata.js';
+import { key, query, eq } from '../b1/odata.js';
 import { sha256, aleatorio } from '../lib/sha256.js';
-import { HttpError, badRequest, notFound, forbidden, agora, addHoras, d10 } from '../lib/util.js';
+import { HttpError, badRequest, notFound, forbidden, agora, addHoras, d10, hoje, round2 } from '../lib/util.js';
 
 const str = (v, n) => String(v ?? '').trim().slice(0, n);
 const MAX_FALHAS = 5;
@@ -194,6 +194,41 @@ export function createPortalService({ repos, audit, aftersales }) {
     return { ok: true };
   }
 
+  /* ---------------- financeiro (lido das notas e recebimentos nativos do SAP) ---------------- */
+
+  /** Notas de saída do cliente com vencimento, valor pago e situação. O boleto e o PDF vêm do add-on de cobrança/fiscal (a definir). */
+  async function financeiro(a) {
+    const notas = await sl.getAll(query('Invoices', { filter: eq('CardCode', a.U_CardCode), orderby: 'DocEntry desc' }));
+    const titulos = notas.filter((n) => n.Cancelled !== 'tYES').map((n) => {
+      const total = round2(Number(n.DocTotal) || (n.DocumentLines || []).reduce((s, l) => s + (Number(l.Quantity) || 0) * (Number(l.UnitPrice) || 0), 0));
+      const pago = round2(Math.min(total, Number(n.PaidToDate) || 0));
+      const venc = d10(n.DocDueDate) || d10(n.DocDate);
+      const situacao = pago >= total - 0.01 ? 'pago' : venc < hoje() ? 'vencido' : 'aberto';
+      return { DocEntry: n.DocEntry, numero: n.DocNum, emissao: d10(n.DocDate), vencimento: venc, total, pago, saldo: round2(total - pago), situacao,
+        contrato: n.U_SPS_CtrEntry || 0, competencia: n.U_SPS_Comp || '', os: n.U_SPS_OsEntry || 0, descricao: String(n.Comments || '').slice(0, 120),
+        boleto: Boolean(n.U_SPS_Boleto), linhaDigitavel: n.U_SPS_LinhaDig || '' };
+    });
+    const soma = (f) => round2(titulos.filter(f).reduce((s, t) => s + t.saldo, 0));
+    return { titulos, resumo: { aberto: soma((t) => t.situacao === 'aberto'), vencido: soma((t) => t.situacao === 'vencido'),
+      pago12m: round2(titulos.filter((t) => t.situacao === 'pago' && t.emissao >= `${Number(hoje().slice(0, 4)) - 1}${hoje().slice(4)}`).reduce((s, t) => s + t.pago, 0)) } };
+  }
+
+  /** Extrato da parcela (memória de cálculo) de um contrato do cliente. */
+  async function extrato(a, ctr, comp) {
+    const c = await repos.contracts.get(ctr);
+    if (!c || c.U_CardCode !== a.U_CardCode) throw notFound('Contrato');
+    const p = await repos.installments.get(`${c.DocEntry}-${String(comp).replace(/\D/g, '').slice(0, 6)}`);
+    if (!p || p.U_Status !== 'OK') throw notFound('Extrato');
+    let linhas = [];
+    try {
+      linhas = JSON.parse(p.U_Detalhe || '[]');
+    } catch {
+      linhas = [];
+    }
+    return { contrato: c.DocNum, obra: c.U_Obra, competencia: p.U_Comp, valor: p.U_Valor, documento: p.U_DocNum, documentoServico: p.U_DocNum2 || 0,
+      linhas: linhas.map((l) => ({ desc: l.desc, qtd: l.qtd, preco: l.preco, total: l.total, memoria: l.memoria || [], abonada: l.abonada, servico: l.servico })) };
+  }
+
   /* ---------------- QR Code do equipamento (sem login) ---------------- */
 
   async function tokenQR(req, ativo) {
@@ -237,5 +272,5 @@ export function createPortalService({ repos, audit, aftersales }) {
   }
 
   return { listarAcessos, criarAcesso, novoCodigo, situacaoAcesso, entrar, sessao, sair, equipamentos, chamados, chamado, abrirChamado, mensagem, orcamentos,
-    decidirOrcamento, tokenQR, infoQR, chamadoQR };
+    decidirOrcamento, financeiro, extrato, tokenQR, infoQR, chamadoQR };
 }

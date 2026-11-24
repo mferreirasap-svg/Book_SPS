@@ -104,9 +104,12 @@ export function createRepos(sl) {
   };
 
   const readings = {
-    list: ({ comp, ctr, ativo }) =>
-      sl.getAll(query(SET.MED, { filter: and(comp && eq('U_Comp', comp), ctr && eq('U_CtrEntry', Number(ctr)), ativo && eq('U_Ativo', ativo)) })),
+    list: ({ comp, ctr, ativo, situacao }) =>
+      sl.getAll(query(SET.MED, { filter: and(comp && eq('U_Comp', comp), ctr && eq('U_CtrEntry', Number(ctr)), ativo && eq('U_Ativo', ativo),
+        situacao && eq('U_Situacao', situacao)) })),
+    get: (code) => getOrNull(`${SET.MED}${key(code)}`),
     create: (rec) => sl.request('POST', SET.MED, rec),
+    patch: (code, p) => sl.request('PATCH', `${SET.MED}${key(code)}`, p),
   };
 
   const offPeriods = {
@@ -216,8 +219,28 @@ export function createRepos(sl) {
     byOs: (os) => sl.getAll(query(SET.PES, { filter: eq('U_OsEntry', Number(os)) })),
   };
 
+  /* ---- v6: mão de obra, ajustes de faturamento, documentação de veículos ---- */
+  const operators = udt(SET.OPE);
+  const appointments = {
+    ...udt(SET.APO),
+    list: ({ comp, ctr, linha, situacao } = {}) =>
+      sl.getAll(query(SET.APO, { filter: and(comp && eq('U_Comp', comp), ctr && eq('U_CtrEntry', Number(ctr)), linha && eq('U_CtrLine', Number(linha)),
+        situacao && eq('U_Situacao', situacao)), orderby: 'U_Data asc' })),
+    remove: (code) => sl.request('DELETE', `${SET.APO}${key(code)}`),
+  };
+  const adjustments = {
+    ...udt(SET.FAJ),
+    byParcel: (parcela) => sl.getAll(query(SET.FAJ, { filter: eq('U_Parcela', parcela), orderby: 'U_Linha asc' })),
+    remove: (code) => sl.request('DELETE', `${SET.FAJ}${key(code)}`),
+  };
+  const vehicleDocs = {
+    ...udt(SET.DOC),
+    list: ({ ativo, status } = {}) => sl.getAll(query(SET.DOC, { filter: and(ativo && eq('U_Ativo', ativo), status && eq('U_Status', status)), orderby: 'U_Venc asc' })),
+  };
+  const calendar = udt(SET.CAL);
+
   const period = (from, to) => and(ge('U_Data', from), le('U_Data', to));
 
   return { sl, assets, families, rules, contracts, movements, readings, offPeriods, installments, fines, settings, partners, items, period,
-    tickets, orders, technicians, plans, surveys };
+    tickets, orders, technicians, plans, surveys, operators, appointments, adjustments, vehicleDocs, calendar };
 }

@@ -5,23 +5,24 @@ import { createServices } from '../services/index.js';
 import { PERMISSIONS } from '../auth/permissions.js';
 import { SET, LN, CH1 } from './schema.js';
 import { hoje, addDias, compDe, addHoras } from '../lib/util.js';
+import { montarV6 } from './apresentacao-v6.js';
 
 const req = { user: { login: 'implantacao', name: 'Implantação', perms: Object.keys(PERMISSIONS), branches: [] }, id: 'apresentacao', ip: '' };
 
 // Aumente a cada mudança nos dados de apresentação: a base guardada de uma versão anterior é recriada ao abrir.
-export const VERSAO_APRESENTACAO = '3';
+export const VERSAO_APRESENTACAO = '4';
 
 /** Base guardada é de outra versão (ou não é de apresentação)? Então volta à semente e monta de novo. */
-export async function garantirApresentacao(sl) {
+export async function garantirApresentacao(sl, opts = {}) {
   const marca = (sl.db.sets.U_SPS_LCFG || []).find((r) => r.Code === 'APRESENTACAO')?.U_Valor;
   if (sl.carregado && marca === VERSAO_APRESENTACAO) return false;
   if (sl.carregado) sl.reset();
-  await montarApresentacao(sl);
+  await montarApresentacao(sl, opts);
   return true;
 }
 
-export async function montarApresentacao(sl) {
-  const S = createServices({ sl, audit: { record() {} }, jobs: null });
+export async function montarApresentacao(sl, { posicoes } = {}) {
+  const S = createServices({ sl, audit: { record() {} }, jobs: null, posicoes });
   const { repos } = S;
   const h = hoje();
   const D = (n) => addDias(h, n);
@@ -95,7 +96,11 @@ export async function montarApresentacao(sl) {
     return r;
   }
   const leitura = (ativo, valor, data) => tenta(() => S.operations.registerReading(req, { ativo, leitura: valor, data, comp: compDe(data) }));
-  const faturar = (c, data) => tenta(() => S.billing.generateOne(req, c.DocEntry, compDe(data)));
+  // Faturar na base de apresentação: libera a conferência (sem ajustes) e gera o documento.
+  const faturar = (c, data) => tenta(async () => {
+    await S.billing.liberar(req, c.DocEntry, compDe(data), []);
+    return S.billing.generateOne(req, c.DocEntry, compDe(data));
+  });
 
   // Leitura e faturamento de meses anteriores dos contratos da base (horímetro já atualizado: grava a leitura direto).
   await sl.request('POST', SET.MED, { Code: 'apr-1', Name: 'apr-1', U_CtrEntry: 1, U_CtrLine: 1, U_Ativo: 'EQP-0001', U_Comp: compDe(m2), U_Data: addDias(m1, -1),
@@ -285,6 +290,9 @@ export async function montarApresentacao(sl) {
   await S.aftersales.quoteOrder(req, of.DocEntry, { acao: 'enviar' });
   await S.aftersales.interact(req, tf.DocEntry, { texto: 'Enviamos o orçamento da troca do para-brisa. Pode aprovar pelo portal.', publico: true, status: 'AGC' });
   await envelhecer(tf.DocEntry, addHoras(`${h}T08:00`, -28), 3, null);
+  /* ---------- pedidos da Macromaq (versão 6) ---------- */
+  await montarV6({ S, sl, repos, req, h, D, tenta, posicoes });
+
   const marca = { Code: 'APRESENTACAO', Name: 'APRESENTACAO', U_Valor: VERSAO_APRESENTACAO };
   if ((sl.db.sets.U_SPS_LCFG || []).some((r) => r.Code === 'APRESENTACAO')) await sl.request('PATCH', `${SET.CFG}('APRESENTACAO')`, { U_Valor: VERSAO_APRESENTACAO });
   else await sl.request('POST', SET.CFG, marca);

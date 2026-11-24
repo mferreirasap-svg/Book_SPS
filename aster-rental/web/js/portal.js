@@ -26,7 +26,7 @@ const ls = {
 
 let raiz;
 let token = '';
-let estado = { aba: 'chamados', chamado: null };
+let estado = { aba: 'chamados', chamado: null, extrato: null };
 let aoSair = null;
 let fotos = [];
 
@@ -100,12 +100,13 @@ async function inicio() {
     ls.set('');
     return entrar(e.status === 401 ? 'Sua sessão terminou. Entre novamente.' : e.message);
   }
-  const abas = [['chamados', 'Meus chamados'], ['novo', 'Abrir chamado'], ['orcamentos', `Orçamentos${orc.length ? ` (${orc.length})` : ''}`], ['equipamentos', 'Meus equipamentos']];
+  const abas = [['chamados', 'Meus chamados'], ['novo', 'Abrir chamado'], ['orcamentos', `Orçamentos${orc.length ? ` (${orc.length})` : ''}`], ['equipamentos', 'Meus equipamentos'], ['financeiro', 'Financeiro']];
   let corpo = '';
   if (estado.chamado) corpo = await telaChamado(estado.chamado);
   else if (estado.aba === 'novo') corpo = await telaNovo();
   else if (estado.aba === 'orcamentos') corpo = telaOrcamentos(orc);
   else if (estado.aba === 'equipamentos') corpo = await telaEquipamentos();
+  else if (estado.aba === 'financeiro') corpo = estado.extrato ? await telaExtrato(estado.extrato) : await telaFinanceiro();
   else corpo = telaChamados(lista);
   moldura(`<p class="pt-ola">Olá, <b>${esc(me.nome)}</b> · ${esc(me.cliente)}</p>
     ${orc.length && estado.aba !== 'orcamentos' ? `<div class="msg warn">Há ${orc.length} orçamento(s) aguardando a sua aprovação. <button type="button" class="mini" data-aba="orcamentos">Ver</button></div>` : ''}
@@ -177,6 +178,35 @@ async function telaEquipamentos() {
     <p class="sub">Problema com algum equipamento? Use "Abrir chamado" ou aponte a câmera do celular para a etiqueta QR colada nele.</p>`;
 }
 
+const SIT_FIN = { pago: ['Pago', 'b-CON'], aberto: ['Em aberto', 'b-AGE'], vencido: ['Vencido', 'v-vencida'] };
+const compTxt = (c) => (c ? `${String(c).slice(4, 6)}/${String(c).slice(0, 4)}` : '');
+
+async function telaFinanceiro() {
+  const f = await p('GET', '/financeiro');
+  const r = f.resumo;
+  return `<div class="kpis"><div class="kpi ${r.vencido ? 'alerta' : 'ok'}"><div class="l">Vencido</div><div class="v" style="font-size:19px">${brl(r.vencido)}</div></div>
+    <div class="kpi"><div class="l">A vencer</div><div class="v" style="font-size:19px">${brl(r.aberto)}</div></div>
+    <div class="kpi"><div class="l">Pago nos últimos 12 meses</div><div class="v" style="font-size:19px">${brl(r.pago12m)}</div></div></div>
+  <div class="card"><h2>Notas e títulos</h2><div class="tbl"><table><thead><tr><th>NF</th><th>Emissão</th><th>Vencimento</th><th>Referente a</th><th class="num">Valor</th><th class="num">Saldo</th><th>Situação</th><th></th></tr></thead><tbody>
+  ${f.titulos.map((t) => `<tr><td>${t.numero}</td><td>${fmtD(t.emissao)}</td><td>${fmtD(t.vencimento)}</td>
+    <td>${t.contrato ? `Contrato ${t.contrato}${t.competencia ? ` · ${compTxt(t.competencia)}` : ''}` : t.os ? `Assistência técnica (OS ${t.os})` : esc(t.descricao)}</td>
+    <td class="num">${brl(t.total)}</td><td class="num">${brl(t.saldo)}</td><td><span class="badge ${SIT_FIN[t.situacao][1]}">${SIT_FIN[t.situacao][0]}</span></td>
+    <td class="right" style="white-space:nowrap">${t.contrato && t.competencia ? `<button type="button" class="mini" data-pt="extrato" data-ctr="${t.contrato}" data-comp="${esc(t.competencia)}">Extrato</button>` : ''}
+      ${t.linhaDigitavel && t.situacao !== 'pago' ? `<button type="button" class="mini" data-pt="copiar" data-txt="${esc(t.linhaDigitavel)}">Copiar linha digitável</button>` : ''}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="empty">Nenhuma nota emitida.</td></tr>'}</tbody></table></div>
+  <p class="sub">Dúvidas sobre valores? Abra um chamado do tipo "Dúvida / solicitação" citando o número da NF.</p></div>`;
+}
+
+async function telaExtrato({ ctr, comp }) {
+  const e = await p('GET', `/extrato/${ctr}/${comp}`);
+  return `<div class="card"><button type="button" class="mini" data-pt="voltarFin">‹ Financeiro</button>
+    <h2 style="margin-top:10px">Extrato — contrato ${e.contrato} · ${compTxt(e.competencia)}</h2><p class="sub">${esc(e.obra || '')} · NF nº ${e.documento}${e.documentoServico ? ` e NF de serviço nº ${e.documentoServico}` : ''}</p>
+    <div class="tbl"><table><thead><tr><th>Descrição e cálculo</th><th class="num">Qtd</th><th class="num">Preço</th><th class="num">Total</th></tr></thead><tbody>
+    ${e.linhas.filter((l) => !l.abonada).map((l) => `<tr><td class="wrap">${esc(l.desc)}<ul class="memo">${l.memoria.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></td>
+      <td class="num">${num(l.qtd, Number.isInteger(Number(l.qtd)) ? 0 : 2)}</td><td class="num">${brl(l.preco)}</td><td class="num">${brl(l.total)}</td></tr>`).join('')}
+    <tr><td colspan="3"><b>Total</b></td><td class="num"><b>${brl(e.valor)}</b></td></tr></tbody></table></div></div>`;
+}
+
 /* ---------------- etiqueta QR (sem login) ---------------- */
 
 async function telaQR(tk) {
@@ -246,6 +276,23 @@ async function clique(b) {
       toast('Mensagem enviada.');
       return inicio();
     }
+    if (a === 'extrato') {
+      estado = { ...estado, extrato: { ctr: b.dataset.ctr, comp: b.dataset.comp } };
+      return inicio();
+    }
+    if (a === 'voltarFin') {
+      estado = { ...estado, extrato: null };
+      return inicio();
+    }
+    if (a === 'copiar') {
+      try {
+        await navigator.clipboard.writeText(b.dataset.txt);
+        toast('Linha digitável copiada.');
+      } catch {
+        toast(b.dataset.txt);
+      }
+      return;
+    }
     if (a === 'orc') {
       await p('POST', `/orcamentos/${b.dataset.id}`, { acao: b.dataset.acao });
       toast(b.dataset.acao === 'aprovar' ? 'Orçamento aprovado. A locadora já pode executar o serviço.' : 'Orçamento recusado. A locadora vai entrar em contato.');
@@ -276,7 +323,7 @@ document.addEventListener('click', (ev) => {
   if (!raiz || raiz.hidden || !raiz.contains(ev.target)) return;
   const aba = ev.target.closest('[data-aba]');
   if (aba) {
-    estado = { aba: aba.dataset.aba, chamado: null };
+    estado = { aba: aba.dataset.aba, chamado: null, extrato: null };
     fotos = [];
     return inicio();
   }

@@ -67,3 +67,40 @@ export function reduzirFoto(file, max = 1024, qualidade = 0.6) {
     img.src = url;
   });
 }
+
+/** Foto de exemplo do mostrador (só na demonstração, para quem apresenta sem câmera). */
+export function fotoExemploMostrador(valor, unidade = 'h') {
+  const cv = document.createElement('canvas');
+  cv.width = 640;
+  cv.height = 420;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, 0, 0, 420);
+  grad.addColorStop(0, '#3a4148');
+  grad.addColorStop(1, '#1d2226');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 640, 420);
+  g.fillStyle = '#0d0f10';
+  g.beginPath();
+  g.roundRect(70, 120, 500, 170, 18);
+  g.fill();
+  const txt = String(Math.round(Number(valor) * 10) / 10).replace('.', ',').padStart(7, '0');
+  g.font = 'bold 92px monospace';
+  g.textAlign = 'center';
+  g.fillStyle = '#f2c14e';
+  g.fillText(txt, 320, 240);
+  g.font = '28px sans-serif';
+  g.fillStyle = '#c9d1d6';
+  g.fillText(unidade === 'km' ? 'HODÔMETRO — km' : 'HORÍMETRO — horas', 320, 90);
+  g.font = '20px sans-serif';
+  g.fillText(new Date().toLocaleString('pt-BR'), 320, 345);
+  return cv.toDataURL('image/jpeg', 0.7);
+}
+
+/** Posição do celular (com permissão do navegador). Resolve null se não houver ou se o usuário negar. */
+export function posicaoAtual(timeout = 8000) {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition((p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, precisao: Math.round(p.coords.accuracy) }),
+      () => resolve(null), { enableHighAccuracy: true, timeout, maximumAge: 60000 });
+  });
+}

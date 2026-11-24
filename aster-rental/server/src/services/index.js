@@ -8,15 +8,19 @@ import { createOperationsService } from './operations.js';
 import { createAfterSalesService } from './aftersales.js';
 import { createIntegrationService } from './integration.js';
 import { createPortalService } from './portal.js';
+import { createFieldService } from './campo.js';
+import { createGeoService } from './geo.js';
 
-export function createServices({ sl, audit, jobs }) {
+export function createServices({ sl, audit, jobs, posicoes }) {
   const repos = createRepos(sl);
   const contracts = createContractService({ repos, audit });
   const movements = createMovementService({ repos, audit, contracts });
   const integ = createIntegrationService({ repos, audit });
   const billing = createBillingService({ repos, audit, jobs, integ });
   const operations = createOperationsService({ repos, audit, billing });
-  const aftersales = createAfterSalesService({ repos, audit, integ });
+  const aftersales = createAfterSalesService({ repos, audit, integ, posicoes });
   const portal = createPortalService({ repos, audit, aftersales });
-  return { repos, contracts, movements, billing, operations, aftersales, integ, portal };
+  const campo = createFieldService({ repos, audit });
+  const geo = createGeoService({ repos, audit, aftersales, posicoes });
+  return { repos, contracts, movements, billing, operations, aftersales, integ, portal, campo, geo };
 }

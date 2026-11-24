@@ -21,6 +21,11 @@ import * as satisfacao from './views/satisfacao.js';
 import * as tecnicos from './views/tecnicos.js';
 import * as integracao from './views/integracao.js';
 import * as portalcli from './views/portalcli.js';
+import * as lancar from './views/lancar.js';
+import * as apontamentos from './views/apontamentos.js';
+import * as veiculos from './views/veiculos.js';
+import * as manutencao from './views/manutencao.js';
+import * as mapa from './views/mapa.js';
 import { abrirPortal } from './portal.js';
 
 iniciarNumerosBR();
@@ -30,13 +35,16 @@ const VIEWS = [
   { key: 'painel', title: 'Painel', perm: 'painel.ver', mod: painel },
   { key: 'contratos', title: 'Contratos', perm: 'contratos.ver', mod: contratos },
   { key: 'movimentacao', title: 'Movimentação', perm: 'mov.registrar', mod: movimentacao },
+  { key: 'lancar', title: 'Lançar leitura (campo)', perm: 'leituras.lancar', mod: lancar },
   { key: 'leituras', title: 'Leituras', perm: 'leituras.ver', mod: leituras },
+  { key: 'apontamentos', title: 'Horas do operador', perm: ['mo.apontar', 'mo.aprovar'], mod: apontamentos },
   { key: 'faturamento', title: 'Faturamento', perm: 'faturamento.ver', mod: faturamento },
   { key: 'multas', title: 'Multas', perm: 'multas.ver', mod: multas },
   { sec: 'Pós-venda' },
   { key: 'chamados', title: 'Chamados', perm: 'chamados.ver', mod: chamados },
   { key: 'os', title: 'Ordens de serviço', perm: 'os.ver', mod: os },
   { key: 'agenda', title: 'Agenda da equipe', perm: 'os.ver', mod: agenda },
+  { key: 'mapa', title: 'Mapa da equipe', perm: ['geo.ver'], mod: mapa },
   { key: 'preventivas', title: 'Preventivas', perm: 'os.ver', mod: preventivas },
   { key: 'satisfacao', title: 'Satisfação (NPS)', perm: 'pesquisa.ver', mod: satisfacao },
   { key: 'portalcli', title: 'Portal do cliente', perm: 'portal.gerir', mod: portalcli },
@@ -44,6 +52,8 @@ const VIEWS = [
   { sec: 'Frota' },
   { key: 'ativos', title: 'Ativos', perm: 'ativos.ver', mod: ativos },
   { key: 'disponibilidade', title: 'Disponibilidade', perm: 'ativos.ver', mod: disponibilidade },
+  { key: 'manutencao', title: 'Manutenção da frota', perm: 'manutencao.ver', mod: manutencao },
+  { key: 'veiculos', title: 'Documentação de veículos', perm: 'veiculos.docs', mod: veiculos },
   { sec: 'Configuração' },
   { key: 'cadastros', title: 'Famílias e regras', perm: 'contratos.ver', mod: cadastros },
   { key: 'integracao', title: 'Integração SAP B1', perm: ['admin.instalar', 'admin.parametros'], mod: integracao },

@@ -95,6 +95,24 @@ async function parametros(box) {
     <div class="span2"><label>Checklist de entrega técnica</label><textarea data-p="CHK_OS_INS" rows="4">${esc(p.CHK_OS_INS)}</textarea></div>
     <div class="span2"><label>Checklist de vistoria</label><textarea data-p="CHK_OS_VIS" rows="4">${esc(p.CHK_OS_VIS)}</textarea></div>
     <div class="span2"><label>Checklist de reparo de avaria</label><textarea data-p="CHK_OS_REP" rows="4">${esc(p.CHK_OS_REP)}</textarea></div>
+    <div class="span2"><label>Checklist de manutenção interna (oficina)</label><textarea data-p="CHK_OS_INT" rows="4">${esc(p.CHK_OS_INT)}</textarea></div>
+  </div>
+  <h3>Campo e faturamento</h3>
+  <div class="grid">
+    <div><label>Leitura lançada no campo (celular)</label><select data-p="LEIT_CONFERENCIA">${Object.entries({ S: 'Escritório confere antes de valer', N: 'Vale direto' }).map(([k, t]) => `<option value="${k}" ${String(p.LEIT_CONFERENCIA) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div><label>Foto do mostrador na leitura de campo</label><select data-p="LEIT_FOTO_OBRIG">${Object.entries({ S: 'Obrigatória', N: 'Opcional' }).map(([k, t]) => `<option value="${k}" ${String(p.LEIT_FOTO_OBRIG) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div><label>Conferência antes de faturar (regra geral)</label><select data-p="FAT_CONFERENCIA">${Object.entries({ FRANQUIA: 'Contratos com franquia/excedente ou mão de obra', TODOS: 'Todos os contratos', NENHUM: 'Nenhum (libera direto)' }).map(([k, t]) => `<option value="${k}" ${String(p.FAT_CONFERENCIA) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div><label>Alçada para abono/redução sem gestor (R$)</label><input data-p="FAT_ALCADA_ABONO" type="number" min="0" step="0.01" value="${esc(p.FAT_ALCADA_ABONO)}"></div>
+    <div><label>Avisar documentos de veículos com quantos dias</label><input data-p="VEI_ALERTA_DIAS" type="number" min="1" value="${esc(p.VEI_ALERTA_DIAS)}"></div>
+    <div><label>Custo da hora do mecânico (R$, indicadores)</label><input data-p="OFI_CUSTO_HORA" type="number" min="0" step="0.01" value="${esc(p.OFI_CUSTO_HORA)}"></div>
+  </div>
+  <h3>Localização dos técnicos (LGPD)</h3>
+  <p class="sub">O celular da empresa envia a posição conforme a política abaixo. O técnico aceita o termo na primeira OS. As posições ficam no banco do Áster (não no SAP) e são apagadas após o prazo.</p>
+  <div class="grid">
+    <div><label>Política</label><select data-p="GEO_MODO">${Object.entries({ NAO: 'Não registrar', OS: 'Só no início e no fim de cada OS', EXP: 'Também durante o expediente (em serviço)' }).map(([k, t]) => `<option value="${k}" ${String(p.GEO_MODO) === k ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    <div><label>Distância máxima da obra no check-in (m)</label><input data-p="GEO_RAIO_M" type="number" min="50" value="${esc(p.GEO_RAIO_M)}"></div>
+    <div><label>Guardar posições por (dias)</label><input data-p="GEO_RETENCAO_DIAS" type="number" min="1" max="365" value="${esc(p.GEO_RETENCAO_DIAS)}"></div>
+    <div><label>Base / pátio (latitude,longitude)</label><input data-p="GEO_BASE" value="${esc(p.GEO_BASE)}" placeholder="-19.9165,-44.0806"></div>
   </div><div class="row" style="margin-top:12px"><span class="spacer"></span><button type="button" class="primary" data-a="salvar">Salvar parâmetros</button></div>`;
   box.onclick = async (ev) => {
     if (!ev.target.closest('[data-a=salvar]')) return;

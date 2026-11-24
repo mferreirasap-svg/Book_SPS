@@ -70,6 +70,7 @@ async function editor(root, params) {
   // Cadastros nativos do B1 usados no faturamento (filial, vendedor, condição, projeto e endereço de entrega do parceiro).
   aux.b1 = await get('/b1/lists?k=filiais,vendedores,condicoes,projetos').catch(() => ({}));
   aux.enderecos = E.U_CardCode ? await get(`/b1/addresses/${encodeURIComponent(E.U_CardCode)}`).catch(() => []) : [];
+  aux.operadores = await get('/operators').catch(() => []);
   draw(root);
 }
 
@@ -81,7 +82,7 @@ function draw(root) {
   const ro = ed ? '' : 'disabled';
   const regrasItem = aux.regras.filter((r) => r.U_Tipo !== 'AGRUP');
   const regrasGrupo = aux.regras.filter((r) => ['AGRUP', 'CONS'].includes(r.U_Tipo));
-  const entregue = E[LN].some((l) => l.U_StatusL !== 'PEN');
+  const entregue = E[LN].some((l) => !['PEN', 'MO'].includes(l.U_StatusL || 'PEN'));
   const h = (k, t = 'text', o = '') => `<input type="${t}" data-h="${k}" value="${esc(t === 'date' ? d10(E[k]) : E[k] ?? '')}" ${ro} ${o}>`;
   // Lista nativa do B1; se a lista não estiver disponível, volta para o campo digitado.
   const b1sel = (k, lista, vazio, tipo = 'text') => (Array.isArray(lista)
@@ -127,6 +128,7 @@ function draw(root) {
     <div><label>Condição de pagamento</label>${b1sel('U_CondPgto', aux.b1?.condicoes, '(padrão do cliente)', 'number')}</div>
     <div><label>Projeto (resultado por obra)</label>${b1sel('U_Projeto', aux.b1?.projetos, '(sem projeto)')}</div>
     <div><label>Índice de reajuste</label>${h('U_Indice', 'text', 'placeholder="IGP-M, IPCA…"')}</div>
+    <div><label>Conferência antes de faturar</label><select data-h="U_Conferir" ${ro} title="Pela regra geral: contratos com franquia/excedente ou mão de obra passam pela conferência; mensalidade fixa sai direto.">${options(DOM.conferir, E.U_Conferir || '')}</select></div>
     <div class="span2"><label>Observações</label><textarea data-h="U_Obs" ${ro}>${esc(E.U_Obs || '')}</textarea></div>
   </div>
 
@@ -147,6 +149,7 @@ function draw(root) {
   <div class="tbl"><table><thead><tr><th>Família</th><th>Equipamento</th><th>Cobrança</th><th>Item fat.</th><th class="num">Mensalidade</th><th class="num">Diária</th>
     <th class="num">Franquia</th><th class="num">R$ exced.</th><th>Condutor / local</th><th>Entrega</th><th>Devolução</th><th>Status</th><th></th></tr></thead><tbody>
   ${E[LN].map((l, i) => {
+    if (l.U_TipoLinha === 'MO') return '';
     const le = ed && l.U_StatusL !== 'DEV' ? '' : 'disabled';
     const fixo = l.U_StatusL !== 'PEN' ? 'disabled' : le;
     const emGrupo = !!l.U_Grupo;
@@ -162,6 +165,22 @@ function draw(root) {
       <td class="right" style="white-space:nowrap">${ed && (l.U_StatusL || 'PEN') === 'PEN' ? `<button type="button" class="mini danger" data-rml="${i}">Remover</button>` : ''}${acoes(l)}</td></tr>`;
   }).join('') || '<tr><td colspan="13" class="empty">Nenhum item. Use "+ Item".</td></tr>'}</tbody></table><datalist id="dlItens"></datalist></div>
   ${ed ? '<div class="row" style="margin-top:6px"><button type="button" class="mini" data-a="addl">+ Item</button></div>' : ''}
+
+  <h3>Mão de obra (operador) <span class="sub">(cobrada em documento de serviço separado, pelas horas aprovadas no apontamento)</span></h3>
+  <div class="tbl"><table><thead><tr><th>Operador</th><th>Máquina</th><th>Cobrança</th><th class="num">Valor</th><th class="num">Jornada (h/dia)</th><th class="num">R$ hora extra</th><th>Item serviço</th><th></th></tr></thead><tbody>
+  ${E[LN].map((l, i) => {
+    if (l.U_TipoLinha !== 'MO') return '';
+    const maquinas = E[LN].filter((x) => x.U_TipoLinha !== 'MO' && (x.U_Ativo || x.U_Familia)).map((x) => x.U_Ativo || x.U_Familia);
+    return `<tr><td><select data-l="${i}" data-k="U_Operador" ${ro}><option value="">—</option>${aux.operadores.filter((o) => o.U_Ativo !== 'N' || o.Code === l.U_Operador).map((o) => `<option value="${esc(o.Code)}" ${o.Code === l.U_Operador ? 'selected' : ''}>${esc(o.Name)}</option>`).join('')}</select></td>
+      <td><select data-l="${i}" data-k="U_Maquina" ${ro}><option value="">—</option>${[...new Set(maquinas)].map((m) => `<option value="${esc(m)}" ${m === l.U_Maquina ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></td>
+      <td><select data-l="${i}" data-k="U_UnidCobr" ${ro}>${options(DOM.unidCobr, l.U_UnidCobr || 'H')}</select></td>
+      <td class="num"><input class="w110" type="number" step="0.01" min="0" data-l="${i}" data-k="U_Valor" value="${esc(l.U_Valor ?? 0)}" ${ro}></td>
+      <td class="num"><input class="w80" type="number" step="0.5" min="0" max="24" data-l="${i}" data-k="U_Jornada" value="${esc(l.U_Jornada ?? 8)}" ${ro}></td>
+      <td class="num"><input class="w80" type="number" step="0.01" min="0" data-l="${i}" data-k="U_VlrExtra" value="${esc(l.U_VlrExtra ?? 0)}" ${ro}></td>
+      <td><input class="w110" list="dlItens" data-l="${i}" data-k="U_ItemCode" value="${esc(l.U_ItemCode || '')}" placeholder="padrão" ${ro}></td>
+      <td>${ed ? `<button type="button" class="mini danger" data-rml="${i}">Remover</button>` : ''}</td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Sem operador. Use "+ Operador" quando a locação incluir mão de obra.</td></tr>'}</tbody></table></div>
+  ${ed ? '<div class="row" style="margin-top:6px"><button type="button" class="mini" data-a="addmo">+ Operador</button></div>' : ''}
   ${aux.hist ? historico() : ''}</div>`;
   bind(root);
 }
@@ -251,6 +270,11 @@ function bind(root) {
     if (a === 'addl') {
       lerFormulario(root);
       E[LN].push({ U_Familia: '', U_Ativo: '', U_Regra: (aux.regras.find((r) => r.Code === 'MENSAL') || aux.regras.find((r) => r.U_Tipo === 'ITEM'))?.Code || '', U_Grupo: '', U_Valor: 0, U_Diaria: 0, U_Franquia: 0, U_VlrExced: 0, U_StatusL: 'PEN' });
+      return draw(root);
+    }
+    if (a === 'addmo') {
+      lerFormulario(root);
+      E[LN].push({ U_TipoLinha: 'MO', U_Operador: '', U_Maquina: '', U_UnidCobr: 'H', U_Valor: 0, U_Jornada: 8, U_VlrExtra: 0, U_ItemCode: '', U_StatusL: 'MO' });
       return draw(root);
     }
     if (a === 'addg') {

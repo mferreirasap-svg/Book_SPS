@@ -1,7 +1,7 @@
 // Estruturas do Áster Rental no SAP B1: tabelas (UDT), campos (UDF) e objetos (UDO).
 // O instalador cria tudo pela Service Layer. Ao mudar algo aqui, incremente SCHEMA_VERSION.
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 export const SET = {
   ATV: 'SPSLATV',
@@ -21,6 +21,11 @@ export const SET = {
   PES: 'U_SPS_LPES',
   INT: 'U_SPS_LINT',
   POR: 'U_SPS_LPOR',
+  OPE: 'U_SPS_LOPE',
+  APO: 'U_SPS_LAPO',
+  FAJ: 'U_SPS_LFAJ',
+  DOC: 'U_SPS_LDOC',
+  CAL: 'U_SPS_LCAL',
 };
 export const LN = 'SPS_LCT1Collection'; // itens do contrato
 export const GR = 'SPS_LCT2Collection'; // grupos de cobrança agrupada
@@ -32,7 +37,16 @@ export const DOM = {
   statusAtivo: { DIS: 'Disponível', LOC: 'Locado', MAN: 'Manutenção', RES: 'Reservado', BAI: 'Baixado' },
   tipoContrato: { LOC: 'Locação', COM: 'Comodato', SRV: 'Serviço' },
   statusContrato: { RAS: 'Rascunho', ATV: 'Ativo', SUS: 'Suspenso', ENC: 'Encerrado' },
-  statusLinha: { PEN: 'Aguardando entrega', LOC: 'Locado', DEV: 'Devolvido' },
+  statusLinha: { PEN: 'Aguardando entrega', LOC: 'Locado', DEV: 'Devolvido', MO: 'Mão de obra' },
+  tipoLinha: { EQP: 'Equipamento', MO: 'Mão de obra (operador)' },
+  unidCobr: { H: 'Por hora apontada', D: 'Por diária apontada', M: 'Mensal' },
+  situacaoLeit: { CON: 'Conferida', PEN: 'Aguardando conferência', REC: 'Recusada' },
+  situacaoApo: { LAN: 'Aguardando aprovação', APR: 'Aprovado', REC: 'Recusado' },
+  ajusteFat: { COB: 'Cobrar', ABO: 'Abonar', AJU: 'Ajustar valor' },
+  motivoAjuste: { COR: 'Cortesia comercial', FAL: 'Falha do equipamento', LEI: 'Erro de leitura', NEG: 'Negociação com o cliente', OUT: 'Outro' },
+  tipoDocVei: { LIC: 'Licenciamento anual', IPVA: 'IPVA', SEG: 'Seguro', TAC: 'Tacógrafo / aferição Inmetro', ANTT: 'ANTT / RNTRC', AET: 'AET', OUT: 'Outro' },
+  statusDocVei: { PEN: 'Em aberto', PAG: 'Pago', ISE: 'Isento / não se aplica' },
+  geoModo: { NAO: 'Não registrar localização', OS: 'Só no início e no fim da OS', EXP: 'Durante o expediente (com o técnico em serviço)' },
   modoFat: { RAS: 'Rascunho de NF', PRE: 'Pré-fatura (pedido)', FAT: 'Fatura direta (NF)' },
   tipoRegra: { ITEM: 'Por item', AGRUP: 'Agrupada', CONS: 'Por consumo', SEM: 'Sem cobrança' },
   proRata: { LIN: 'Linear (dias ÷ dias do mês)', PCT: 'Tabela em % do mês', DIA: 'Tabela em diárias' },
@@ -44,9 +58,9 @@ export const DOM = {
   origemCha: { TEL: 'Telefone', EMA: 'E-mail', WPP: 'WhatsApp', POR: 'Portal / QR Code', INT: 'Interno' },
   prioridade: { URG: 'Urgente', ALT: 'Alta', MED: 'Média', BAI: 'Baixa' },
   statusCha: { ABE: 'Aberto', AND: 'Em atendimento', AGC: 'Aguardando cliente', RES: 'Resolvido', FEC: 'Fechado', CAN: 'Cancelado' },
-  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' },
+  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria', INT: 'Manutenção interna (oficina)' },
   statusOS: { ABE: 'Sem agenda', AGE: 'Agendada', EXE: 'Em execução', AOR: 'Aguardando aprovação', CON: 'Concluída', CAN: 'Cancelada' },
-  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento' },
+  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento', TER: 'Serviço de terceiro' },
   orcamento: { '': 'Sem orçamento', PEN: 'Aguardando cliente', APR: 'Aprovado', REC: 'Recusado' },
   // integração com documentos nativos
   remessa: { NAO: 'Não gerar documento', NF: 'Entrega (NF de remessa) e devolução (NF de retorno)', TRANSF: 'Transferência entre depósitos' },
@@ -241,6 +255,53 @@ export const SCHEMA = {
   ],
 };
 
+/* ---- Versão 6: melhorias pedidas pela Macromaq (ver docs/proximas-etapas/01-levantamento-macromaq.md) ---- */
+const v6 = {
+  tables: [
+    ['SPS_LOPE', 'Locação - Operadores'], ['SPS_LAPO', 'Locação - Apontamento de horas'], ['SPS_LFAJ', 'Locação - Ajustes de faturamento'],
+    ['SPS_LDOC', 'Frota - Obrigações dos veículos'], ['SPS_LCAL', 'Frota - Calendário de licenciamento'],
+  ],
+  fields: {
+    // fotos (no SAP real: anexos nativos Attachments2 + número do anexo; no protótipo ficam no registro)
+    '@SPS_LMOV': [F('Fotos', 'T', 'Fotos (JSON)')],
+    // leitura lançada no campo com foto, conferida no escritório antes de valer no faturamento
+    '@SPS_LMED': [F('Situacao', 'A', 'Situação', { size: 3, vv: DOM.situacaoLeit, def: 'CON' }), F('Foto', 'T', 'Foto do painel'), F('LancPor', 'A', 'Lançada por', { size: 50 }),
+      F('ConfPor', 'A', 'Conferida por', { size: 50 }), F('DtConf', 'A', 'Conferida em', { size: 16 }), F('Obs', 'A', 'Observação', { size: 254 })],
+    // mão de obra como linha do contrato, ligada à máquina
+    '@SPS_LCT1': [F('TipoLinha', 'A', 'Tipo da linha', { size: 3, vv: DOM.tipoLinha, def: 'EQP' }), F('Maquina', 'A', 'Máquina operada', { size: 50 }),
+      F('Operador', 'A', 'Operador', { size: 50 }), F('UnidCobr', 'A', 'Unidade de cobrança', { size: 1, vv: DOM.unidCobr }), F('Jornada', 'M', 'Jornada (h/dia)'),
+      F('VlrExtra', 'P', 'Valor da hora extra')],
+    '@SPS_LCTR': [F('Conferir', 'A', 'Conferir antes de faturar (S/N; vazio = padrão)', { size: 1 })],
+    '@SPS_LFAT': [F('DocEntry2', 'N', 'DocEntry do doc. de serviço'), F('DocNum2', 'N', 'Número do doc. de serviço'), F('LibPor', 'A', 'Liberada por', { size: 50 }),
+      F('DtLib', 'A', 'Liberada em', { size: 16 }), F('ValorCalc', 'S', 'Valor calculado na liberação')],
+    '@SPS_LOPE': [F('EmpID', 'N', 'Funcionário (B1)'), F('Fone', 'A', 'Telefone', { size: 30 }), F('CNH', 'A', 'CNH / categoria', { size: 30 }), F('CNHVal', 'D', 'Validade da CNH'),
+      F('Habilit', 'A', 'Habilitações (NR-11, NR-12…)', { size: 150 }), F('HabVal', 'D', 'Validade das habilitações'), F('Ativo', 'A', 'Ativo', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'S' })],
+    '@SPS_LAPO': [F('CtrEntry', 'N', 'Contrato (DocEntry)'), F('CtrLine', 'N', 'Linha de mão de obra'), F('Operador', 'A', 'Operador', { size: 50 }), F('Data', 'D', 'Data'),
+      F('Comp', 'A', 'Competência AAAAMM', { size: 6 }), F('HrNorm', 'M', 'Horas normais'), F('HrExtra', 'M', 'Horas extras'), F('Obs', 'A', 'Observação', { size: 254 }),
+      F('Situacao', 'A', 'Situação', { size: 3, vv: DOM.situacaoApo, def: 'LAN' }), F('LancPor', 'A', 'Lançado por', { size: 50 }), F('AprPor', 'A', 'Aprovado por', { size: 50 })],
+    '@SPS_LFAJ': [F('Parcela', 'A', 'Parcela (contrato-competência)', { size: 30 }), F('Linha', 'N', 'Linha do cálculo'), F('Descr', 'A', 'Linha', { size: 150 }),
+      F('Tipo', 'A', 'Ajuste', { size: 3, vv: DOM.ajusteFat }), F('VlrOrig', 'S', 'Valor calculado'), F('VlrFinal', 'S', 'Valor cobrado'),
+      F('Motivo', 'A', 'Motivo', { size: 3, vv: DOM.motivoAjuste }), F('Obs', 'A', 'Observação', { size: 254 }), F('Usuario', 'A', 'Usuário', { size: 50 }), F('Data', 'A', 'Data e hora', { size: 16 })],
+    '@SPS_LDOC': [F('Ativo', 'A', 'Veículo', { size: 50 }), F('Tipo', 'A', 'Obrigação', { size: 4, vv: DOM.tipoDocVei }), F('Exercicio', 'A', 'Exercício', { size: 4 }),
+      F('Venc', 'D', 'Vencimento'), F('Valor', 'S', 'Valor'), F('Status', 'A', 'Situação', { size: 3, vv: DOM.statusDocVei, def: 'PEN' }), F('DtPag', 'D', 'Pago em'),
+      F('VlrPago', 'S', 'Valor pago'), F('Anexo', 'T', 'Comprovante / documento'), F('DocB1', 'N', 'Esboço de conta a pagar (B1)'), F('Obs', 'A', 'Observação', { size: 254 })],
+    '@SPS_LCAL': [F('UF', 'A', 'UF', { size: 2 }), F('Final', 'A', 'Final da placa', { size: 1 }), F('MesLic', 'N', 'Mês do licenciamento'), F('MesIPVA', 'N', 'Mês do IPVA (cota única)')],
+    // oficina e geolocalização
+    '@SPS_LATV': [F('UF', 'A', 'UF de registro (veículo)', { size: 2 }), F('CCusto', 'A', 'Centro de custo (B1)', { size: 20 })],
+    '@SPS_LOS': [F('DocSaida', 'N', 'Saída de mercadorias (B1)'), F('DocCompra', 'A', 'Pedidos de compra (B1)', { size: 100 }), F('LatIni', 'A', 'Latitude no início', { size: 20 }),
+      F('LonIni', 'A', 'Longitude no início', { size: 20 }), F('LatFim', 'A', 'Latitude no fim', { size: 20 }), F('LonFim', 'A', 'Longitude no fim', { size: 20 }),
+      F('DistObra', 'N', 'Distância da obra no início (m)')],
+    '@SPS_LOS1': [F('Fornecedor', 'A', 'Fornecedor (terceiro)', { size: 15 }), F('Baixar', 'A', 'Baixar do estoque', { size: 1, vv: { S: 'Sim', N: 'Não' }, def: 'N' })],
+    '@SPS_LTEC': [F('GeoAceite', 'A', 'Termo de localização aceito em', { size: 16 })],
+    OIGE: [F('SPS_OsEntry', 'N', 'Ordem de serviço')],
+    OINV: [F('SPS_DocVei', 'A', 'Documento de veículo (Áster)', { size: 30 })],
+    OPOR: [F('SPS_OsEntry', 'N', 'Ordem de serviço')],
+    CRD1: [F('SPS_Lat', 'A', 'Latitude da obra', { size: 20 }), F('SPS_Lon', 'A', 'Longitude da obra', { size: 20 })],
+  },
+};
+for (const [TableName, TableDescription] of v6.tables) SCHEMA.tables.push({ TableName, TableDescription, TableType: 'bott_NoObject' });
+for (const [t, fs] of Object.entries(v6.fields)) (SCHEMA.fields[t] ||= []).push(...fs);
+
 const FTYPE = { A: ['db_Alpha', 'st_None'], N: ['db_Numeric', 'st_None'], D: ['db_Date', 'st_None'], P: ['db_Float', 'st_Price'],
   Q: ['db_Float', 'st_Quantity'], M: ['db_Float', 'st_Measurement'], S: ['db_Float', 'st_Sum'], T: ['db_Memo', 'st_None'] };
 
@@ -271,6 +332,7 @@ export const CFG_DEFAULTS = {
   CHK_OS_COR: ['Equipamento identificado (série/placa)', 'Defeito reproduzido', 'Causa identificada', 'Peças substituídas testadas', 'Teste de funcionamento final', 'Local limpo e organizado'].join('\n'),
   CHK_OS_INS: ['Equipamento conferido na chegada', 'Operador do cliente orientado', 'Itens de segurança apresentados', 'Teste de funcionamento com o cliente'].join('\n'),
   CHK_OS_VIS: ['Estado geral', 'Uso conforme contrato', 'Horímetro / hodômetro conferido', 'Sinais de mau uso'].join('\n'),
+  CHK_OS_INT: ['Diagnóstico registrado', 'Peças substituídas conferidas', 'Teste de funcionamento', 'Limpeza e lubrificação', 'Liberado para locação'].join('\n'),
   CHK_OS_REP: ['Avaria registrada com fotos', 'Causa (desgaste normal ou mau uso)', 'Reparo executado', 'Teste de funcionamento final'].join('\n'),
   // integração com o SAP B1 (de-para com cadastros nativos; vazio = usar o padrão do B1)
   B1_FILIAL: '',
@@ -297,5 +359,22 @@ export const CFG_DEFAULTS = {
   PREV_AUTO: 'N',
   // portal do cliente: horas de validade da sessão
   PORTAL_HORAS: '12',
+  // v6 — leituras de campo, mão de obra, conferência, veículos, oficina e localização
+  LEIT_CONFERENCIA: 'S',
+  LEIT_FOTO_OBRIG: 'S',
+  ITEM_MO: 'SLOC810',
+  MO_DOC_SEPARADO: 'S',
+  FAT_CONFERENCIA: 'FRANQUIA',
+  FAT_ALCADA_ABONO: '1000',
+  VEI_ALERTA_DIAS: '30',
+  VEI_FORNECEDOR: '',
+  VEI_CONTA: '',
+  OFI_DEP_PECAS: '',
+  OFI_DIM: '2',
+  OFI_CUSTO_HORA: '95',
+  GEO_MODO: 'OS',
+  GEO_RAIO_M: '500',
+  GEO_BASE: '',
+  GEO_RETENCAO_DIAS: '90',
   SCHEMA_VERSION: '0',
 };

@@ -5,6 +5,25 @@
 > Princípio mantido: o que tem tela nativa no B1 usa o objeto nativo; o resto vai em tabelas e objetos de usuário (prefixo `SPS_L`);
 > dados de alto volume (fotos, posições de GPS) não vão para tabelas do B1.
 
+## Situação no protótipo (versão 6)
+
+Os oito pedidos já estão **funcionando no protótipo**, com o processo que consideramos mais adequado e as regras deixadas **configuráveis**
+(Administração › Parâmetros e Integração SAP B1 › De-para). Cada decisão abaixo é uma proposta para validar com a Macromaq — mudar a regra é parametrização, não desenvolvimento.
+
+| # | Pedido | Como ficou no protótipo | Regra configurável |
+|---|---|---|---|
+| 1 | Fotos nas movimentações | Até 6 fotos por entrega/devolução/substituição, com legenda; saem no termo impresso | — |
+| 2 | Foto do horímetro | Perfil **Leiturista** (funcionário da Macromaq) lança no celular com foto obrigatória; a leitura fica **"a conferir"** e só vale no faturamento depois que o escritório aprova comparando com a foto (recusa exige motivo) | `LEIT_CONFERENCIA`, `LEIT_FOTO_OBRIG` |
+| 3 | Mão de obra | Linha **"Mão de obra (operador)"** no mesmo contrato, ligada à máquina; cobrança por hora, diária ou mês, com jornada e valor de hora extra. Horas lançadas por dia (acima da jornada viram extra) e **aprovadas** antes de cobrar. Sai em **documento de serviço separado** da locação | `ITEM_MO`, `MO_DOC_SEPARADO` |
+| 4 | Liberar o faturamento | Contratos com franquia/excedente ou mão de obra passam por **conferência**: linha a linha cobrar, abonar ou ajustar, com motivo; redução acima da **alçada** só com perfil gestor. Contrato pode forçar "sempre conferir" ou "liberar direto". Se o cálculo mudar depois de liberado, pede nova conferência | `FAT_CONFERENCIA`, `FAT_ALCADA_ABONO`, campo do contrato |
+| 5 | Licenciamento | Obrigações por veículo (licenciamento, IPVA, seguro, tacógrafo, ANTT, AET); calendário gerado pela UF e final da placa; alertas; pagamento com comprovante e **esboço de nota de entrada de serviço** no SAP | `VEI_ALERTA_DIAS`, `VEI_FORNECEDOR`, `VEI_CONTA` |
+| 6 | Financeiro no portal | Aba **Financeiro**: notas pagas, em aberto e vencidas (lidas das notas nativas do SAP) e **extrato** de cada mês com a memória de cálculo. Boleto/2ª via depende do add-on bancário (a definir) | — |
+| 7 | Manutenção | Tela **Manutenção da frota**: disponibilidade, o que está na oficina e há quantos dias, custo por equipamento e por hora trabalhada, quebras e uso entre quebras. **OS interna**: equipamento vai para "manutenção" (automático ao mudar o status), peças saem por **Saída de mercadorias** do depósito da oficina, terceiros viram **Pedido de compra**, custo no **centro de custo do equipamento** | `OFI_DEP_PECAS`, `OFI_DIM`, `OFI_CUSTO_HORA` |
+| 8 | Geolocalização e rota | Posição registrada **só no início e no fim de cada OS** (padrão), com termo de ciência do técnico (LGPD); distância até a obra (alerta de check-in longe); **Mapa da equipe** com a rota sugerida do dia e link para o Google Maps. Rastreio durante o expediente fica como opção. Posições ficam no banco do Áster e são apagadas após o prazo | `GEO_MODO`, `GEO_RAIO_M`, `GEO_RETENCAO_DIAS`, `GEO_BASE` |
+
+Perfis novos/alterados: **Leiturista** (lança leituras e horas), Faturamento (confere e libera), Gestor (abona acima da alçada).
+O desenho de como cada item fica gravado no SAP B1 está nas seções abaixo e será revisado na próxima etapa.
+
 ## Resumo
 
 | # | Pedido | Tamanho | Depende de decisão? | Estruturas novas no SAP |

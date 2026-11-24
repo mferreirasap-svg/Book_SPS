@@ -82,7 +82,7 @@ export function valorPeriodo(rule, mensal, diaria, dias, diasMes) {
  * Calcula a parcela de um contrato numa competência (AAAAMM).
  * @returns {{faturavel:boolean, motivo?:string, linhas:object[], avisos:string[], total:number}}
  */
-export function calcularParcela({ contrato, regras = {}, leituras = [], foras = [], multas = [], comp, itemMulta = '' }) {
+export function calcularParcela({ contrato, regras = {}, leituras = [], foras = [], multas = [], apontamentos = [], comp, itemMulta = '' }) {
   const out = { faturavel: true, linhas: [], avisos: [], total: 0 };
   if (contrato.U_Tipo === 'COM') return { ...out, faturavel: false, motivo: 'Contrato de comodato não gera cobrança.' };
   const { mes, dias: diasMes } = compRange(comp);
@@ -91,7 +91,7 @@ export function calcularParcela({ contrato, regras = {}, leituras = [], foras = 
   const grupos = contrato[GR] || [];
 
   for (const l of linhas) {
-    if (l.U_Grupo) continue;
+    if (l.U_Grupo || l.U_TipoLinha === 'MO') continue;
     if (l.U_Regra && !regras[l.U_Regra]) out.avisos.push(`Regra de cobrança ${l.U_Regra} não encontrada; usada a regra padrão.`);
     const rule = regraDe(l.U_Regra);
     if (rule.tipo === 'SEM') continue;
@@ -171,6 +171,40 @@ export function calcularParcela({ contrato, regras = {}, leituras = [], foras = 
         desc: `Excedente ${g.U_Descr || `grupo ${g.U_Grupo}`}: uso ${num(usoTotal, 0)}, franquia ${num(franquia, 0)}`,
         memoria: [`Uso total ${num(usoTotal)} − franquia ${num(franquia)} = ${num(qtd)} × ${brl(preco)}`,
           ...rateio.map((r) => `${r.ativo}: uso ${num(r.uso)} → ${brl(r.valor)}`)], rateio });
+    }
+  }
+
+  // Mão de obra do operador: serviço (vai em documento de serviço quando separado). Por hora e por diária usam o apontamento aprovado.
+  for (const l of linhas.filter((x) => x.U_TipoLinha === 'MO')) {
+    const maquina = linhas.filter((x) => x.U_TipoLinha !== 'MO' && x.U_Ativo === l.U_Maquina).sort((a, b) => (a.U_StatusL === 'DEV') - (b.U_StatusL === 'DEV'))[0];
+    const nome = `${l.U_Maquina ? ` ${l.U_Maquina}` : ''}${l.U_Operador ? ` — operador ${l.U_Operador}` : ''}`;
+    const valor = Number(l.U_Valor) || 0;
+    const vlrExtra = Number(l.U_VlrExtra) || valor;
+    const apos = apontamentos.filter((a) => Number(a.U_CtrLine) === Number(l.LineId) && a.U_Comp === comp && a.U_Situacao === 'APR');
+    const normais = round2(apos.reduce((s, a) => s + (Number(a.U_HrNorm) || 0), 0));
+    const extras = round2(apos.reduce((s, a) => s + (Number(a.U_HrExtra) || 0), 0));
+    if (!l.U_ItemCode) out.avisos.push(`Mão de obra${nome}: item de faturamento (serviço) não informado.`);
+    const base = { lineId: l.LineId, ItemCode: l.U_ItemCode, servico: true };
+    if (l.U_UnidCobr === 'M') {
+      const p = maquina ? periodoNoCliente(contrato, maquina, comp) : null;
+      if (p && valor > 0) {
+        const v = round2((valor * p.dias) / diasMes);
+        out.linhas.push({ ...base, tipo: 'MO', qtd: 1, preco: v, total: v, desc: `Mão de obra mensal${nome} ${fmtD(p.ini)} a ${fmtD(p.fim)}`,
+          memoria: [`Máquina no cliente ${p.dias} de ${diasMes} dias × ${brl(valor)} = ${brl(v)}`] });
+      }
+    } else if (l.U_UnidCobr === 'D') {
+      const dias = new Set(apos.filter((a) => Number(a.U_HrNorm) > 0).map((a) => String(a.U_Data).slice(0, 10))).size;
+      if (dias > 0 && valor > 0) {
+        out.linhas.push({ ...base, tipo: 'MO', qtd: dias, preco: valor, total: round2(dias * valor), desc: `Mão de obra${nome}: ${dias} diária(s)`,
+          memoria: [`${dias} dia(s) trabalhado(s) no apontamento aprovado × ${brl(valor)}`] });
+      }
+    } else if (normais > 0 && valor > 0) {
+      out.linhas.push({ ...base, tipo: 'MO', qtd: normais, preco: valor, total: round2(normais * valor), desc: `Mão de obra${nome}: ${num(normais, 1)} h`,
+        memoria: [`${num(normais, 1)} hora(s) normal(is) apontada(s) e aprovada(s) × ${brl(valor)}`] });
+    }
+    if (extras > 0 && vlrExtra > 0) {
+      out.linhas.push({ ...base, tipo: 'MOX', qtd: extras, preco: vlrExtra, total: round2(extras * vlrExtra), desc: `Horas extras${nome}: ${num(extras, 1)} h`,
+        memoria: [`${num(extras, 1)} hora(s) extra(s) apontada(s) e aprovada(s) × ${brl(vlrExtra)}`] });
     }
   }
 

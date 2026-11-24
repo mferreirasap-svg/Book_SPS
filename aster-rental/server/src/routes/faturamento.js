@@ -30,6 +30,11 @@ export default async function faturamentoRoutes(app, { deps }) {
     return billing.generateOne(req, Number(contrato), compOk(comp), { desconto, acrescimo });
   });
 
+  app.post('/billing/liberar', { preHandler: can('faturamento.conferir') }, async (req) => {
+    const { comp, contrato, ajustes } = req.body || {};
+    return billing.liberar(req, Number(contrato), compOk(comp), ajustes || []);
+  });
+
   app.post('/billing/installment/:code/release', { preHandler: can('faturamento.liberar') }, async (req) => billing.release(req, req.params.code));
 
   app.get('/jobs/:id', async (req) => {

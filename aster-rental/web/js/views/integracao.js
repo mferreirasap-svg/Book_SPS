@@ -92,6 +92,14 @@ const CAMPOS = [
   { k: 'ITEM_SERVICO', l: 'Item de serviço padrão (mão de obra)', tipo: 'item' },
   { k: 'B1_USAGE_SRV', l: 'Utilização da NF de serviço / peças', lista: 'utilizacoes' },
   { k: 'B1_SERIE_SRV', l: 'Série da NF de serviço', tipo: 'number' },
+  { sec: 'Mão de obra no contrato', txt: 'A linha de operador é cobrada pelas horas aprovadas. Com documento separado, a locação (bem móvel) e a mão de obra (serviço, com ISS) saem em documentos diferentes.' },
+  { k: 'ITEM_MO', l: 'Item de serviço da mão de obra do operador', tipo: 'item' },
+  { k: 'MO_DOC_SEPARADO', l: 'Documento da mão de obra', opcoes: { S: 'Separado (NF de serviço)', N: 'Junto com a locação' } },
+  { sec: 'Oficina e frota', txt: 'Peças da OS interna saem do estoque por Saída de mercadorias; serviço de terceiro vira Pedido de compra; o custo vai para o centro de custo do equipamento (dimensão abaixo). Taxas de veículos viram esboço de nota de entrada de serviço.' },
+  { k: 'OFI_DEP_PECAS', l: 'Depósito de peças da oficina', lista: 'depositos' },
+  { k: 'OFI_DIM', l: 'Dimensão do centro de custo por equipamento', opcoes: { 1: 'Dimensão 1', 2: 'Dimensão 2', 3: 'Dimensão 3', 4: 'Dimensão 4', 5: 'Dimensão 5' } },
+  { k: 'VEI_FORNECEDOR', l: 'Fornecedor das taxas de veículos (DETRAN/SEFAZ)', tipo: 'text' },
+  { k: 'VEI_CONTA', l: 'Conta contábil das taxas de veículos (opcional)', tipo: 'text' },
 ];
 
 async function depara(box) {

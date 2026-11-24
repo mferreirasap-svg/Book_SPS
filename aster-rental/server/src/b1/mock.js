@@ -2,7 +2,8 @@
 // Usada em desenvolvimento, demonstração e testes automatizados. Nunca em produção.
 import { B1Error } from './errors.js';
 
-const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'SPSLCHA', 'SPSLOS', 'Drafts', 'Orders', 'Invoices', 'Quotations', 'DeliveryNotes', 'Returns', 'StockTransfers']);
+const DOC_SETS = new Set(['SPSLCTR', 'SPSLMOV', 'SPSLCHA', 'SPSLOS', 'Drafts', 'Orders', 'Invoices', 'Quotations', 'DeliveryNotes', 'Returns', 'StockTransfers',
+  'InventoryGenExits', 'PurchaseOrders', 'PurchaseInvoices']);
 const KEYS = {
   UserTablesMD: 'TableName', UserObjectsMD: 'Code', BusinessPartners: 'CardCode', Items: 'ItemCode', BusinessPlaces: 'BPLID',
   ServiceCalls: 'ServiceCallID', Activities: 'ActivityCode', EmployeesInfo: 'EmployeeID', Warehouses: 'WarehouseCode', NotaFiscalUsage: 'ID',
@@ -12,12 +13,12 @@ const KEYS = {
 // Objetos nativos com chave numérica gerada pelo B1.
 const AUTO_KEY = new Set(['ServiceCalls', 'Activities', 'UserFieldsMD']);
 const LINE_COLL = { DeliveryNotes: 'DocumentLines', Returns: 'DocumentLines', Drafts: 'DocumentLines', Orders: 'DocumentLines', Invoices: 'DocumentLines',
-  StockTransfers: 'StockTransferLines' };
+  StockTransfers: 'StockTransferLines', InventoryGenExits: 'DocumentLines', PurchaseOrders: 'DocumentLines', PurchaseInvoices: 'DocumentLines' };
 
 /** Regras mínimas que o B1 real aplica e que a integração precisa respeitar (item, nº de série, cliente, documento base). */
 function validarNativo(db, set, rec) {
   const has = (s, k, v) => (db.sets[s] || []).some((r) => r[k] == v);
-  if (['DeliveryNotes', 'Returns', 'StockTransfers', 'Drafts', 'Orders', 'Invoices', 'ServiceCalls'].includes(set)) {
+  if (['DeliveryNotes', 'Returns', 'StockTransfers', 'Drafts', 'Orders', 'Invoices', 'ServiceCalls', 'PurchaseOrders', 'PurchaseInvoices'].includes(set)) {
     const card = rec.CardCode || rec.CustomerCode;
     if (card && !has('BusinessPartners', 'CardCode', card)) fail(400, `Invalid BP code '${card}' (-10)`, -10);
   }

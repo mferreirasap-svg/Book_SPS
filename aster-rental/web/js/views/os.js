@@ -2,7 +2,7 @@
 import { $, $$, esc, brl, num, fmtD, fmtDT, UN, DOM, badge, options, toast, acao, modal, closeModal, msg, debounce, pager, confirmar, SEARCH, SETA, hoje } from '../util.js';
 import { get, post, put, qs } from '../api.js';
 import { filtro, S } from '../state.js';
-import { padAssinatura, reduzirFoto } from '../campo.js';
+import { padAssinatura, reduzirFoto, posicaoAtual } from '../campo.js';
 import { imprimirOS } from '../print.js';
 
 const OS1 = 'SPS_LOS1Collection';
@@ -101,7 +101,8 @@ async function detalhe(root, id, c) {
   if (!F || F.id !== o.DocEntry || F.versao !== o.U_Versao) {
     F = { id: o.DocEntry, versao: o.U_Versao, laudo: o.U_Laudo || '', medidor: o.U_Medidor || '', respons: o.U_Respons || '', docResp: o.U_DocResp || '',
       checklist: lerJSON(o.U_Checklist, {}), fotos: lerJSON(o.U_Fotos, []), assinatura: o.U_Assinatura || '',
-      itens: (o[OS1] || []).map((i) => ({ tipo: i.U_Tipo, itemCode: i.U_ItemCode, descr: i.U_Descr, qtd: i.U_Qtd, preco: i.U_Preco, cobrar: i.U_Cobrar })), sujo: false };
+      itens: (o[OS1] || []).map((i) => ({ tipo: i.U_Tipo, itemCode: i.U_ItemCode, descr: i.U_Descr, qtd: i.U_Qtd, preco: i.U_Preco, cobrar: i.U_Cobrar,
+        fornecedor: i.U_Fornecedor || '', baixar: i.U_Baixar || 'N' })), sujo: false };
   }
   const aberta = ABERTAS.includes(o.U_Status);
   const exec = aberta && (c.can('os.executar') || c.can('os.editar'));
@@ -115,7 +116,9 @@ async function detalhe(root, id, c) {
     <div class="row" style="margin:8px 0 12px">${badge(o.U_Status, DOM.statusOS)} ${badge(o.U_Prior, DOM.prioridade, 'p-')}
       ${o.U_Parada === 'S' ? `<span class="badge p-URG">PARADO DESDE ${fmtD(o.U_DtParada)}${aberta ? '' : ' (encerrado)'}</span>` : ''}
       ${o.U_Orc ? `<span class="chip">Orçamento: ${esc(DOM.orcamento[o.U_Orc])}${o.U_OrcAprov ? ` por ${esc(o.U_OrcAprov)}` : ''}</span>` : ''}
-      ${o.U_DocNum ? `<span class="chip">Rascunho de NF nº ${o.U_DocNum} no SAP B1</span>` : ''}</div>
+      ${o.U_DocNum ? `<span class="chip">Rascunho de NF nº ${o.U_DocNum} no SAP B1</span>` : ''}
+      ${o.U_DocSaida ? `<span class="chip">Saída de estoque nº ${o.U_DocSaida}</span>` : ''}${o.U_DocCompra ? `<span class="chip">Pedido(s) de compra nº ${esc(o.U_DocCompra)}</span>` : ''}
+      ${o.U_LatIni ? `<span class="chip" title="Posição do celular ao iniciar">Check-in ${o.U_DistObra != null && o.U_DistObra !== '' && Number(o.U_DistObra) > 0 ? `a ${num(Number(o.U_DistObra) / 1000, 1)} km da obra` : 'registrado'}</span>` : ''}</div>
     <div class="head-info">
       <div><b>Cliente</b>${esc(o.U_CardName)}</div><div><b>Equipamento</b>${esc(o.U_Ativo)} ${esc(o.ativo?.Name || '')}</div>
       <div><b>Placa / série</b>${esc(o.ativo?.U_Placa || o.ativo?.U_Serie || '—')}</div><div><b>Local</b>${esc(o.U_Local || '—')}</div>
@@ -143,7 +146,7 @@ async function detalhe(root, id, c) {
     ${['OK', 'NOK', 'NA'].map((v) => `<label><input type="radio" name="oc${i}" data-chk="${esc(it)}" value="${v}" ${F.checklist[it]?.r === v ? 'checked' : ''} ${ro}> ${{ OK: 'OK', NOK: 'Não OK', NA: 'N/A' }[v]}</label>`).join('')}</td>
     <td><input data-chko="${esc(it)}" value="${esc(F.checklist[it]?.o || '')}" placeholder="observação" ${ro}></td></tr>`).join('')}</tbody></table>
 
-  <h3>Peças e serviços</h3><div class="tbl"><table><thead><tr><th>Tipo</th><th>Item SAP B1</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Preço</th><th class="num">Total</th><th title="Sim para mau uso ou avaria; não para garantia e desgaste normal">Cobrar do cliente</th><th></th></tr></thead><tbody>
+  <h3>Peças e serviços</h3><div class="tbl"><table><thead><tr><th>Tipo</th><th>Item SAP B1</th><th>Descrição</th><th class="num">Qtd</th><th class="num">Preço</th><th class="num">Total</th><th title="Sim para mau uso ou avaria; não para garantia e desgaste normal">Cobrar do cliente</th><th title="Peça: baixar do estoque da oficina. Terceiro: fornecedor do pedido de compra.">Estoque / fornecedor</th><th></th></tr></thead><tbody>
   ${F.itens.map((i, n) => `<tr><td><select data-i="${n}" data-k="tipo" ${ro}>${options(DOM.tipoItemOS, i.tipo)}</select></td>
     <td><input data-i="${n}" data-k="itemCode" value="${esc(i.itemCode)}" class="w110" list="osItens" ${ro}></td>
     <td><input data-i="${n}" data-k="descr" value="${esc(i.descr)}" ${ro}></td>
@@ -151,8 +154,10 @@ async function detalhe(root, id, c) {
     <td><input type="number" min="0" step="0.01" data-i="${n}" data-k="preco" value="${esc(i.preco)}" class="w110" ${ro}></td>
     <td class="num">${brl((Number(i.qtd) || 0) * (Number(i.preco) || 0))}</td>
     <td><select data-i="${n}" data-k="cobrar" ${ro}>${options({ N: 'Não', S: 'Sim' }, i.cobrar)}</select></td>
-    <td>${exec ? `<button type="button" class="mini danger" data-del="${n}">×</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">Nenhuma peça ou serviço.</td></tr>'}
-  </tbody></table></div><datalist id="osItens"></datalist>
+    <td>${i.tipo === 'PEC' ? `<select data-i="${n}" data-k="baixar" ${ro}>${options({ N: 'Não baixar', S: 'Baixar do estoque' }, i.baixar)}</select>`
+      : i.tipo === 'TER' ? `<input data-i="${n}" data-k="fornecedor" value="${esc(i.fornecedor)}" class="w110" list="osForn" placeholder="fornecedor" ${ro}>` : ''}</td>
+    <td>${exec ? `<button type="button" class="mini danger" data-del="${n}">×</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="9" class="empty">Nenhuma peça ou serviço.</td></tr>'}
+  </tbody></table></div><datalist id="osItens"></datalist><datalist id="osForn"></datalist>
   <div class="row" style="margin-top:8px">${exec ? '<button type="button" class="mini" data-a="addItem">+ Peça ou serviço</button>' : ''}<span class="spacer"></span>
     <span class="sub">Custo total ${brl(custo)} · <b>a cobrar do cliente ${brl(total)}</b></span>
     ${exec && total > 0 && o.U_Orc !== 'APR' && o.U_Status !== 'AOR' ? '<button type="button" class="primary" data-a="orcamento">Enviar orçamento para aprovação</button>' : ''}</div>
@@ -188,6 +193,11 @@ async function detalhe(root, id, c) {
 
   root.oninput = debounce(async (ev) => {
     if (ev.target.dataset.k !== 'itemCode' || ev.target.value.length < 2) return;
+    if (ev.target.dataset?.k === 'fornecedor') {
+      const fs = await get(`/lookup/suppliers${qs({ q: ev.target.value })}`).catch(() => []);
+      ($('#osForn') || {}).innerHTML = fs.map((x) => `<option value="${esc(x.CardCode)}">${esc(x.CardName)}</option>`).join('');
+      return;
+    }
     const r = await get(`/lookup/items${qs({ q: ev.target.value })}`).catch(() => []);
     ($('#osItens') || {}).innerHTML = r.map((i) => `<option value="${esc(i.ItemCode)}">${esc(i.ItemName)}</option>`).join('');
   }, 300);
@@ -203,7 +213,7 @@ async function detalhe(root, id, c) {
       }
       return;
     }
-    if (e.dataset.k && ['qtd', 'preco', 'cobrar'].includes(e.dataset.k)) {
+    if (e.dataset.k && ['qtd', 'preco', 'cobrar', 'tipo'].includes(e.dataset.k)) {
       ler();
       redesenhaLocal();
     }
@@ -256,8 +266,9 @@ async function detalhe(root, id, c) {
     if (a === 'agendar') return agendar(o, root, c);
     if (a === 'iniciar') {
       return acao(async () => {
-        await post(`/orders/${id}/start`, { U_Versao: o.U_Versao });
-        toast('Atendimento iniciado.');
+        const pos = await localizacaoOS();
+        const r = await post(`/orders/${id}/start`, { U_Versao: o.U_Versao, ...(pos || {}) });
+        toast(r.U_LatIni && Number(r.U_DistObra) > 500 ? `Atendimento iniciado. Atenção: você está a ${num(Number(r.U_DistObra) / 1000, 1)} km da obra.` : 'Atendimento iniciado.');
         F = null;
         redesenha();
       });
@@ -286,10 +297,14 @@ async function detalhe(root, id, c) {
       const ok = await confirmar({ titulo: `Concluir OS ${o.DocNum}`, ok: 'Concluir',
         texto: [o.U_Parada === 'S' ? 'A parada do equipamento será encerrada e os dias parados descontados do contrato.' : '',
           cobrar > 0 ? `Será criado um rascunho de NF de ${brl(cobrar)} no SAP B1.` : 'Nada a cobrar do cliente.',
-          o.U_ChaEntry ? `O chamado ${o.U_ChaEntry} será marcado como resolvido.` : '', 'A pesquisa de satisfação é enviada ao cliente.'].filter(Boolean).join(' ') });
+          o.U_ChaEntry ? `O chamado ${o.U_ChaEntry} será marcado como resolvido.` : '',
+          F.itens.some((i) => i.tipo === 'PEC' && i.baixar === 'S') ? 'As peças marcadas saem do estoque da oficina no SAP B1.' : '',
+          F.itens.some((i) => i.tipo === 'TER') ? 'Os serviços de terceiros viram pedido de compra no SAP B1.' : '',
+          o.U_Tipo === 'INT' ? 'O equipamento volta a "Disponível".' : 'A pesquisa de satisfação é enviada ao cliente.'].filter(Boolean).join(' ') });
       if (!ok) return;
       try {
-        const r = await post(`/orders/${id}/conclude`, corpo());
+        const pos = await localizacaoOS(false);
+        const r = await post(`/orders/${id}/conclude`, { ...corpo(), ...(pos || {}) });
         F = null;
         toast(`OS ${r.DocNum} concluída.${r.documento ? ` Rascunho de NF nº ${r.documento.numero} criado.` : ''}`);
         if (r.avisoDocumento) toast(r.avisoDocumento, 'err');
@@ -365,4 +380,31 @@ function cancelar(o, root, c) {
       msg('#caMsg', 'err', e.message);
     }
   };
+}
+
+/**
+ * Localização do celular para o início/fim da OS, conforme a política da empresa (GEO_MODO).
+ * Na primeira vez o técnico lê e aceita o termo (LGPD). Sem permissão do navegador, a OS segue sem localização.
+ */
+async function localizacaoOS(pedirTermo = true) {
+  const p = await get('/geo/policy').catch(() => null);
+  if (!p || p.modo === 'NAO' || !p.tecnico) return null;
+  if (!p.aceite) {
+    if (!pedirTermo) return null;
+    const ok = await new Promise((resolve) => {
+      const m = modal(`<h2>Localização no atendimento</h2>
+        <p>Para organizar a rota e comprovar a visita, o Áster registra a <b>posição do seu celular no início e no fim de cada OS</b>${p.modo === 'EXP' ? ' e durante o expediente, enquanto você estiver "em serviço"' : ''}.</p>
+        <p>Nada é registrado fora do trabalho. As posições ficam guardadas por ${p.retencao} dias e só a coordenação vê. Você pode negar a permissão no navegador; a OS continua funcionando.</p>
+        <div class="dlg-actions"><button type="button" data-r="0">Agora não</button><button type="button" class="primary" data-r="1">Li e concordo</button></div>`);
+      m.onclick = (e) => {
+        const b = e.target.closest('[data-r]');
+        if (!b) return;
+        closeModal();
+        resolve(b.dataset.r === '1');
+      };
+    });
+    if (!ok) return null;
+    await post('/geo/accept').catch(() => null);
+  }
+  return posicaoAtual();
 }

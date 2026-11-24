@@ -29,6 +29,8 @@ export default async function portalRoutes(app, { deps }) {
   app.post('/public/portal/chamados', comSessao(async (req, a) => portal.abrirChamado(req, a, req.body || {})));
   app.post('/public/portal/chamados/:id/mensagens', comSessao(async (req, a) => portal.mensagem(req, a, req.params.id, req.body?.texto)));
   app.get('/public/portal/orcamentos', comSessao(async (_req, a) => portal.orcamentos(a)));
+  app.get('/public/portal/financeiro', comSessao(async (_req, a) => portal.financeiro(a)));
+  app.get('/public/portal/extrato/:ctr/:comp', comSessao(async (req, a) => portal.extrato(a, req.params.ctr, req.params.comp)));
   app.post('/public/portal/orcamentos/:id', comSessao(async (req, a) => portal.decidirOrcamento(req, a, req.params.id, req.body?.acao)));
 
   /* ---- etiqueta QR no equipamento (público, sem login) ---- */

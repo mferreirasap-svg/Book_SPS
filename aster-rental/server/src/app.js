@@ -24,6 +24,8 @@ import adminRoutes from './routes/admin.js';
 import posvendaRoutes from './routes/posvenda.js';
 import integracaoRoutes from './routes/integracao.js';
 import portalRoutes from './routes/portal.js';
+import campoRoutes from './routes/campo.js';
+import { createPosicoes } from './lib/posicoes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = join(here, '..', '..', 'web');
@@ -43,15 +45,16 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   const audit = createAudit(db);
   const jobs = createJobs(db, app.log);
   const sl = b1Client || createB1Client(cfg.b1, app.log);
-  const services = createServices({ sl, audit, jobs });
+  const posicoes = createPosicoes(db);
+  const services = createServices({ sl, audit, jobs, posicoes });
   const idem = {
     get: (key, user) => db.prepare('SELECT status, response FROM idempotency WHERE key = ? AND user_login = ?').get(key, user),
     save: (key, user, status, response) =>
       db.prepare('INSERT OR IGNORE INTO idempotency (key, user_login, status, response) VALUES (?, ?, ?, ?)').run(key, user, status, response),
   };
   // Modo simulado: base nova recebe os dados de apresentação (contratos, faturamento e pós-venda com histórico).
-  const montarDemo = !b1Client && cfg.b1.mode !== 'servicelayer' && cfg.b1.dados !== 'basico' ? () => montarApresentacao(sl) : null;
-  if (montarDemo) await garantirApresentacao(sl); // base nova ou de versão anterior: monta os dados de apresentação
+  const montarDemo = !b1Client && cfg.b1.mode !== 'servicelayer' && cfg.b1.dados !== 'basico' ? () => montarApresentacao(sl, { posicoes }) : null;
+  if (montarDemo) await garantirApresentacao(sl, { posicoes }); // base nova ou de versão anterior: monta os dados de apresentação
   const deps = { cfg, db, auth, audit, jobs, sl, idem, montarDemo, ...services };
   app.decorate('deps', deps);
 
@@ -118,6 +121,7 @@ export async function buildApp(cfg, { b1Client, db: dbOverride } = {}) {
   await app.register(posvendaRoutes, { prefix: '/api', deps });
   await app.register(integracaoRoutes, { prefix: '/api', deps });
   await app.register(portalRoutes, { prefix: '/api', deps });
+  await app.register(campoRoutes, { prefix: '/api', deps });
 
   app.get('/api/health', async () => ({ ok: true, b1Mode: cfg.b1.mode, version: process.env.npm_package_version || '0.1.0' }));
 

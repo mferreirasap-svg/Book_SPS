@@ -1,16 +1,26 @@
 // Cadastro de técnicos (ligados ao usuário do Áster) e dos planos de manutenção preventiva por família.
-import { $, esc, num, toast, modal, closeModal, msg } from '../util.js';
+import { $, esc, num, fmtD, hoje, toast, modal, closeModal, msg } from '../util.js';
 import { get, post, put } from '../api.js';
 import { filtro } from '../state.js';
 
 export async function render(root, _p, c) {
   const f = filtro('tecnicos', { aba: 'tec' });
   const ed = c.can('planos.editar');
-  const [tecs, planos, fams] = await Promise.all([get('/technicians'), get('/plans'), get('/families')]);
+  const [tecs, planos, fams, ops] = await Promise.all([get('/technicians'), get('/plans'), get('/families'), get('/operators')]);
   const famNome = Object.fromEntries(fams.map((x) => [x.Code, x]));
   root.innerHTML = `<div class="card"><div class="tabs-in"><button type="button" data-aba="tec" class="${f.aba === 'tec' ? 'on' : ''}">Técnicos</button>
-    <button type="button" data-aba="pln" class="${f.aba === 'pln' ? 'on' : ''}">Planos preventivos</button></div>
-  ${f.aba === 'tec' ? `<div class="row" style="margin-bottom:10px"><p class="sub" style="margin:0">Ligue o técnico ao usuário do Áster (perfil "Técnico de campo") para ele ver só as próprias OS.</p><span class="spacer"></span>
+    <button type="button" data-aba="pln" class="${f.aba === 'pln' ? 'on' : ''}">Planos preventivos</button>
+    <button type="button" data-aba="ope" class="${f.aba === 'ope' ? 'on' : ''}">Operadores (mão de obra)</button></div>
+  ${f.aba === 'ope' ? `<div class="row" style="margin-bottom:10px"><p class="sub" style="margin:0">Operadores que a locadora envia junto com a máquina. A CNH e a habilitação vencidas aparecem em vermelho.</p><span class="spacer"></span>
+      ${ed ? '<button type="button" class="primary" data-novo="ope">+ Novo operador</button>' : ''}</div>
+    <div class="tbl"><table><thead><tr><th>Código</th><th>Nome</th><th>Telefone</th><th>CNH</th><th>Validade CNH</th><th>Habilitação (NR-11/NR-12)</th><th>Validade</th><th>Situação</th><th></th></tr></thead><tbody>
+    ${ops.map((o) => {
+      const venc = (d) => (d ? `<span ${String(d).slice(0, 10) < hoje() ? 'class="badge p-URG"' : ''}>${fmtD(d)}</span>` : '—');
+      return `<tr><td>${esc(o.Code)}</td><td>${esc(o.Name)}</td><td>${esc(o.U_Fone || '')}</td><td>${esc(o.U_CNH || '')}</td><td>${venc(o.U_CNHVal)}</td>
+      <td class="wrap">${esc(o.U_Habilit || '')}</td><td>${venc(o.U_HabVal)}</td><td>${o.U_Ativo === 'N' ? '<span class="badge b-BAI">Inativo</span>' : '<span class="badge b-ATV">Ativo</span>'}</td>
+      <td class="right">${ed ? `<button type="button" class="mini" data-ed="ope" data-code="${esc(o.Code)}">Editar</button>` : ''}</td></tr>`;
+    }).join('') || '<tr><td colspan="9" class="empty">Nenhum operador.</td></tr>'}</tbody></table></div>`
+  : f.aba === 'tec' ? `<div class="row" style="margin-bottom:10px"><p class="sub" style="margin:0">Ligue o técnico ao usuário do Áster (perfil "Técnico de campo") para ele ver só as próprias OS.</p><span class="spacer"></span>
       ${ed ? '<button type="button" class="primary" data-novo="tec">+ Novo técnico</button>' : ''}</div>
     <div class="tbl"><table><thead><tr><th>Código</th><th>Nome</th><th>Usuário do Áster</th><th>Especialidade</th><th>Telefone</th><th>Funcionário B1</th><th>Situação</th><th></th></tr></thead><tbody>
     ${tecs.map((t) => `<tr><td>${esc(t.Code)}</td><td>${esc(t.Name)}</td><td>${esc(t.U_Login || '—')}</td><td>${esc(t.U_Especial)}</td><td>${esc(t.U_Fone)}</td><td>${Number(t.U_EmpID) ? esc(t.U_EmpID) : '<span class="muted">—</span>'}</td>
@@ -37,6 +47,8 @@ export async function render(root, _p, c) {
     if (n?.dataset.novo === 'tec') formTec(null, reload);
     if (n?.dataset.novo === 'pln') formPlano(null, fams, reload);
     if (e?.dataset.ed === 'tec') formTec(tecs.find((t) => t.Code === e.dataset.code), reload);
+    if (n?.dataset.novo === 'ope') formOperador(null, reload);
+    if (e?.dataset.ed === 'ope') formOperador(ops.find((o) => o.Code === e.dataset.code), reload);
     if (e?.dataset.ed === 'pln') formPlano(planos.find((p) => p.Code === e.dataset.code), fams, reload);
   };
 }
@@ -89,4 +101,23 @@ function formPlano(p, fams, reload) {
     <div class="dlg-actions"><button type="button" data-x="0">Cancelar</button><button type="button" class="primary" data-x="1">Salvar</button></div>`);
   salvarCom(m, '/plans', p, () => ({ Code: $('#pCode').value, Name: $('#pName').value, U_Familia: $('#pFam').value, U_IntMed: $('#pMed').value, U_IntDias: $('#pDias').value,
     U_Aviso: $('#pAviso').value, U_Ativo: $('#pAtivo').value, U_Checklist: $('#pChk').value }), reload, 'Plano salvo.');
+}
+
+async function formOperador(o, reload) {
+  const fun = (await get('/b1/lists?k=funcionarios').catch(() => ({}))).funcionarios;
+  const d = (v) => (v ? String(v).slice(0, 10) : '');
+  const m = modal(`<h2>${o ? `Operador ${esc(o.Code)}` : 'Novo operador'}</h2><div class="grid">
+    <div><label>Código</label><input id="oCode" value="${esc(o?.Code || '')}" ${o ? 'readonly' : ''} placeholder="OP03"></div>
+    <div><label>Nome</label><input id="oName" value="${esc(o?.Name || '')}"></div>
+    <div><label>Telefone</label><input id="oFone" value="${esc(o?.U_Fone || '')}"></div>
+    <div><label>Situação</label><select id="oAtivo"><option value="S">Ativo</option><option value="N" ${o?.U_Ativo === 'N' ? 'selected' : ''}>Inativo</option></select></div>
+    <div><label>CNH (nº e categoria)</label><input id="oCNH" value="${esc(o?.U_CNH || '')}"></div><div><label>Validade da CNH</label><input type="date" id="oCNHVal" value="${d(o?.U_CNHVal)}"></div>
+    <div><label>Habilitação / treinamentos</label><input id="oHab" value="${esc(o?.U_Habilit || '')}" placeholder="NR-11, NR-12, operador de retro…"></div>
+    <div><label>Validade da habilitação</label><input type="date" id="oHabVal" value="${d(o?.U_HabVal)}"></div>
+    <div class="span2"><label>Funcionário no SAP B1</label>${Array.isArray(fun)
+      ? `<select id="oEmp"><option value="">(não vincular)</option>${fun.map((f) => `<option value="${esc(f.id)}" ${Number(o?.U_EmpID) === Number(f.id) ? 'selected' : ''}>${esc(f.nome)} (${esc(f.id)})</option>`).join('')}</select>`
+      : `<input id="oEmp" type="number" value="${esc(o?.U_EmpID || '')}">`}</div></div><div id="fMsg"></div>
+    <div class="dlg-actions"><button type="button" data-x="0">Cancelar</button><button type="button" class="primary" data-x="1">Salvar</button></div>`);
+  salvarCom(m, '/operators', o, () => ({ Code: $('#oCode').value, Name: $('#oName').value, U_Fone: $('#oFone').value, U_Ativo: $('#oAtivo').value, U_CNH: $('#oCNH').value,
+    U_CNHVal: $('#oCNHVal').value, U_Habilit: $('#oHab').value, U_HabVal: $('#oHabVal').value, U_EmpID: $('#oEmp').value }), reload, 'Operador salvo.');
 }

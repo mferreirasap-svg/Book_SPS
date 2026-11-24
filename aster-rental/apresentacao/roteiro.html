@@ -41,7 +41,7 @@
 <header><div class="in"><h1>Áster Rental — roteiro de fala</h1>
 <p>O que dizer, tela a tela · cerca de 30 minutos · entrar com <b>admin</b> / <b>Demo2026senha</b></p></div></header>
 <nav><div class="in"><a href="#antes">Antes</a><a href="#abertura">Abertura</a><a href="#s1">1 Painel</a><a href="#s2">2 Contrato</a><a href="#s3">3 Entrega</a><a href="#s4">4 Leituras e multas</a>
-<a href="#s5">5 Faturamento</a><a href="#s6">6 Pós-venda</a><a href="#s6b">6b Portal do cliente</a><a href="#s7">7 SAP B1</a><a href="#s8">8 Fechamento</a><a href="#qa">Perguntas</a><a href="#socorro">Se der errado</a></div></nav>
+<a href="#s5">5 Faturamento</a><a href="#s6">6 Pós-venda</a><a href="#s6b">6b Portal do cliente</a><a href="#s7">7 SAP B1</a><a href="#s9">8 Pedidos da Macromaq</a><a href="#s8">9 Fechamento</a><a href="#qa">Perguntas</a><a href="#socorro">Se der errado</a></div></nav>
 <main>
 <div class="legenda"><span><b style="color:var(--arrow)">▌</b> o que falar (leia em voz alta, do seu jeito)</span><span>🖱 onde clicar</span><span>💡 lembrete só para você</span></div>
 
@@ -49,7 +49,7 @@
   <h2>Antes de começar <span class="t">10 min antes</span></h2>
   <ul class="check">
     <li>Dois cliques em <code>Abrir Aster Rental.cmd</code> e deixar a janela preta aberta (ou abrir <code>Aster Rental.html</code>).</li>
-    <li>Entrar com <b>admin</b> / <b>Demo2026senha</b>.</li>
+    <li>Entrar com <b>admin</b> / <b>Demo2026senha</b>. Para mostrar o celular do funcionário de campo: <b>leiturista</b> / <b>Demo2026senha</b> (no celular ou numa janela anônima).</li>
     <li>Se ensaiou antes: <b>Administração › SAP B1 › Restaurar dados de demonstração</b>.</li>
     <li>Navegador em tela cheia (F11). Este roteiro aberto no celular, em outra tela ou impresso.</li>
   </ul>
@@ -111,6 +111,8 @@
   <p class="fala">Aqui estão todos os contratos que precisam ser faturados neste mês, com a situação de cada um: <b>já gerado</b>, <b>vencendo</b> ou <b>atrasado</b>.</p>
   <div class="clique">No contrato <b>4</b>, botão <b>Detalhar</b>.</div>
   <p class="fala">E o mais importante: a <b>memória de cálculo</b>. O cliente liga perguntando “por que veio esse valor?” e a resposta está aqui: a mensalidade, os dias no cliente, o <b>excedente de horas</b>, e até a <b>multa de trânsito repassada</b>. Tudo explicado, linha a linha.</p>
+  <div class="clique">No contrato <b>5</b>, botão <b>Conferir…</b> › <b>Liberar para faturar</b>.</div>
+  <p class="fala">Contrato com franquia não sai direto: alguém do faturamento <b>confere e libera</b>. Contrato de mensalidade fixa sai sem conferência. Isso é regra configurável, e pode ser definida contrato a contrato.</p>
   <div class="clique">Marcar os pendentes › <b>Gerar selecionados</b> › <b>Confirmar</b>.</div>
   <p class="fala">Agora eu gero todos de uma vez. O sistema cria os documentos <b>direto no SAP</b> — rascunho de nota, pedido ou nota fiscal, conforme o contrato — já com a forma de pagamento do <b>boleto</b>, a condição, o vendedor e o endereço da obra. A <b>nota fiscal eletrônica e o boleto continuam saindo do SAP</b>, do jeito que vocês já fazem hoje.</p>
   <div class="clique">Trocar a <b>competência</b> para o mês anterior.</div>
@@ -179,8 +181,36 @@
   <p class="fala">E para começar a usar não precisa cadastrar a frota de novo: o sistema <b>puxa os equipamentos que já existem no SAP</b>.</p>
 </section>
 
+<section id="s9">
+  <h2><span class="n">8</span> O que vocês pediram <span class="t">8 min</span></h2>
+  <p class="fala">Na última conversa vocês trouxeram oito pontos. Eu quero mostrar como cada um ficou — as regras são todas configuráveis, e a gente fecha os detalhes juntos.</p>
+  <div class="clique">Menu <b>Painel</b> (quadro <b>Pendências</b>).</div>
+  <p class="fala">Primeiro, o painel agora avisa o que está pendente: leituras do campo para conferir, horas de operador para aprovar e documentos de veículo vencendo.</p>
+  <div class="clique">Menu <b>Lançar leitura (campo)</b> — ou mostrar no celular com o usuário <b>leiturista</b>.</div>
+  <p class="fala"><b>Foto do horímetro:</b> o funcionário de vocês, no celular, escolhe o equipamento, digita o número e <b>tira a foto do mostrador</b>. Sem foto, não envia.</p>
+  <div class="clique">Menu <b>Leituras</b> › clicar na foto › <b>Aprovar</b>.</div>
+  <p class="fala">No escritório, alguém compara o número com a foto. Só depois de aprovada a leitura vale no faturamento — acabou a discussão de “essa leitura está errada”.</p>
+  <div class="clique">Menu <b>Contratos</b> › contrato <b>1</b> › rolar até <b>Mão de obra (operador)</b>.</div>
+  <p class="fala"><b>Mão de obra:</b> o operador entra como uma linha do mesmo contrato, ligado à máquina, cobrado por hora, diária ou mês, com jornada e valor de hora extra.</p>
+  <div class="clique">Menu <b>Horas do operador</b> › <b>Aprovar</b>.</div>
+  <p class="fala">O operador lança as horas do dia; o que passa da jornada vira hora extra sozinho. Só a hora aprovada é cobrada — e enquanto tiver hora para aprovar, o faturamento daquele contrato fica travado.</p>
+  <div class="clique">Menu <b>Faturamento</b> › contrato <b>1</b> › <b>Conferir…</b> › numa linha, <b>Abonar</b> com motivo › <b>Liberar</b> › <b>Gerar…</b>.</div>
+  <p class="fala"><b>Liberar o faturamento:</b> é aqui que vocês decidem o que vai e o que não vai. Cobrar, abonar ou ajustar, sempre com motivo — e abono acima da alçada só com gestor. Fica tudo registrado. E repare: a mão de obra sai numa <b>nota de serviço separada</b> da locação.</p>
+  <div class="clique">Menu <b>Movimentação</b> (mostrar o bloco <b>Fotos do equipamento</b>).</div>
+  <p class="fala"><b>Fotos nas movimentações:</b> na entrega e na devolução, até seis fotos — laterais, painel, avarias — e elas saem no termo assinado.</p>
+  <div class="clique">Menu <b>Documentação de veículos</b>.</div>
+  <p class="fala"><b>Licenciamento:</b> o sistema gera o licenciamento e o IPVA do ano pelo final da placa, avisa o que está vencendo, guarda o comprovante e já deixa a <b>nota de entrada no SAP</b> para o financeiro pagar.</p>
+  <div class="clique">Menu <b>Manutenção da frota</b> › clicar numa OS da oficina.</div>
+  <p class="fala"><b>Manutenção:</b> quanto da frota está disponível, o que está parado na oficina e há quantos dias, quanto custa cada equipamento por hora trabalhada e quem quebra mais. Na OS interna, a peça <b>sai do estoque do SAP</b> e o serviço de terceiro vira <b>pedido de compra</b>, no centro de custo do equipamento.</p>
+  <div class="clique">Menu <b>Mapa da equipe</b> › <b>Abrir rota</b>.</div>
+  <p class="fala"><b>Rota dos técnicos:</b> as visitas do dia, a ordem sugerida e a rota no Google Maps. O celular registra a posição <b>no início e no fim de cada OS</b> — e aqui aparece em vermelho quem fez check-in longe da obra. Rastrear o dia inteiro é possível, mas é uma decisão de vocês por causa da LGPD; o técnico aceita um termo.</p>
+  <div class="clique">Menu <b>Portal do cliente</b> › <b>ver como o cliente</b> (marcos@serraazul.example / SERRA2026) › aba <b>Financeiro</b> › <b>Extrato</b>.</div>
+  <p class="fala"><b>Financeiro no portal:</b> o cliente vê as notas, o que está pago, em aberto e vencido, e o extrato de cada mês com a memória de cálculo. Os títulos vêm direto do SAP.</p>
+  <div class="ponte">Para fechar…</div>
+</section>
+
 <section id="s8">
-  <h2><span class="n">8</span> Fechamento <span class="t">2 min</span></h2>
+  <h2><span class="n">9</span> Fechamento <span class="t">2 min</span></h2>
   <p class="fala">Resumindo: o <b>SAP continua sendo o sistema da empresa</b> — clientes, notas, boletos, estoque e contabilidade. O <b>Áster Rental</b> cuida da locação de ponta a ponta: contrato com franquia, entrega com checklist e assinatura, faturamento calculado e explicado, um pós-venda que controla prazo, técnico e satisfação, e um <b>portal</b> para o cliente abrir chamado e aprovar orçamento sozinho.</p>
   <p class="fala">Funciona no <b>computador, no tablet e no celular</b>, para <b>máquinas e veículos</b>.</p>
   <p class="fala">Como próximos passos, eu sugiro: validar com vocês as regras de contrato e de faturamento; fazer uma <b>homologação na base de teste do SAP</b> de vocês; e validar com o contador a nota de remessa. Depois disso, a gente pode evoluir para o <b>aplicativo do técnico funcionando sem internet</b> e para os avisos por e-mail e WhatsApp.</p>

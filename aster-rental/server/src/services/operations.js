@@ -1,7 +1,8 @@
 // Leituras, multas, disponibilidade e painel.
 import { SET, LN } from '../b1/schema.js';
 import { key } from '../b1/odata.js';
-import { badRequest, notFound, d10, hoje, addDias, compDe, uid } from '../lib/util.js';
+import { badRequest, notFound, d10, hoje, addDias, compDe, uid, agora } from '../lib/util.js';
+import { validarFoto } from '../lib/fotos.js';
 
 export function createOperationsService({ repos, audit, billing }) {
   /** Item locado de um ativo, a partir do contrato atual dele. */
@@ -14,7 +15,12 @@ export function createOperationsService({ repos, audit, billing }) {
     return { at, c, l };
   }
 
-  async function registerReading(req, { ativo, leitura, data, comp, abatimento = 0, origem = 'MAN' }) {
+  /**
+   * Registra a leitura do horímetro/hodômetro.
+   * Lançada no campo (perfil Leiturista) com LEIT_CONFERENCIA = S: fica aguardando conferência e só vale no faturamento depois de conferida.
+   * Quem tem permissão de conferir lança já conferida.
+   */
+  async function registerReading(req, { ativo, leitura, data, comp, abatimento = 0, origem = 'MAN', foto, obs }) {
     const { at, c, l } = await linhaAtual(ativo);
     const fim = Number(leitura);
     const ini = Number(at.U_Medidor) || 0;
@@ -24,14 +30,50 @@ export function createOperationsService({ repos, audit, billing }) {
     data = d10(data) || hoje();
     comp = comp || compDe(data);
     if (!/^\d{6}$/.test(comp)) throw badRequest('Competência inválida.');
+    const cfg = await repos.settings.all();
+    const podeConferir = req.user.perms.includes('leituras.conferir');
+    const fotoOk = foto ? validarFoto(foto).src : '';
+    // Só a leitura lançada no campo (origem CAM) exige foto e conferência; escritório, planilha, entrega e OS já são conferidas.
+    const campo = origem === 'CAM';
+    if (campo && !fotoOk && cfg.LEIT_FOTO_OBRIG !== 'N') throw badRequest('Tire a foto do painel (horímetro/hodômetro).');
+    const pendente = campo && cfg.LEIT_CONFERENCIA !== 'N' && !podeConferir;
     const code = `${c.DocEntry}-${l.LineId}-${uid()}`;
-    await repos.sl.batch([
-      { method: 'POST', path: SET.MED, body: { Code: code, Name: code, U_CtrEntry: c.DocEntry, U_CtrLine: l.LineId, U_Ativo: at.Code, U_Comp: comp, U_Data: data,
-        U_LeitIni: ini, U_LeitFim: fim, U_Abat: abat, U_Origem: origem } },
-      { method: 'PATCH', path: `${SET.ATV}${key(at.Code)}`, body: { U_Medidor: fim, U_Versao: (Number(at.U_Versao) || 0) + 1 } },
-    ]);
-    audit.record(req, { action: 'leitura', entity: 'ativo', id: at.Code, after: { comp, ini, fim, abat } });
-    return { ativo: at.Code, contrato: c.DocNum, uso: fim - ini - abat };
+    const rec = { Code: code, Name: code, U_CtrEntry: c.DocEntry, U_CtrLine: l.LineId, U_Ativo: at.Code, U_Comp: comp, U_Data: data, U_LeitIni: ini, U_LeitFim: fim,
+      U_Abat: abat, U_Origem: origem, U_Situacao: pendente ? 'PEN' : 'CON', U_Foto: fotoOk, U_LancPor: req.user.login, U_ConfPor: pendente ? '' : req.user.login,
+      U_DtConf: pendente ? '' : agora(), U_Obs: String(obs || '').slice(0, 254) };
+    if (pendente) {
+      await repos.readings.create(rec);
+    } else {
+      await repos.sl.batch([
+        { method: 'POST', path: SET.MED, body: rec },
+        { method: 'PATCH', path: `${SET.ATV}${key(at.Code)}`, body: { U_Medidor: fim, U_Versao: (Number(at.U_Versao) || 0) + 1 } },
+      ]);
+    }
+    audit.record(req, { action: pendente ? 'leitura_campo' : 'leitura', entity: 'ativo', id: at.Code, after: { comp, ini, fim, abat, pendente } });
+    return { ativo: at.Code, contrato: c.DocNum, uso: fim - ini - abat, situacao: rec.U_Situacao, code };
+  }
+
+  /** Conferência no escritório: aprova (vale no faturamento e atualiza o medidor) ou recusa com motivo. */
+  async function conferirLeitura(req, code, { acao, obs }) {
+    const m = await repos.readings.get(code);
+    if (!m) throw notFound('Leitura');
+    if (m.U_Situacao !== 'PEN') throw badRequest('Esta leitura já foi conferida.');
+    const agoraDt = agora();
+    if (acao === 'recusar') {
+      if (!String(obs || '').trim()) throw badRequest('Informe o motivo da recusa (ex.: foto ilegível).');
+      await repos.readings.patch(code, { U_Situacao: 'REC', U_ConfPor: req.user.login, U_DtConf: agoraDt, U_Obs: String(obs).slice(0, 254) });
+    } else if (acao === 'aprovar') {
+      const at = await repos.assets.get(m.U_Ativo);
+      const atual = Number(at?.U_Medidor) || 0;
+      const fim = Number(m.U_LeitFim);
+      if (fim < atual) throw badRequest(`Leitura ${fim} menor que a última conferida (${atual}). Recuse e peça uma nova leitura.`);
+      await repos.sl.batch([
+        { method: 'PATCH', path: `${SET.MED}${key(code)}`, body: { U_Situacao: 'CON', U_LeitIni: atual, U_ConfPor: req.user.login, U_DtConf: agoraDt } },
+        { method: 'PATCH', path: `${SET.ATV}${key(at.Code)}`, body: { U_Medidor: fim, U_Versao: (Number(at.U_Versao) || 0) + 1 } },
+      ]);
+    } else throw badRequest('Ação inválida.');
+    audit.record(req, { action: `leitura:${acao}`, entity: 'ativo', id: m.U_Ativo, after: { code, obs } });
+    return repos.readings.get(code);
   }
 
   /** Importa leituras de planilha CSV: ativo;leitura;data[;abatimento]. Linhas com erro não impedem as demais. */
@@ -152,5 +194,5 @@ export function createOperationsService({ repos, audit, billing }) {
     };
   }
 
-  return { registerReading, importReadings, createFine, setFineStatus, availability, dashboard, contractOnDate };
+  return { registerReading, conferirLeitura, importReadings, createFine, setFineStatus, availability, dashboard, contractOnDate };
 }

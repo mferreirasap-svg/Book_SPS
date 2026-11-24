@@ -51,6 +51,15 @@ export function imprimirContrato(c, { empresa = '', regras = {}, ativos = {} } =
     <div class="ass"><div>${esc(empresa || 'Locadora')}</div><div>${esc(c.U_CardName)}</div></div>`);
 }
 
+const fotosDe = (v) => {
+  try {
+    const l = JSON.parse(v || '[]');
+    return Array.isArray(l) ? l.filter((f) => /^data:image\/(jpeg|png|webp);base64,/.test(f?.src || '')) : [];
+  } catch {
+    return [];
+  }
+};
+
 export function imprimirTermo(m, { empresa = '', contrato = null, ativo = null, novo = null } = {}) {
   let chk = {};
   try {
@@ -67,12 +76,13 @@ export function imprimirTermo(m, { empresa = '', contrato = null, ativo = null, 
     ${Object.keys(chk).length ? `<h2>Checklist</h2><table><tr><th>Item</th><th>Situação</th><th>Observação</th></tr>
       ${Object.entries(chk).map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc({ OK: 'OK', NOK: 'Não OK', NA: 'N/A' }[v.r] || '')}</td><td>${esc(v.o || '')}</td></tr>`).join('')}</table>` : ''}
     ${m.U_Avarias ? `<h2>Avarias / observações</h2><p>${esc(m.U_Avarias)}</p>` : ''}
+    ${fotosDe(m.U_Fotos).length ? `<h2>Fotos</h2><div>${fotosDe(m.U_Fotos).map((f) => `<figure style="display:inline-block;margin:4px;width:220px"><img src="${f.src}" style="width:220px"><figcaption style="font-size:11px">${esc(f.legenda || '')}</figcaption></figure>`).join('')}</div>` : ''}
     <div class="ass"><div>${esc(empresa || 'Locadora')}<br><small>${esc(m.U_Usuario || '')}</small></div>
       <div>${m.U_Assinatura && /^data:image\/png;base64,/.test(m.U_Assinatura) ? `<img src="${m.U_Assinatura}" style="max-height:70px;display:block;margin:-80px auto 4px">` : ''}
       ${esc(m.U_Respons || '')}${m.U_DocResp ? ` — ${esc(m.U_DocResp)}` : ''}</div></div>`);
 }
 
-const TIPO_OS = { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' };
+const TIPO_OS = { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria', INT: 'Manutenção interna' };
 
 /** Relatório da ordem de serviço para o cliente (laudo, checklist, peças, fotos e assinatura). */
 export function imprimirOS(o, { empresa = '' } = {}) {

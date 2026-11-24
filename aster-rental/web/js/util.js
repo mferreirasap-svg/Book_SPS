@@ -24,7 +24,15 @@ export const DOM = {
   statusAtivo: { DIS: 'Disponível', LOC: 'Locado', MAN: 'Manutenção', RES: 'Reservado', BAI: 'Baixado' },
   tipoContrato: { LOC: 'Locação', COM: 'Comodato', SRV: 'Serviço' },
   statusContrato: { RAS: 'Rascunho', ATV: 'Ativo', SUS: 'Suspenso', ENC: 'Encerrado' },
-  statusLinha: { PEN: 'Aguardando entrega', LOC: 'Locado', DEV: 'Devolvido' },
+  statusLinha: { PEN: 'Aguardando entrega', LOC: 'Locado', DEV: 'Devolvido', MO: 'Mão de obra' },
+  unidCobr: { H: 'Por hora', D: 'Por diária', M: 'Mensal' },
+  situacaoLeit: { CON: 'Conferida', PEN: 'A conferir', REC: 'Recusada' },
+  situacaoApo: { LAN: 'A aprovar', APR: 'Aprovado', REC: 'Recusado' },
+  ajusteFat: { COB: 'Cobrar', ABO: 'Abonar', AJU: 'Ajustar valor' },
+  motivoAjuste: { COR: 'Correção de cálculo', FAL: 'Falha/parada do equipamento', LEI: 'Leitura contestada', NEG: 'Negociação comercial', OUT: 'Outro' },
+  tipoDocVei: { LIC: 'Licenciamento (CRLV)', IPVA: 'IPVA', SEG: 'Seguro', TAC: 'Tacógrafo (aferição)', ANTT: 'ANTT/RNTRC', AET: 'AET', OUT: 'Outro' },
+  sitDocVei: { vencida: 'Vencida', vence: 'Vence em breve', em_dia: 'Em dia', paga: 'Paga', isenta: 'Isenta' },
+  conferir: { '': 'Pela regra geral', S: 'Sempre conferir', N: 'Liberar direto' },
   modoFat: { RAS: 'Rascunho de NF', PRE: 'Pré-fatura (pedido)', FAT: 'Fatura direta (NF)' },
   tipoRegra: { ITEM: 'Por item', AGRUP: 'Agrupada', CONS: 'Por consumo', SEM: 'Sem cobrança' },
   proRata: { LIN: 'Linear', PCT: 'Tabela em %', DIA: 'Tabela em diárias' },
@@ -36,9 +44,9 @@ export const DOM = {
   origemCha: { TEL: 'Telefone', EMA: 'E-mail', WPP: 'WhatsApp', POR: 'Portal / QR Code', INT: 'Interno' },
   prioridade: { URG: 'Urgente', ALT: 'Alta', MED: 'Média', BAI: 'Baixa' },
   statusCha: { ABE: 'Aberto', AND: 'Em atendimento', AGC: 'Aguardando cliente', RES: 'Resolvido', FEC: 'Fechado', CAN: 'Cancelado' },
-  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria' },
+  tipoOS: { COR: 'Corretiva', PRE: 'Preventiva', INS: 'Entrega técnica', VIS: 'Vistoria', REP: 'Reparo de avaria', INT: 'Manutenção interna (oficina)' },
   statusOS: { ABE: 'Sem agenda', AGE: 'Agendada', EXE: 'Em execução', AOR: 'Aguardando aprovação', CON: 'Concluída', CAN: 'Cancelada' },
-  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento' },
+  tipoItemOS: { PEC: 'Peça', SRV: 'Mão de obra', DES: 'Deslocamento', TER: 'Serviço de terceiro' },
   orcamento: { '': 'Sem orçamento', PEN: 'Aguardando cliente', APR: 'Aprovado', REC: 'Recusado' },
   sla: { cumprido: 'No prazo', no_prazo: 'No prazo', vencendo: 'Vencendo', violado: 'Estourado' },
   prev: { vencida: 'Vencida', proxima: 'Próxima', ok: 'Em dia' },
@@ -91,8 +99,9 @@ export async function acao(fn) {
   }
 }
 
-export function modal(html) {
+export function modal(html, { largo = false } = {}) {
   $('#modal').innerHTML = html;
+  $('#modal').classList.toggle('largo', largo);
   $('#modalBg').hidden = false;
   return $('#modal');
 }
@@ -142,6 +151,11 @@ export const ICON = {
   satisfacao: 'M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z',
   integracao: 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
   portalcli: 'M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2zM6 14h5v2H6z',
+  lancar: 'M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM9 2 7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z',
+  apontamentos: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+  veiculos: 'M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z',
+  manutencao: 'M13.78 15.17l-1.06 1.06 3.53 3.54 1.06-1.06-3.53-3.54zM17.5 10c1.93 0 3.5-1.57 3.5-3.5 0-.58-.16-1.12-.41-1.6l-2.7 2.7-1.49-1.49 2.7-2.7c-.48-.25-1.02-.41-1.6-.41C15.57 3 14 4.57 14 6.5c0 .41.08.8.21 1.16l-1.85 1.85-1.78-1.78.71-.71-1.41-1.41L12 3.49a3 3 0 0 0-4.24 0L4.22 7.03l1.41 1.41H2.81l-.71.71 3.54 3.54.71-.71V9.15l1.41 1.41.71-.71 1.78 1.78-7.41 7.41 2.12 2.12L16.34 9.79c.36.13.75.21 1.16.21z',
+  mapa: 'M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z',
   tecnicos: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
 };
 export const ico = (k) => `<svg class="ico" viewBox="0 0 24 24"><path d="${ICON[k]}"/></svg>`;

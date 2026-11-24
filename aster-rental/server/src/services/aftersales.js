@@ -28,7 +28,15 @@ export function prazoSituacao(inicio, prazo, feito, agoraDt) {
   return total > 0 && difHoras(agoraDt, prazo) <= total * 0.25 ? 'vencendo' : 'no_prazo';
 }
 
-export function createAfterSalesService({ repos, audit, integ }) {
+// Distância em metros entre dois pontos (fórmula de haversine).
+export function distanciaM(lat1, lon1, lat2, lon2) {
+  const r = (g) => (Number(g) * Math.PI) / 180;
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lon2 - lon1) / 2) ** 2;
+  return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+const coordOk = (lat, lon) => Number.isFinite(Number(lat)) && Number.isFinite(Number(lon)) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180 && !(Number(lat) === 0 && Number(lon) === 0);
+
+export function createAfterSalesService({ repos, audit, integ, posicoes }) {
   // Espelho nos objetos nativos do B1 (chamada de serviço e atividade). Falhas ficam no log de integração para reprocessar.
   const espelhar = {
     chamado: (req, id) => (integ && id ? integ.chamado(req, id) : null),
@@ -281,6 +289,10 @@ export function createAfterSalesService({ repos, audit, integ }) {
           [CH1]: [{ U_Data: agora(), U_Usuario: req.user?.login || 'sistema', U_Texto: `OS ${os.DocNum} aberta (${DOM.tipoOS[tipo].toLowerCase()})${tecnico && data ? `, agendada para ${data.split('-').reverse().join('/')} ${hora}` : ''}.`, U_Publico: 'N' }] });
       }
     }
+    // OS interna da oficina: o equipamento do pátio fica "em manutenção" até a OS ser concluída.
+    if (tipo === 'INT' && !noCliente && at.U_Status === 'DIS') {
+      await sl.request('PATCH', `${SET.ATV}${key(at.Code)}`, { U_Status: 'MAN', U_Versao: (Number(at.U_Versao) || 0) + 1 });
+    }
     audit.record(req, { action: 'criar', entity: 'os', id: os.DocEntry, after: { ...rec, [OS1]: undefined } });
     await espelhar.chamado(req, rec.U_ChaEntry);
     await espelhar.atividade(req, os.DocEntry);
@@ -344,9 +356,30 @@ export function createAfterSalesService({ repos, audit, integ }) {
     if (!os) throw notFound('Ordem de serviço');
     await exigirMinha(req, os);
     if (!['ABE', 'AGE'].includes(os.U_Status)) throw badRequest('Esta OS já foi iniciada ou encerrada.');
-    await repos.orders.update(id, { U_Status: 'EXE', U_CheckIn: agora(), U_Usuario: req.user.login }, input?.U_Versao);
-    audit.record(req, { action: 'iniciar', entity: 'os', id });
+    const geo = await geoDaOS(req, os, input?.lat, input?.lon, 'INICIO');
+    await repos.orders.update(id, { U_Status: 'EXE', U_CheckIn: agora(), U_Usuario: req.user.login,
+      ...(geo ? { U_LatIni: String(geo.lat), U_LonIni: String(geo.lon), U_DistObra: geo.dist ?? 0 } : {}) }, input?.U_Versao);
+    audit.record(req, { action: 'iniciar', entity: 'os', id, after: geo || undefined });
     return getOrder(req, id);
+  }
+
+  /** Coordenada da obra: endereço de entrega do contrato, no cadastro do parceiro no B1 (U_SPS_Lat/U_SPS_Lon). */
+  async function coordObra(os) {
+    const c = os.U_CtrEntry ? await repos.contracts.get(os.U_CtrEntry) : null;
+    if (!c?.U_EndEntrega) return null;
+    const bp = await repos.partners.get(c.U_CardCode);
+    const end = (bp?.BPAddresses || []).find((a) => a.AddressName === c.U_EndEntrega);
+    return end && coordOk(end.U_SPS_Lat, end.U_SPS_Lon) ? { lat: Number(end.U_SPS_Lat), lon: Number(end.U_SPS_Lon) } : null;
+  }
+
+  /** Localização do celular no início/fim da OS (se a política GEO_MODO permitir) e distância até a obra. */
+  async function geoDaOS(req, os, lat, lon, origem) {
+    if (lat == null || lon == null || !coordOk(lat, lon)) return null;
+    if ((await cfg()).GEO_MODO === 'NAO') return null;
+    const obra = await coordObra(os);
+    const geo = { lat: Number(Number(lat).toFixed(6)), lon: Number(Number(lon).toFixed(6)), dist: obra ? distanciaM(lat, lon, obra.lat, obra.lon) : null };
+    await posicoes?.registrar({ login: req.user.login, tecnico: os.U_Tecnico || '', lat: geo.lat, lon: geo.lon, os: os.DocEntry, origem });
+    return geo;
   }
 
   /** Lê e valida os dados de execução (laudo, checklist, peças, fotos, assinatura). */
@@ -395,7 +428,10 @@ export function createAfterSalesService({ repos, audit, integ }) {
         const preco = Number(i.preco) || 0;
         if (!str(i.descr, 100)) throw badRequest('Descreva cada peça ou serviço.');
         if (!(qtd > 0) || preco < 0) throw badRequest(`Quantidade ou preço inválido em "${str(i.descr, 40)}".`);
-        return { U_Tipo: DOM.tipoItemOS[i.tipo] ? i.tipo : 'PEC', U_ItemCode: str(i.itemCode, 50), U_Descr: str(i.descr, 100), U_Qtd: qtd, U_Preco: preco, U_Cobrar: sn(i.cobrar) };
+        const tipoI = DOM.tipoItemOS[i.tipo] ? i.tipo : 'PEC';
+        if (tipoI === 'TER' && !str(i.fornecedor, 15)) throw badRequest(`Informe o fornecedor do serviço de terceiro "${str(i.descr, 40)}".`);
+        return { U_Tipo: tipoI, U_ItemCode: str(i.itemCode, 50), U_Descr: str(i.descr, 100), U_Qtd: qtd, U_Preco: preco, U_Cobrar: sn(i.cobrar),
+          U_Fornecedor: tipoI === 'TER' ? str(i.fornecedor, 15) : '', U_Baixar: tipoI === 'PEC' ? sn(i.baixar) : 'N' };
       });
       patch.U_Valor = totalCobravel(patch[OS1]);
     }
@@ -453,6 +489,8 @@ export function createAfterSalesService({ repos, audit, integ }) {
     if (os0.U_Status === 'AOR') throw badRequest('O orçamento ainda não foi aprovado pelo cliente.');
     if (!['ABE', 'AGE', 'EXE'].includes(os0.U_Status)) throw badRequest('Esta OS já está encerrada.');
     const exec = dadosExecucao(input);
+    const geoFim = await geoDaOS(req, os0, input?.lat, input?.lon, 'FIM');
+    if (geoFim) Object.assign(exec, { U_LatFim: String(geoFim.lat), U_LonFim: String(geoFim.lon) });
     const os = { ...os0, ...exec, [OS1]: exec[OS1] || os0[OS1] };
     const c0 = await cfg();
     const itensChk = await checklistItens(os, c0);
@@ -519,7 +557,41 @@ export function createAfterSalesService({ repos, audit, integ }) {
         out.avisoDocumento = `OS concluída, mas o rascunho de NF não foi criado no SAP B1: ${e.message}`;
       }
     }
-    if (c0.PESQ_AUTO === 'S') out.pesquisa = await surveyFor({ os: { ...os, U_Status: 'CON' } });
+    if (c0.PESQ_AUTO === 'S' && os.U_Tipo !== 'INT') out.pesquisa = await surveyFor({ os: { ...os, U_Status: 'CON' } });
+    // Oficina: peças baixadas do estoque (saída de mercadorias) e serviços de terceiros (pedido de compra), com o centro de custo do equipamento.
+    const dimCampo = `CostingCode${Number(c0.OFI_DIM) > 1 ? Number(c0.OFI_DIM) : ''}`;
+    const cc = at?.U_CCusto ? { [dimCampo]: at.U_CCusto } : {};
+    const pecas = os[OS1].filter((i) => i.U_Tipo === 'PEC' && i.U_Baixar === 'S' && i.U_ItemCode);
+    const docsOfi = {};
+    if (pecas.length) {
+      try {
+        if (!c0.OFI_DEP_PECAS) throw new Error('configure o depósito de peças da oficina (Integração SAP B1 › De-para)');
+        const d = await sl.request('POST', 'InventoryGenExits', { DocDate: data, U_SPS_OsEntry: os.DocEntry, Comments: `Oficina - OS ${os.DocNum} - ${os.U_Ativo}`.slice(0, 254),
+          DocumentLines: pecas.map((i) => ({ ItemCode: i.U_ItemCode, Quantity: Number(i.U_Qtd), WarehouseCode: c0.OFI_DEP_PECAS, ...cc })) });
+        docsOfi.U_DocSaida = d.DocNum;
+        out.saida = d.DocNum;
+      } catch (e) {
+        out.avisoDocumento = `${out.avisoDocumento} Peças não baixadas do estoque no SAP B1: ${e.message}.`.trim();
+      }
+    }
+    const terceiros = os[OS1].filter((i) => i.U_Tipo === 'TER' && i.U_Fornecedor);
+    const pedidos = [];
+    for (const forn of [...new Set(terceiros.map((i) => i.U_Fornecedor))]) {
+      try {
+        const d = await sl.request('POST', 'PurchaseOrders', { CardCode: forn, DocDate: data, DocDueDate: data, U_SPS_OsEntry: os.DocEntry,
+          Comments: `Serviço de terceiro - OS ${os.DocNum} - ${os.U_Ativo}`.slice(0, 254),
+          DocumentLines: terceiros.filter((i) => i.U_Fornecedor === forn).map((i) => ({ ItemCode: i.U_ItemCode || c0.ITEM_SERVICO, Quantity: Number(i.U_Qtd),
+            UnitPrice: Number(i.U_Preco), FreeText: str(i.U_Descr, 100), ...cc })) });
+        pedidos.push(d.DocNum);
+      } catch (e) {
+        out.avisoDocumento = `${out.avisoDocumento} Pedido de compra do fornecedor ${forn} não criado no SAP B1: ${e.message}.`.trim();
+      }
+    }
+    if (pedidos.length) {
+      docsOfi.U_DocCompra = pedidos.join(', ');
+      out.pedidos = pedidos;
+    }
+    if (Object.keys(docsOfi).length) await sl.request('PATCH', `${SET.OS}(${Number(id)})`, docsOfi);
     await espelhar.atividade(req, id);
     await espelhar.chamado(req, os.U_ChaEntry);
     return out;

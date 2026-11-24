@@ -16,9 +16,10 @@ import adminRoutes from '../../server/src/routes/admin.js';
 import posvendaRoutes from '../../server/src/routes/posvenda.js';
 import integracaoRoutes from '../../server/src/routes/integracao.js';
 import portalRoutes from '../../server/src/routes/portal.js';
+import campoRoutes from '../../server/src/routes/campo.js';
 
 const DEMO_PASSWORD = 'Demo2026senha';
-const K = { b1: 'aster-rental-demo-b1', users: 'aster-rental-demo-users', audit: 'aster-rental-demo-audit', session: 'aster-rental-demo-sessions', token: 'aster-rental-demo-token' };
+const K = { pos: 'aster-rental-demo-posicoes', b1: 'aster-rental-demo-b1', users: 'aster-rental-demo-users', audit: 'aster-rental-demo-audit', session: 'aster-rental-demo-sessions', token: 'aster-rental-demo-token' };
 
 const ls = {
   get(k) {
@@ -68,7 +69,10 @@ class BrowserAuth {
   constructor() {
     this.users = ls.get(K.users) || [];
     this.sessions = new Map(Object.entries(ls.get(K.session) || {}));
-    if (!this.users.length) this.createUser({ login: 'admin', name: 'Administrador', password: DEMO_PASSWORD, profile: 'administrador' });
+    // Usuários da demonstração: administrador, funcionário de campo (leituras e horas no celular) e técnico (só as próprias OS).
+    for (const [login, name, profile] of [['admin', 'Administrador', 'administrador'], ['leiturista', 'Antônio Carlos (campo)', 'leiturista'], ['tecnico', 'Rafael Moreira', 'tecnico']]) {
+      if (!this.users.some((u) => u.login === login)) this.createUser({ login, name, password: DEMO_PASSWORD, profile });
+    }
   }
   save() {
     ls.set(K.users, this.users);
@@ -212,6 +216,31 @@ function createRouter() {
   return { app, routes };
 }
 
+/** Posições dos técnicos no navegador (no servidor ficam no SQLite), com a mesma interface. */
+function createPosicoesNavegador() {
+  const all = () => ls.get(K.pos) || [];
+  return {
+    registrar({ login, tecnico = '', lat, lon, precisao = null, os = null, origem = '', at = new Date().toISOString() }) {
+      const l = all();
+      l.push({ id: (l.at(-1)?.id || 0) + 1, at, login, tecnico, lat: Number(lat), lon: Number(lon), precisao, os, origem });
+      ls.set(K.pos, l.slice(-2000));
+    },
+    ultimas() {
+      const m = {};
+      for (const p of all()) if (p.tecnico) m[p.tecnico] = p;
+      return Object.values(m);
+    },
+    doDia: (tecnico, data) => all().filter((p) => p.tecnico === tecnico && p.at.slice(0, 10) === data),
+    limpar(dias) {
+      const lim = new Date(Date.now() - Number(dias) * 864e5).toISOString().slice(0, 10);
+      const l = all();
+      const k = l.filter((p) => p.at.slice(0, 10) >= lim);
+      ls.set(K.pos, k);
+      return l.length - k.length;
+    },
+  };
+}
+
 export async function createDemoBackend() {
   const cfg = { session: { cookieName: 'ar_sid', secure: false, maxHours: 12 }, b1: { mode: 'mock', company: 'demonstração' } };
   const sl = new MockServiceLayer({ seed: demoSeed, storage: { load: () => ls.get(K.b1), save: (db) => ls.set(K.b1, db) } });
@@ -220,12 +249,13 @@ export async function createDemoBackend() {
   const jobs = createJobs();
   const idemMap = new Map();
   const idem = { get: (k, u) => idemMap.get(`${u}|${k}`), save: (k, u, status, response) => idemMap.set(`${u}|${k}`, { status, response }) };
-  const montarDemo = () => montarApresentacao(sl);
-  await garantirApresentacao(sl); // dados guardados de um pacote anterior são recriados
-  const deps = { cfg, auth, audit, jobs, sl, idem, montarDemo, ...createServices({ sl, audit, jobs }) };
+  const posicoes = createPosicoesNavegador();
+  const montarDemo = () => montarApresentacao(sl, { posicoes });
+  await garantirApresentacao(sl, { posicoes }); // dados guardados de um pacote anterior são recriados
+  const deps = { cfg, auth, audit, jobs, sl, idem, montarDemo, ...createServices({ sl, audit, jobs, posicoes }) };
 
   const { app, routes } = createRouter();
-  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes, integracaoRoutes, portalRoutes]) await r(app, { deps });
+  for (const r of [authRoutes, cadastroRoutes, operacaoRoutes, faturamentoRoutes, adminRoutes, posvendaRoutes, integracaoRoutes, portalRoutes, campoRoutes]) await r(app, { deps });
   app.get('/health', async () => ({ ok: true, b1Mode: 'mock', version: 'demo' }));
   const PUBLIC = new Set(['/auth/login', '/health']);
   let token = ls.get(K.token);

@@ -177,6 +177,26 @@ Estruturas novas no B1 (versão 3): `SPSLCHA` (chamados e interações), `SPSLOS
 
 Preventivas: botão "Gerar OS de todas as vencidas". Com o parâmetro `PREV_AUTO = S`, a leitura que vence uma preventiva já abre a OS.
 
+## Campo, faturamento conferido, frota e mapa (versão 6 — pedidos da Macromaq)
+
+Detalhes e decisões a validar: `docs/proximas-etapas/01-levantamento-macromaq.md`.
+
+- **Fotos nas movimentações:** até 6 por entrega/devolução/substituição; saem no termo.
+- **Leitura de campo:** menu *Lançar leitura (campo)*, pensado para celular (perfil **Leiturista**). Foto do mostrador obrigatória;
+  a leitura fica "a conferir" e o escritório aprova em *Leituras* comparando com a foto (`LEIT_CONFERENCIA`, `LEIT_FOTO_OBRIG`).
+- **Mão de obra:** linha de operador no contrato (hora, diária ou mês; jornada; hora extra). Horas lançadas e aprovadas em
+  *Horas do operador*; cobradas em documento de serviço separado (`ITEM_MO`, `MO_DOC_SEPARADO`). Operadores em *Técnicos e planos*.
+- **Conferência do faturamento:** contratos variáveis passam por *Conferir…* (cobrar/abonar/ajustar com motivo, alçada `FAT_ALCADA_ABONO`)
+  antes de gerar (`FAT_CONFERENCIA`; o contrato pode forçar "sempre conferir" ou "liberar direto").
+- **Documentação de veículos:** licenciamento/IPVA pelo calendário da UF e final da placa, alertas, comprovante e esboço de nota de entrada no B1.
+- **Manutenção da frota:** disponibilidade, custo por equipamento e por hora, quebras; OS interna com baixa de peças (Saída de mercadorias),
+  terceiros (Pedido de compra) e centro de custo do equipamento. Ativo enviado para "Manutenção" abre a OS interna.
+- **Mapa da equipe:** posição no início/fim da OS (termo LGPD), alerta de check-in longe da obra, rota sugerida e link para o Google Maps
+  (`GEO_MODO`, `GEO_RAIO_M`, `GEO_RETENCAO_DIAS`, `GEO_BASE`). As posições ficam no banco do Áster, fora do SAP.
+- **Portal do cliente › Financeiro:** notas pagas, em aberto e vencidas, e extrato do mês.
+
+Demonstração: `leiturista` / `Demo2026senha` mostra a visão do funcionário de campo.
+
 ## Integração com o SAP B1 (telas nativas)
 
 Mapa completo, pré-requisitos e roteiro de homologação em `docs/integracao-b1/01-mapa-nativo.md`.
@@ -205,14 +225,16 @@ Tela **Configuração › Integração SAP B1**:
 `/api/preventive` · `/api/technicians` · `/api/plans` · `/api/surveys` · `/api/assets/:code/history` · `/api/aftersales/dashboard` ·
 `/api/public/survey/:code` (sem login) ·
 `/api/b1/lists` · `/api/b1/addresses/:card` · `/api/integration/{structure,readiness,log,serials}` · `/api/integration/log/:code/retry` · `/api/integration/serials/import` ·
+`/api/readings/{field,review,rented,mine}` · `/api/readings/:code/review` · `/api/timesheet` · `/api/operators` · `/api/billing/liberar` ·
+`/api/vehicle-docs` · `/api/vehicle-docs/{calendar,:code/pay,:code/exempt}` · `/api/maintenance/indicators` · `/api/geo/{policy,accept,position,map}` · `/api/alerts` ·
 `/api/portal/accesses` · `/api/portal/qr-labels` · `/api/public/portal/*` e `/api/public/qr/:tk` (portal do cliente, sem login interno) · `/api/preventive/overdue`
 
 ## Próximos passos
 
 - Equipamento como número de série do B1, com nota de remessa e de retorno (`DeliveryNotes` e `Returns`) na entrega e na devolução.
-- Fotos no checklist como anexos do B1 e modo offline no celular.
+- Fotos (movimentação, leitura, OS, comprovantes) como anexos nativos do B1 (`Attachments2`) e modo offline no celular.
 - Proposta e pré-contrato a partir de cotação e pedido do B1.
 - Envio da fatura, do extrato e da pesquisa de satisfação por e-mail (hoje a pesquisa é gerada e o link pode ser copiado).
-- Pós-venda, próxima etapa: portal do cliente (abrir chamado por QR Code, acompanhar OS, aprovar orçamento), app do técnico offline com GPS,
-  SLA em horário comercial, baixa de peças no estoque do B1 e contrato de manutenção de equipamento do cliente.
+- Pós-venda, próxima etapa: app do técnico offline, SLA em horário comercial, mapa com serviço de mapas licenciado e contrato de manutenção de equipamento do cliente.
+- Boleto/2ª via no portal, conforme o add-on bancário da Macromaq.
 - Teste de carga, teste de invasão e homologação com cliente piloto.

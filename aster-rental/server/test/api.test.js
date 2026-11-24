@@ -77,6 +77,9 @@ test('fluxo completo: contrato → ativação → entrega → leitura → parcel
   const exc = pv.body.linhas.find((l) => l.tipo === 'EXC');
   assert.ok(exc && exc.qtd > 0, 'excedente calculado');
 
+  // contrato com franquia passa por conferência: sem liberar, não gera
+  assert.match((await admin.post('/api/billing/generate-one', { comp: COMP, contrato: id })).body.error, /confira e libere/);
+  assert.equal((await admin.post('/api/billing/liberar', { comp: COMP, contrato: id, ajustes: [] })).status, 200);
   const g1 = await admin.post('/api/billing/generate-one', { comp: COMP, contrato: id });
   assert.equal(g1.status, 200, JSON.stringify(g1.body));
   assert.equal(b1.db.sets.Drafts.at(-1).U_SPS_CtrEntry, id);
@@ -87,6 +90,7 @@ test('fluxo completo: contrato → ativação → entrega → leitura → parcel
 
   const rel = await admin.post(`/api/billing/installment/${id}-${COMP}/release`);
   assert.equal(rel.body.U_Status, 'CAN');
+  assert.equal((await admin.post('/api/billing/liberar', { comp: COMP, contrato: id, ajustes: [] })).status, 200);
   const g3 = await admin.post('/api/billing/generate-one', { comp: COMP, contrato: id, desconto: 100 });
   assert.equal(g3.status, 200, JSON.stringify(g3.body));
   assert.ok(b1.db.sets.Drafts.at(-1).DiscountPercent > 0);
@@ -154,6 +158,7 @@ test('multa identifica o contrato e entra no faturamento agrupado', async () => 
 });
 
 test('faturamento em lote roda em segundo plano', async () => {
+  assert.equal((await admin.post('/api/billing/liberar', { comp: COMP, contrato: 2, ajustes: [] })).status, 200, 'grupo com franquia: libera antes');
   const r = await admin.post('/api/billing/generate', { comp: COMP, contratos: [2] });
   assert.equal(r.status, 200);
   let job;

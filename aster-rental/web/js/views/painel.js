@@ -5,7 +5,14 @@ import { get } from '../api.js';
 export async function render(root, _p, { go, can }) {
   const d = await get('/dashboard');
   const pv = can('chamados.ver') || can('os.ver') ? await get('/aftersales/dashboard').catch(() => null) : null;
+  const al = await get('/alerts').catch(() => null);
   const a = d.ativos;
+  const pend = al ? [
+    can('leituras.conferir') && al.leiturasPendentes ? { ir: 'leituras', t: `${al.leiturasPendentes} leitura(s) do campo a conferir`, s: 'Compare o número com a foto do mostrador.' } : null,
+    can('mo.aprovar') && al.apontamentosPendentes ? { ir: 'apontamentos', t: `${al.apontamentosPendentes} apontamento(s) de horas a aprovar`, s: 'Travam o faturamento da mão de obra.' } : null,
+    can('veiculos.docs') && al.veiculosVencidos ? { ir: 'veiculos', t: `${al.veiculosVencidos} documento(s) de veículo vencido(s)`, s: 'Licenciamento/IPVA em atraso: risco de apreensão.' } : null,
+    can('veiculos.docs') && al.veiculosVencendo ? { ir: 'veiculos', t: `${al.veiculosVencendo} documento(s) de veículo vencendo`, s: 'Programe o pagamento.' } : null,
+  ].filter(Boolean) : [];
   const fams = Object.entries(d.familias).sort();
   root.innerHTML = `
   <div class="kpis">
@@ -17,6 +24,7 @@ export async function render(root, _p, { go, can }) {
       <div class="sub">gerado: ${brl(d.faturamento.gerado)}${d.faturamento.atrasadas ? ` · <b style="color:#C25113">${d.faturamento.atrasadas} atrasada(s)</b>` : ''}${d.faturamento.vencendo ? ` · ${d.faturamento.vencendo} vencendo` : ''}</div></div>` : ''}
     <div class="kpi"><div class="l">Multas em aberto</div><div class="v">${d.multas.quantidade}</div><div class="sub">${brl(d.multas.valor)}</div></div>
   </div>
+  ${pend.length ? `<div class="card"><h2>Pendências</h2><div class="alertas">${pend.map((x) => `<div class="al" data-ir="${x.ir}"><b>${esc(x.t)}</b><div class="sub">${esc(x.s)}</div></div>`).join('')}</div></div>` : ''}
   ${pv ? `<div class="card"><div class="row"><h2 style="margin:0">Pós-venda</h2><span class="spacer"></span>${can('chamados.ver') ? '<button type="button" class="mini" data-ir="chamados">Chamados</button>' : ''}
     ${can('os.ver') ? '<button type="button" class="mini" data-ir="agenda">Agenda</button><button type="button" class="mini" data-ir="preventivas">Preventivas</button>' : ''}</div>
     <div class="kpis" style="margin:10px 0">

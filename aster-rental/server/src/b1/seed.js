@@ -23,10 +23,10 @@ export function demoSeed() {
   ].map(([CardCode, CardName, FederalTaxID, EmailAddress]) => ({ CardCode, CardName, FederalTaxID, EmailAddress, CardType: 'cCustomer', Valid: 'tYES',
     BPAddresses: [{ AddressName: 'COBRANCA', AddressType: 'bo_BillTo', Street: 'Endereço de cobrança', City: 'Belo Horizonte', State: 'MG' }] }));
   // Endereços de entrega (obras) cadastrados no parceiro de negócio do B1
-  sets.BusinessPartners[0].BPAddresses.push({ AddressName: 'OBRA PARQUE DAS AGUAS', AddressType: 'bo_ShipTo', Street: 'Av. das Águas, 1500', City: 'Contagem', State: 'MG' },
-    { AddressName: 'OBRA CENTRO', AddressType: 'bo_ShipTo', Street: 'Rua da Bahia, 900', City: 'Belo Horizonte', State: 'MG' });
-  sets.BusinessPartners[2].BPAddresses.push({ AddressName: 'BASE BETIM', AddressType: 'bo_ShipTo', Street: 'Rod. Fernão Dias, km 492', City: 'Betim', State: 'MG' });
-  sets.BusinessPartners[3].BPAddresses.push({ AddressName: 'FAZENDA BOA VISTA', AddressType: 'bo_ShipTo', Street: 'Estrada Municipal, km 12', City: 'Unaí', State: 'MG' });
+  sets.BusinessPartners[0].BPAddresses.push({ AddressName: 'OBRA PARQUE DAS AGUAS', AddressType: 'bo_ShipTo', Street: 'Av. das Águas, 1500', City: 'Contagem', State: 'MG', U_SPS_Lat: '-19.9320', U_SPS_Lon: '-44.0539' },
+    { AddressName: 'OBRA CENTRO', AddressType: 'bo_ShipTo', Street: 'Rua da Bahia, 900', City: 'Belo Horizonte', State: 'MG', U_SPS_Lat: '-19.9218', U_SPS_Lon: '-43.9387' });
+  sets.BusinessPartners[2].BPAddresses.push({ AddressName: 'BASE BETIM', AddressType: 'bo_ShipTo', Street: 'Rod. Fernão Dias, km 492', City: 'Betim', State: 'MG', U_SPS_Lat: '-19.9678', U_SPS_Lon: '-44.1983' });
+  sets.BusinessPartners[3].BPAddresses.push({ AddressName: 'FAZENDA BOA VISTA', AddressType: 'bo_ShipTo', Street: 'Estrada Municipal, km 12', City: 'Unaí', State: 'MG', U_SPS_Lat: '-16.3592', U_SPS_Lon: '-46.9064' });
 
   sets.Items = [
     ['SLOC001', 'Locação de máquinas e equipamentos'],
@@ -38,6 +38,9 @@ export function demoSeed() {
     ['PEC-0102', 'Óleo lubrificante 15W40 (litro)'],
     ['PEC-0210', 'Mangueira hidráulica 1/2"'],
     ['PEC-0305', 'Bateria 150 Ah'],
+    ['SLOC810', 'Operação de equipamento (mão de obra)'],
+    ['PEC-0420', 'Filtro hidráulico'],
+    ['PEC-0515', 'Correia do alternador'],
   ].map(([ItemCode, ItemName]) => ({ ItemCode, ItemName, SalesItem: 'tYES', Valid: 'tYES' }));
 
   // Itens dos bens (controlados por nº de série) — cada equipamento da frota é um nº de série no B1
@@ -46,7 +49,7 @@ export function demoSeed() {
   sets.Items.push(...BENS.map(([ItemCode, ItemName]) => ({ ItemCode, ItemName, SalesItem: 'tYES', InventoryItem: 'tYES', ManageSerialNumbers: 'tYES', Valid: 'tYES' })));
 
   sets.BusinessPlaces = [{ BPLID: 1, BPLName: 'Matriz — Contagem/MG', DefaultWarehouseID: '01' }, { BPLID: 2, BPLName: 'Filial — Betim/MG', DefaultWarehouseID: '02' }];
-  sets.Warehouses = [['01', 'Pátio Contagem'], ['02', 'Pátio Betim'], ['LOC', 'Equipamentos em clientes'], ['MAN', 'Oficina / manutenção']]
+  sets.Warehouses = [['01', 'Pátio Contagem'], ['02', 'Pátio Betim'], ['LOC', 'Equipamentos em clientes'], ['MAN', 'Oficina / manutenção'], ['PEC', 'Almoxarifado de peças']]
     .map(([WarehouseCode, WarehouseName]) => ({ WarehouseCode, WarehouseName }));
   sets.NotaFiscalUsage = [[9, 'Locação de bens móveis'], [12, 'Remessa de bem em locação'], [13, 'Retorno de bem locado'], [15, 'Serviço e peças de assistência']]
     .map(([ID, Usage]) => ({ ID, Usage, Description: Usage }));
@@ -55,18 +58,26 @@ export function demoSeed() {
     ['TED-FORN', 'TED fornecedores', 'boptOutgoing']].map(([PaymentMethodCode, Description, Type]) => ({ PaymentMethodCode, Description, Type, Active: 'tYES' }));
   sets.SalesPersons = [[-1, '-Nenhum vendedor-'], [1, 'Ana Paula Rocha'], [2, 'Roberto Dias']].map(([SalesEmployeeCode, SalesEmployeeName]) => ({ SalesEmployeeCode, SalesEmployeeName, Active: 'tYES' }));
   sets.Projects = [['OBRA-PQAGUAS', 'Residencial Parque das Águas'], ['FROTA-ROTASUL', 'Frota Rota Sul']].map(([Code, Name]) => ({ Code, Name, Active: 'tYES' }));
-  sets.EmployeesInfo = [[11, 'Rafael', 'Moreira'], [12, 'Juliana', 'Costa'], [13, 'Marcos', 'Tavares'], [14, 'Paulo', 'Lima']]
+  sets.EmployeesInfo = [[11, 'Rafael', 'Moreira'], [12, 'Juliana', 'Costa'], [13, 'Marcos', 'Tavares'], [14, 'Paulo', 'Lima'], [21, 'Antônio Carlos', 'Ferreira'], [22, 'Gilmar', 'Rocha']]
     .map(([EmployeeID, FirstName, LastName]) => ({ EmployeeID, FirstName, LastName, Active: 'tYES' }));
   sets.ServiceCallStatus = [[-3, 'Aberto'], [-2, 'Pendente'], [-1, 'Fechado']].map(([StatusId, Name]) => ({ StatusId, Name }));
   sets.ServiceCallTypes = [[1, 'Manutenção corretiva'], [2, 'Manutenção preventiva'], [3, 'Reclamação / qualidade']].map(([CallTypeID, Name]) => ({ CallTypeID, Name }));
   sets.ServiceCallOrigins = [[1, 'Telefone'], [2, 'E-mail'], [3, 'WhatsApp'], [4, 'Portal do cliente']].map(([OriginID, Name]) => ({ OriginID, Name }));
   sets.ServiceCallProblemTypes = [[1, 'Mecânico'], [2, 'Elétrico'], [3, 'Hidráulico'], [4, 'Avaria / mau uso']].map(([ProblemTypeID, Name]) => ({ ProblemTypeID, Name }));
   sets.ActivityTypes = [[1, 'Visita técnica'], [2, 'Ligação']].map(([Code, Name]) => ({ Code, Name }));
+  // Fornecedores (oficina terceirizada e taxas de veículos)
+  sets.BusinessPartners.push(...[['F0001', 'Retífica e Hidráulica Minas Ltda'], ['F0002', 'Auto Elétrica Central Ltda'], ['F0010', 'Secretaria da Fazenda / DETRAN-MG']]
+    .map(([CardCode, CardName]) => ({ CardCode, CardName, CardType: 'cSupplier', Valid: 'tYES', BPAddresses: [] })));
+  // Centros de custo por equipamento (dimensão 2), usados no custo da oficina
+  sets.ProfitCenters = [];
   sets.ServiceCalls = [];
   sets.Activities = [];
   sets.DeliveryNotes = [];
   sets.Returns = [];
   sets.StockTransfers = [];
+  sets.InventoryGenExits = [];
+  sets.PurchaseOrders = [];
+  sets.PurchaseInvoices = [];
 
   sets.U_SPS_LFAM = [
     ['RETRO', 'Retroescavadeiras', 'EQP', 'linha amarela, diesel'],
@@ -92,7 +103,7 @@ export function demoSeed() {
   const ITEM_BEM = { RETRO: 'BEM-RETRO', ESCAV: 'BEM-ESCAV', MINICAR: 'BEM-MINI', GERADOR: 'BEM-GER', PLAT: 'BEM-PLAT', PICAPE: 'BEM-PICAPE', CAMINHAO: 'BEM-CAM', UTIL: 'BEM-UTIL' };
   const A = (Code, Name, U_Tipo, U_Familia, U_Categoria, U_ItemCode, o) => ({
     Code, Name, U_Tipo, U_Familia, U_Categoria, U_ItemCode, U_Status: 'DIS', U_CtrAtual: 0, U_Filial: 1, U_Versao: 0, U_ItemBem: ITEM_BEM[U_Familia] || '',
-    ...o, U_Serie: o.U_Serie || o.U_Chassi || '', U_VlrBem: (o.U_ValorMes || 0) * 30,
+    ...o, U_Serie: o.U_Serie || o.U_Chassi || '', U_VlrBem: (o.U_ValorMes || 0) * 30, U_CCusto: Code, U_UF: U_Tipo === 'VEI' ? 'MG' : '',
   });
   sets.SPSLATV = [
     A('EQP-0001', 'Retroescavadeira JCB 3CX', 'EQP', 'RETRO', 'Linha amarela', 'SLOC001', { U_Serie: 'JCB3CX-778812', U_Marca: 'JCB', U_Modelo: '3CX', U_Ano: '2021', U_Medidor: 4520, U_ValorMes: 18000, U_ValorDia: 900, U_Status: 'LOC', U_CtrAtual: 1 }),
@@ -159,7 +170,7 @@ export function demoSeed() {
     // de-para da demonstração com os cadastros nativos simulados
     USAGE: '9', B1_FILIAL: '1', B1_USAGE_SRV: '15', B1_USAGE_REM: '12', B1_USAGE_RET: '13', B1_FORMA_PGTO: 'BOLETO-ITAU', B1_COND_PGTO: '1',
     B1_REMESSA: 'NF', B1_DEP_PATIO: '01', B1_DEP_LOCACAO: 'LOC', PV_SERVICECALL: 'S', PV_CALL_TIPO: '1', PV_CALL_ORIGEM: '1', PV_CALL_PROBLEMA: '1',
-    PV_ATIVIDADE: 'S', PV_ATV_TIPO: '1' })
+    PV_ATIVIDADE: 'S', PV_ATV_TIPO: '1', VEI_FORNECEDOR: 'F0010', VEI_CONTA: '', OFI_DEP_PECAS: 'PEC', GEO_BASE: '-19.9165,-44.0806' })
     .map(([Code, v]) => ({ Code, Name: Code, U_Valor: v }));
 
   /* ---- pós-venda ---- */
@@ -240,6 +251,15 @@ export function demoSeed() {
   const S = (Code, os, cha, card, name, tec, dias, nota, com) => ({ Code, Name: Code, U_OsEntry: os, U_ChaEntry: cha, U_CardCode: card, U_CardName: name, U_Email: '',
     U_Tecnico: tec, U_Enviada: addDias(h, dias), U_Nota: nota, U_Comentario: com, U_Respondida: nota >= 0 ? dt(dias + 1, '09:12') : '' });
   sets.U_SPS_LINT = [];
+  sets.ProfitCenters = sets.SPSLATV.map((a) => ({ CenterCode: a.Code, CenterName: a.Name, InWhichDimension: 2, Active: 'tYES' }));
+  // Operadores de máquina (mão de obra) e calendário de licenciamento (exemplo MG: conferir no DETRAN a cada ano)
+  sets.U_SPS_LOPE = [['OP01', 'Antônio Carlos Ferreira', 21, 'E', 'NR-11, NR-12 (escavadeira, retro)'], ['OP02', 'Gilmar Rocha', 22, 'D', 'NR-12 (minicarregadeira, rolo)']]
+    .map(([Code, Name, U_EmpID, cat, U_Habilit]) => ({ Code, Name, U_EmpID, U_Fone: '', U_CNH: `Categoria ${cat}`, U_CNHVal: addDias(h, 400), U_Habilit, U_HabVal: addDias(h, 200), U_Ativo: 'S' }));
+  sets.U_SPS_LAPO = [];
+  sets.U_SPS_LFAJ = [];
+  sets.U_SPS_LDOC = [];
+  sets.U_SPS_LCAL = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'].map((f, i) => ({ Code: `MG-${f}`, Name: `MG-${f}`, U_UF: 'MG', U_Final: f,
+    U_MesLic: 3 + Math.floor(i / 2), U_MesIPVA: 1 + Math.floor(i / 4) }));
   sets.U_SPS_LPES = [
     S('pesq-demo-a1', 4, 0, 'C0003', 'Transportes Rota Sul Ltda', 'T02', -10, 9, 'Vistoria rápida e bem explicada.'),
     S('pesq-demo-b2', 5, 3, 'C0001', 'Construtora Horizonte Ltda', 'T01', -5, 6, 'Resolveu, mas demorou para chegar.'),

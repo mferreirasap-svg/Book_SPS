@@ -52,7 +52,7 @@ function ruleFields(b) {
 const CODE = /^[A-Za-z0-9._-]{1,50}$/;
 
 export default async function cadastroRoutes(app, { deps }) {
-  const { repos, audit, contracts } = deps;
+  const { repos, audit, contracts, aftersales } = deps;
   const can = app.can;
 
   /* ---- ativos ---- */
@@ -94,6 +94,11 @@ export default async function cadastroRoutes(app, { deps }) {
     if (status === 'BAI' && (await contracts.allocations()).has(a.Code)) throw badRequest('O ativo está num contrato aberto e não pode ser baixado.');
     const { before, after } = await repos.assets.update(a.Code, { U_Status: status }, req.body.U_Versao);
     audit.record(req, { action: `status:${status}`, entity: 'ativo', id: a.Code, before: { U_Status: before.U_Status }, after: { U_Status: after.U_Status } });
+    // Equipamento enviado para manutenção: abre a OS interna da oficina, se ainda não houver uma em aberto.
+    if (status === 'MAN' && aftersales) {
+      const aberta = (await repos.orders.all({ ativo: a.Code, abertas: true })).find((o) => ['INT', 'REP', 'COR'].includes(o.U_Tipo));
+      if (!aberta) after.osInterna = await aftersales.createOrder(req, { tipo: 'INT', ativo: a.Code, descricao: String(req.body.motivo || 'Equipamento enviado para manutenção.') });
+    }
     return after;
   });
 
